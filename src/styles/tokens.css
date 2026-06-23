@@ -1,0 +1,45 @@
+/* EcoMetric design tokens — mapped from Figma ecometrix */
+
+:root {
+  --font-family-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
+
+  /* Brand */
+  --ecometric-green: #006d36;
+  --ecometric-green-dark: #062c1e;
+  --ecometric-green-bright: #4ade80;
+  --ecometric-text: #00150c;
+  --ecometric-muted: #414844;
+  --ecometric-border: #c1c8c2;
+  --ecometric-page: #f7f9fb;
+
+  /* shadcn semantic tokens (HSL components for Tailwind v4) */
+  --background: #f7f9fb;
+  --foreground: #00150c;
+
+  --card: #ffffff;
+  --card-foreground: #00150c;
+
+  --popover: #ffffff;
+  --popover-foreground: #00150c;
+
+  --primary: #006d36;
+  --primary-foreground: #ffffff;
+
+  --secondary: #dcfce7;
+  --secondary-foreground: #062c1e;
+
+  --muted: #eceef0;
+  --muted-foreground: #414844;
+
+  --accent: #4ade80;
+  --accent-foreground: #062c1e;
+
+  --destructive: #dc2626;
+  --destructive-foreground: #ffffff;
+
+  --border: #c1c8c2;
+  --input: #c1c8c2;
+  --ring: #006d36;
+
+  --radius: 0.5rem;
+}

@@ -1,0 +1,160 @@
+---
+description: EcoMetric frontend standards — React 19, TypeScript, Tailwind, shadcn, Figma fidelity, feature architecture
+alwaysApply: true
+---
+
+# EcoMetric Frontend Engineering Standards
+
+Senior frontend bar: intentional, polished, production-ready. Never AI-looking slop.
+
+## Before Writing Code
+
+1. Inspect existing project structure, conventions, components, tokens, naming.
+2. Follow existing conventions over this rule when they conflict.
+3. If repo is empty (greenfield): scaffold first (see Greenfield Bootstrap).
+4. If Figma is available: read frame hierarchy, auto layout, typography, spacing, tokens before coding.
+5. Understand workflow: primary data, empty/error/loading states, responsive behavior.
+
+## Tech Stack
+
+- React 19, TypeScript strict
+- Tailwind CSS + CSS variables + design tokens, mobile-first
+- shadcn/ui, Radix UI, Lucide React
+- React Router v7
+- TanStack Query (server read state), useMutation (writes/auth)
+- Zustand (cross-route client state only: session, preferences)
+- React Hook Form + Zod
+- clsx, class-variance-authority, tailwind-merge (`cn` utility)
+- Framer Motion only when it improves usability feedback
+
+## Greenfield Bootstrap
+
+If no codebase exists:
+
+1. `pnpm create vite . --template react-ts`
+2. Install: `pnpm add` tailwindcss, @tailwindcss/vite, react-router, @tanstack/react-query, zustand, react-hook-form, @hookform/resolvers, zod, clsx, tailwind-merge, class-variance-authority, lucide-react
+3. Init shadcn/ui (`components.json`, path alias `@/`)
+4. Create `src/` architecture (below)
+5. Define tokens in `src/styles/tokens.css` + Tailwind theme
+6. Then implement the requested feature
+
+## Project Architecture
+
+```
+src/
+  app/           # providers, router, query client
+  assets/
+  layouts/
+  shared/        # cross-feature only
+  features/      # feature-owned code
+  styles/
+```
+
+Per feature when needed:
+
+```
+features/<name>/
+  api/ components/ hooks/ pages/ schemas/
+  services/ store/ types/ utils/ index.ts
+```
+
+Rules:
+- No random folders; no feature code in `shared/`
+- Named exports; strict types; no `any`
+- Presentation components never fetch API directly
+- Prefer composition over configuration
+
+## State Tooling
+
+| Tool | Use when |
+|------|----------|
+| TanStack Query | Server-fetched lists, detail, dashboards |
+| useMutation | Login, register, CRUD, form submit |
+| useState | Local UI (toggle, open/close) |
+| Zustand | Auth session, global UI prefs across routes |
+| Do NOT add | Query/Zustand on screens with no server/global state |
+
+## Output Tiers
+
+**Tier A — Feature screen** (Dashboard, Data Input):
+page, components, api, hooks, schemas, loading/empty/error/success
+
+**Tier B — Auth screen** (Login, Register):
+page, form components, schema, mutation hook, submitting/error/success
+
+**Tier C — Shared primitive** (Button, Badge):
+component + variants + types only
+
+## Design Token Priority
+
+1. Map Figma values → `src/styles/tokens.css` and Tailwind theme
+2. Components use semantic classes: `bg-primary`, `text-muted-foreground`, `border-border`
+3. No raw hex in components
+4. Arbitrary Tailwind values only when token missing — then add the token immediately
+5. No inline styles
+
+### EcoMetric Brand (from Figma ecometrix)
+
+- Font: Inter
+- `--primary`: #006d36 | `--foreground`: #00150c | `--muted-foreground`: #414844
+- `--border`: #c1c8c2 | `--accent`: #4ade80 | `--background`: #f7f9fb
+- Input/button height: 48px (h-12)
+- Radius: 8px inputs/buttons, 12px cards, 24px glass preview card
+- Icons: prefer Lucide equivalents of Figma vectors
+
+## Screen Types
+
+**App screens** (dashboard, tables, operational forms):
+enterprise-dense, content-first, scannable, no marketing fluff
+
+**Auth/public screens** (login, register, landing):
+follow Figma split layouts, hero copy, decorative previews; allow marketing type scale (e.g. 48px H1 in auth panel)
+
+## UI Anti-Patterns (avoid)
+
+- Purple everywhere, huge gradients, rounded-2xl everywhere
+- Giant cards, generic heroes, shadow overload
+- Decorative UI without workflow purpose
+- Desktop-first layout
+- Spinner-only loading for primary content
+- Hardcoded colors, arbitrary spacing without token mapping
+
+## UI Patterns (use)
+
+- Clean enterprise dashboard aesthetics
+- Professional spacing via Tailwind scale: p-4, gap-3, px-6
+- Skeletons for content loading; empty states with actions; error with retry
+- Semantic HTML before ARIA; WCAG AA contrast
+- Keyboard: Tab, Enter, Escape, Space; visible focus rings
+- Every input has label; every icon button has aria-label
+- Responsive: 320, 768, 1024, 1440px — mobile-first, no horizontal overflow
+
+## Forms
+
+React Hook Form + Zod. Handle: defaults, validation errors, server errors, submitting, success.
+Accessible labels and helpful error messages.
+
+## Figma Rules
+
+When Figma MCP available:
+- Read components, frames, auto layout, spacing, typography before coding
+- Reuse tokens; match design system
+- Login frame: `71:6252` | Register: `74:8070` | File key: `BzmfxP0dmTwmf72pb7U7Mv`
+- No Figma Variables in file — tokens are inferred from design context
+
+## Naming
+
+- Files: `kebab-case.tsx`
+- Components: `PascalCase`
+- Path alias: `@/` → `src/`
+
+## Final Checklist
+
+Before finishing:
+- [ ] Responsive 320/768/1024/1440
+- [ ] Keyboard accessible, WCAG AA
+- [ ] Loading, empty, error, success where relevant
+- [ ] Feature-based folders; shared only when reusable
+- [ ] No `any`, no duplicated code, no inline styles
+- [ ] Semantic tokens, not hardcoded colors
+- [ ] Existing conventions respected
