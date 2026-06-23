@@ -129,6 +129,65 @@ follow Figma split layouts, hero copy, decorative previews; allow marketing type
 - Every input has label; every icon button has aria-label
 - Responsive: 320, 768, 1024, 1440px — mobile-first, no horizontal overflow
 
+## Interaction States
+
+Every interactive element must define clear states:
+
+- Default, Hover, Active/Pressed, Focus-visible, Disabled, Loading
+- Selected/Current, Open/Closed when relevant
+- Error/Success when relevant
+
+Rules:
+- Hover: subtle and useful (`hover:bg-accent`, `hover:text-accent-foreground`)
+- Active: immediate tactile feedback (`active:scale-[0.98]`, darker bg)
+- Focus-visible: clearly visible for keyboard (`focus-visible:ring-2 focus-visible:ring-ring`)
+- Disabled: `disabled:pointer-events-none disabled:opacity-50`
+- Loading: prevent duplicate actions (`disabled` + `aria-busy`)
+- Selected: visually distinct from hover (`aria-selected`, `data-[state=checked]`)
+- Do not rely on hover alone — touch devices have no hover
+
+Avoid: harsh hover colors, large scale animations, layout-shifting hover, hover-only functionality, invisible focus states.
+
+### Motion
+
+- CSS transitions for simple UI feedback (`transition-colors duration-150`)
+- Framer Motion only for meaningful transitions (drawers, dialogs, layout changes)
+- Respect `prefers-reduced-motion` — use `motion-reduce:` variants
+- Prefer duration-150/200 for controls; duration-200/300 for overlays
+- Avoid slow, bouncy, decorative animations on dashboards
+
+Utility classes in `globals.css`: `focus-ring`, `link-primary`, `link-muted`
+
+## Theming
+
+- Use semantic CSS variables — no hardcoded light-only colors in components
+- When dark mode exists: verify contrast and interactive states in both themes
+- Project tokens live in `src/styles/tokens.css`
+
+## Data Display
+
+Tables, lists, grids must include when appropriate: search, filter, sort, pagination/infinite load, row actions, bulk actions, empty state, loading skeleton, error state, responsive mobile strategy. No wide tables without overflow plan.
+
+## App Layout
+
+App screens: sidebar (many sections), header (page actions), breadcrumbs (nested), tabs (subviews), sticky action bars only when useful. Keep navigation predictable.
+
+## Authorization UI
+
+When roles exist: hide unavailable actions when appropriate; disable with clear reason when needed; handle unauthorized/forbidden; never expose admin UI to unauthorized users.
+
+## User Feedback
+
+Mutations: success feedback, meaningful errors, prevent duplicate submissions, confirmation for destructive actions, toast only for transient feedback.
+
+## Performance
+
+Avoid unnecessary re-renders; memoize only when it solves a real issue; lazy-load heavy routes when useful; mind bundle size; no expensive animations on large lists/dashboards.
+
+## Backend Contracts
+
+Do not invent API contracts when types/docs exist. Reuse API clients and DTOs; match backend field names. Unknown contract → clearly marked mock data in `api/` separate from production code.
+
 ## Forms
 
 React Hook Form + Zod. Handle: defaults, validation errors, server errors, submitting, success.
@@ -139,7 +198,7 @@ Accessible labels and helpful error messages.
 When Figma MCP available:
 - Read components, frames, auto layout, spacing, typography before coding
 - Reuse tokens; match design system
-- Login frame: `71:6252` | Register: `74:8070` | File key: `BzmfxP0dmTwmf72pb7U7Mv`
+- Login frame: `71:6252` | Register: `74:8070` | Public website: `68:5975` | File key: `BzmfxP0dmTwmf72pb7U7Mv`
 - No Figma Variables in file — tokens are inferred from design context
 
 ## Naming
@@ -154,6 +213,8 @@ Before finishing:
 - [ ] Responsive 320/768/1024/1440
 - [ ] Keyboard accessible, WCAG AA
 - [ ] Loading, empty, error, success where relevant
+- [ ] Hover, active, focus-visible, disabled, loading, selected states on interactives
+- [ ] Motion subtle; respects prefers-reduced-motion
 - [ ] Feature-based folders; shared only when reusable
 - [ ] No `any`, no duplicated code, no inline styles
 - [ ] Semantic tokens, not hardcoded colors

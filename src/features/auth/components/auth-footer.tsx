@@ -11,6 +11,8 @@ const footerLinks = [
   { label: "Support", href: "#support" },
 ] as const;
 
+const currentYear = new Date().getFullYear();
+
 export function AuthFooter({ className }: AuthFooterProps) {
   return (
     <footer
@@ -20,14 +22,14 @@ export function AuthFooter({ className }: AuthFooterProps) {
       )}
     >
       <p className="text-sm text-muted-foreground">
-        © 2024 EcoMetric Platform.
+        © {currentYear} EcoMetric Platform.
       </p>
       <nav aria-label="Legal" className="flex gap-4">
         {footerLinks.map((link) => (
           <Link
             key={link.label}
             to={link.href}
-            className="text-sm text-muted-foreground transition-colors hover:text-foreground"
+            className="link-muted text-sm"
           >
             {link.label}
           </Link>

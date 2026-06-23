@@ -1,6 +1,6 @@
 import { AuthFooter } from "@/features/auth/components/auth-footer";
 import { LoginForm } from "@/features/auth/components/login-form";
-import { Logo } from "@/features/auth/components/logo";
+import { Logo } from "@/shared/components/logo";
 import { MarketingPanel } from "@/features/auth/components/marketing-panel";
 import { SecureBadge } from "@/features/auth/components/secure-badge";
 

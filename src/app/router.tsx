@@ -1,7 +1,7 @@
 import { createBrowserRouter, RouterProvider } from "react-router";
 import { RootLayout } from "@/layouts/root-layout";
+import { PublicWebsitePage } from "@/features/marketing/pages/public-website-page";
 import { LoginPage } from "@/features/auth/pages/login-page";
-import { HomePage } from "@/features/home/pages/home-page";
 
 const router = createBrowserRouter([
   {
@@ -10,7 +10,7 @@ const router = createBrowserRouter([
     children: [
       {
         index: true,
-        element: <HomePage />,
+        element: <PublicWebsitePage />,
       },
       {
         path: "login",

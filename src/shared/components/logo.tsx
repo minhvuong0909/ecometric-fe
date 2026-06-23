@@ -14,7 +14,9 @@ export function Logo({ className, variant = "default" }: LogoProps) {
       <div
         className={cn(
           "flex size-10 shrink-0 items-center justify-center rounded-lg",
-          isOnDark ? "bg-accent text-accent-foreground" : "bg-primary text-primary-foreground",
+          isOnDark
+            ? "bg-accent text-accent-foreground"
+            : "bg-primary text-primary-foreground",
         )}
         aria-hidden
       >

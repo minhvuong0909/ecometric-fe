@@ -47,12 +47,14 @@ export function LoginForm({ className }: LoginFormProps) {
   const successMessage = loginMutation.isSuccess
     ? loginMutation.data.message
     : null;
+  const isSubmitting = loginMutation.isPending;
 
   return (
     <form
       onSubmit={handleSubmit(onSubmit)}
       className={cn("space-y-6", className)}
       noValidate
+      aria-busy={isSubmitting}
     >
       <div className="space-y-2">
         <Label htmlFor="email">Email</Label>
@@ -62,6 +64,7 @@ export function LoginForm({ className }: LoginFormProps) {
           autoComplete="email"
           placeholder="you@company.com"
           className="h-12"
+          disabled={isSubmitting}
           aria-invalid={Boolean(errors.email)}
           aria-describedby={errors.email ? "email-error" : undefined}
           {...register("email")}
@@ -82,6 +85,7 @@ export function LoginForm({ className }: LoginFormProps) {
             autoComplete="current-password"
             placeholder="Enter your password"
             className="h-12 pr-12"
+            disabled={isSubmitting}
             aria-invalid={Boolean(errors.password)}
             aria-describedby={errors.password ? "password-error" : undefined}
             {...register("password")}
@@ -91,6 +95,7 @@ export function LoginForm({ className }: LoginFormProps) {
             variant="ghost"
             size="icon-sm"
             className="absolute top-1/2 right-2 -translate-y-1/2 text-muted-foreground"
+            disabled={isSubmitting}
             onClick={() => setShowPassword((prev) => !prev)}
             aria-label={showPassword ? "Hide password" : "Show password"}
           >
@@ -113,6 +118,7 @@ export function LoginForm({ className }: LoginFormProps) {
           <Checkbox
             id="rememberMe"
             checked={rememberMe}
+            disabled={isSubmitting}
             onCheckedChange={(checked) =>
               setValue("rememberMe", checked === true, { shouldDirty: true })
             }
@@ -121,10 +127,7 @@ export function LoginForm({ className }: LoginFormProps) {
             Remember me
           </Label>
         </div>
-        <Link
-          to="/forgot-password"
-          className="text-sm font-semibold tracking-wide text-primary hover:underline"
-        >
+        <Link to="/forgot-password" className="link-primary text-sm tracking-wide">
           Forgot password?
         </Link>
       </div>
@@ -147,9 +150,11 @@ export function LoginForm({ className }: LoginFormProps) {
       <Button
         type="submit"
         className="h-12 w-full text-sm font-semibold tracking-wide shadow-md"
-        disabled={loginMutation.isPending}
+        disabled={isSubmitting}
+        aria-busy={isSubmitting}
+        data-loading={isSubmitting}
       >
-        {loginMutation.isPending ? (
+        {isSubmitting ? (
           <>
             <Loader2 className="size-4 animate-spin" aria-hidden />
             Signing in…
@@ -164,10 +169,7 @@ export function LoginForm({ className }: LoginFormProps) {
 
       <p className="text-center text-sm text-muted-foreground">
         Don&apos;t have an account?{" "}
-        <Link
-          to="/register"
-          className="font-semibold text-primary hover:underline"
-        >
+        <Link to="/register" className="link-primary">
           Sign up
         </Link>
       </p>

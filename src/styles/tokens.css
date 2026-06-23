@@ -11,6 +11,10 @@
   --ecometric-muted: #414844;
   --ecometric-border: #c1c8c2;
   --ecometric-page: #f7f9fb;
+  --ecometric-footer-muted: #709582;
+
+  /* Semantic (surface-specific) */
+  --footer-muted: var(--ecometric-footer-muted);
 
   /* shadcn semantic tokens (HSL components for Tailwind v4) */
   --background: #f7f9fb;

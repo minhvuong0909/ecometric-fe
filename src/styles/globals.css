@@ -25,6 +25,7 @@
   --color-border: var(--border);
   --color-input: var(--input);
   --color-ring: var(--ring);
+  --color-footer-muted: var(--footer-muted);
 }
 
 @layer base {
@@ -34,5 +35,30 @@
 
   body {
     @apply bg-background text-foreground font-sans antialiased;
+  }
+}
+
+@utility focus-ring {
+  @apply rounded-sm outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background;
+}
+
+@layer components {
+  .link-primary {
+    @apply font-semibold text-primary transition-colors duration-150 hover:text-primary/80 active:text-primary/70 rounded-sm outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background;
+  }
+
+  .link-muted {
+    @apply text-muted-foreground transition-colors duration-150 hover:text-foreground active:text-foreground/80 rounded-sm outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
   }
 }
