@@ -1,5 +1,8 @@
 import { ArrowRight, BarChart3, Database, Layers } from "lucide-react";
-import { FEATURES } from "@/features/marketing/constants/marketing-content";
+import {
+  FEATURES,
+  FEATURES_SECTION,
+} from "@/features/marketing/constants/marketing-content";
 import { cn } from "@/shared/lib/utils";
 
 const ICONS = {
@@ -14,11 +17,10 @@ export function MarketingFeatures() {
       <div className="mx-auto max-w-7xl px-6 lg:px-8">
         <div className="mx-auto mb-16 max-w-3xl text-center">
           <h2 className="text-3xl font-semibold tracking-tight text-secondary-foreground sm:text-4xl">
-            Enterprise-Grade ESG Architecture
+            {FEATURES_SECTION.title}
           </h2>
           <p className="mt-4 text-base leading-relaxed text-muted-foreground">
-            Built for precision and scale, our platform handles the complexities
-            of global carbon accounting with verified methodologies.
+            {FEATURES_SECTION.description}
           </p>
         </div>
 
@@ -45,7 +47,7 @@ export function MarketingFeatures() {
                     "link-primary mt-6 inline-flex items-center gap-1 text-sm tracking-wide",
                   )}
                 >
-                  Learn more
+                  {FEATURES_SECTION.learnMore}
                   <ArrowRight className="size-3.5" aria-hidden />
                 </a>
               </article>

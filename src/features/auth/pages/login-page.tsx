@@ -1,3 +1,4 @@
+import { AUTH_COPY } from "@/features/auth/constants/auth-content";
 import { AuthFooter } from "@/features/auth/components/auth-footer";
 import { LoginForm } from "@/features/auth/components/login-form";
 import { Logo } from "@/shared/components/logo";
@@ -5,6 +6,8 @@ import { MarketingPanel } from "@/features/auth/components/marketing-panel";
 import { SecureBadge } from "@/features/auth/components/secure-badge";
 
 export function LoginPage() {
+  const copy = AUTH_COPY.login;
+
   return (
     <div className="flex min-h-dvh flex-col bg-background lg:flex-row">
       <section className="flex flex-1 flex-col bg-card lg:max-w-[54%]">
@@ -16,11 +19,10 @@ export function LoginPage() {
               <SecureBadge />
               <div className="space-y-3 pt-2">
                 <h1 className="text-4xl font-bold tracking-tight text-foreground sm:text-5xl">
-                  Welcome back
+                  {copy.title}
                 </h1>
                 <p className="text-lg leading-relaxed text-muted-foreground">
-                  Sign in to review your carbon ledger, Eco-score, and ESG
-                  reporting progress.
+                  {copy.description}
                 </p>
               </div>
             </header>

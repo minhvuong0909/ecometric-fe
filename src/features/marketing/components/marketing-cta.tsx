@@ -1,4 +1,6 @@
+import { CTA_SECTION } from "@/features/marketing/constants/marketing-content";
 import { Link } from "react-router";
+import { ROUTES } from "@/shared/constants/routes";
 import { Button } from "@/shared/components/ui/button";
 
 export function MarketingCta() {
@@ -10,11 +12,10 @@ export function MarketingCta() {
       />
       <div className="relative mx-auto max-w-4xl px-6 text-center lg:px-8">
         <h2 className="text-3xl font-bold tracking-tight text-white sm:text-5xl sm:leading-tight">
-          Ready to lead the transition?
+          {CTA_SECTION.title}
         </h2>
         <p className="mx-auto mt-6 max-w-xl text-lg leading-relaxed text-secondary">
-          Join 2,500+ enterprises using EcoMetric to drive climate action and
-          reporting transparency.
+          {CTA_SECTION.description}
         </p>
         <div className="mt-10 flex flex-col items-center justify-center gap-4 sm:flex-row">
           <Button
@@ -22,7 +23,7 @@ export function MarketingCta() {
             size="lg"
             className="h-14 bg-accent px-10 text-sm font-bold tracking-wide text-accent-foreground shadow-lg hover:bg-accent/90 active:bg-accent/80"
           >
-            <Link to="/register">Get Started Free</Link>
+            <Link to={ROUTES.register}>{CTA_SECTION.primary}</Link>
           </Button>
           <Button
             asChild
@@ -30,7 +31,7 @@ export function MarketingCta() {
             size="lg"
             className="h-14 border-white/20 bg-transparent px-10 text-sm font-bold tracking-wide text-white hover:bg-white/10 active:bg-white/15"
           >
-            <Link to="/register">Book a Personalized Demo</Link>
+            <Link to={ROUTES.register}>{CTA_SECTION.secondary}</Link>
           </Button>
         </div>
       </div>

@@ -1,4 +1,5 @@
 import { Link } from "react-router";
+import { AUTH_COPY } from "@/features/auth/constants/auth-content";
 import { cn } from "@/shared/lib/utils";
 
 type AuthFooterProps = {
@@ -6,9 +7,9 @@ type AuthFooterProps = {
 };
 
 const footerLinks = [
-  { label: "Privacy", href: "#privacy" },
-  { label: "Terms", href: "#terms" },
-  { label: "Support", href: "#support" },
+  { label: AUTH_COPY.footer.privacy, href: "#privacy" },
+  { label: AUTH_COPY.footer.terms, href: "#terms" },
+  { label: AUTH_COPY.footer.support, href: "#support" },
 ] as const;
 
 const currentYear = new Date().getFullYear();
@@ -22,9 +23,9 @@ export function AuthFooter({ className }: AuthFooterProps) {
       )}
     >
       <p className="text-sm text-muted-foreground">
-        © {currentYear} EcoMetric Platform.
+        {AUTH_COPY.footer.copyright.replace("{year}", String(currentYear))}
       </p>
-      <nav aria-label="Legal" className="flex gap-4">
+      <nav aria-label="Pháp lý" className="flex gap-4">
         {footerLinks.map((link) => (
           <Link
             key={link.label}

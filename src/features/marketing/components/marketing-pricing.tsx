@@ -2,9 +2,11 @@ import { Check } from "lucide-react";
 import { useState } from "react";
 import { Link } from "react-router";
 import {
+  PRICING_SECTION,
   PRICING_TIERS,
   type PricingInterval,
 } from "@/features/marketing/constants/marketing-content";
+import { ROUTES } from "@/shared/constants/routes";
 import { Button } from "@/shared/components/ui/button";
 import { cn } from "@/shared/lib/utils";
 
@@ -23,17 +25,16 @@ export function MarketingPricing() {
       <div className="mx-auto max-w-7xl px-6 lg:px-8">
         <div className="mx-auto mb-16 max-w-2xl text-center">
           <h2 className="text-3xl font-semibold tracking-tight text-secondary-foreground sm:text-4xl">
-            Transparent Pricing
+            {PRICING_SECTION.title}
           </h2>
           <p className="mt-4 text-base text-muted-foreground">
-            Choose the right tier to accelerate your organization&apos;s
-            net-zero journey.
+            {PRICING_SECTION.description}
           </p>
 
           <div
             className="mt-8 inline-flex rounded-lg border border-border bg-card p-1"
             role="group"
-            aria-label="Billing interval"
+            aria-label={PRICING_SECTION.billingInterval}
           >
             <button
               type="button"
@@ -46,7 +47,7 @@ export function MarketingPricing() {
                   : "text-muted-foreground hover:text-foreground",
               )}
             >
-              Monthly
+              {PRICING_SECTION.monthly}
             </button>
             <button
               type="button"
@@ -59,7 +60,7 @@ export function MarketingPricing() {
                   : "text-muted-foreground hover:text-foreground",
               )}
             >
-              Annually (-20%)
+              {PRICING_SECTION.annually}
             </button>
           </div>
         </div>
@@ -131,7 +132,7 @@ export function MarketingPricing() {
                           isHighlighted ? "text-secondary" : "text-muted-foreground",
                         )}
                       >
-                        /mo
+                        {PRICING_SECTION.perMonth}
                       </span>
                     </>
                   )}
@@ -168,7 +169,11 @@ export function MarketingPricing() {
                       : "border-2 border-secondary-foreground text-secondary-foreground hover:bg-muted",
                   )}
                 >
-                  <Link to="/register">{tier.cta}</Link>
+                  {tier.id === "enterprise" ? (
+                    <a href="#contact">{tier.cta}</a>
+                  ) : (
+                    <Link to={ROUTES.register}>{tier.cta}</Link>
+                  )}
                 </Button>
               </article>
             );

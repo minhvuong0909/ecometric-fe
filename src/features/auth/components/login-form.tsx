@@ -1,8 +1,9 @@
+import { AUTH_COPY } from "@/features/auth/constants/auth-content";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { ArrowRight, Eye, EyeOff, Loader2 } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
-import { Link } from "react-router";
+import { Link, useNavigate } from "react-router";
 import { useLogin } from "@/features/auth/hooks/use-login";
 import {
   loginSchema,
@@ -12,6 +13,7 @@ import { Button } from "@/shared/components/ui/button";
 import { Checkbox } from "@/shared/components/ui/checkbox";
 import { Input } from "@/shared/components/ui/input";
 import { Label } from "@/shared/components/ui/label";
+import { ROUTES } from "@/shared/constants/routes";
 import { cn } from "@/shared/lib/utils";
 
 type LoginFormProps = {
@@ -19,7 +21,9 @@ type LoginFormProps = {
 };
 
 export function LoginForm({ className }: LoginFormProps) {
+  const copy = AUTH_COPY.login;
   const [showPassword, setShowPassword] = useState(false);
+  const navigate = useNavigate();
   const loginMutation = useLogin();
 
   const {
@@ -49,6 +53,12 @@ export function LoginForm({ className }: LoginFormProps) {
     : null;
   const isSubmitting = loginMutation.isPending;
 
+  useEffect(() => {
+    if (loginMutation.isSuccess) {
+      navigate(ROUTES.app.dashboard, { replace: true });
+    }
+  }, [loginMutation.isSuccess, navigate]);
+
   return (
     <form
       onSubmit={handleSubmit(onSubmit)}
@@ -57,12 +67,12 @@ export function LoginForm({ className }: LoginFormProps) {
       aria-busy={isSubmitting}
     >
       <div className="space-y-2">
-        <Label htmlFor="email">Email</Label>
+        <Label htmlFor="email">{copy.emailLabel}</Label>
         <Input
           id="email"
           type="email"
           autoComplete="email"
-          placeholder="you@company.com"
+          placeholder={copy.emailPlaceholder}
           className="h-12"
           disabled={isSubmitting}
           aria-invalid={Boolean(errors.email)}
@@ -77,13 +87,13 @@ export function LoginForm({ className }: LoginFormProps) {
       </div>
 
       <div className="space-y-2">
-        <Label htmlFor="password">Password</Label>
+        <Label htmlFor="password">{copy.passwordLabel}</Label>
         <div className="relative">
           <Input
             id="password"
             type={showPassword ? "text" : "password"}
             autoComplete="current-password"
-            placeholder="Enter your password"
+            placeholder={copy.passwordPlaceholder}
             className="h-12 pr-12"
             disabled={isSubmitting}
             aria-invalid={Boolean(errors.password)}
@@ -97,7 +107,7 @@ export function LoginForm({ className }: LoginFormProps) {
             className="absolute top-1/2 right-2 -translate-y-1/2 text-muted-foreground"
             disabled={isSubmitting}
             onClick={() => setShowPassword((prev) => !prev)}
-            aria-label={showPassword ? "Hide password" : "Show password"}
+            aria-label={showPassword ? copy.hidePassword : copy.showPassword}
           >
             {showPassword ? (
               <EyeOff className="size-4" aria-hidden />
@@ -124,11 +134,11 @@ export function LoginForm({ className }: LoginFormProps) {
             }
           />
           <Label htmlFor="rememberMe" className="cursor-pointer font-normal">
-            Remember me
+            {copy.rememberMe}
           </Label>
         </div>
-        <Link to="/forgot-password" className="link-primary text-sm tracking-wide">
-          Forgot password?
+        <Link to={ROUTES.forgotPassword} className="link-primary text-sm tracking-wide">
+          {copy.forgotPassword}
         </Link>
       </div>
 
@@ -157,20 +167,20 @@ export function LoginForm({ className }: LoginFormProps) {
         {isSubmitting ? (
           <>
             <Loader2 className="size-4 animate-spin" aria-hidden />
-            Signing in…
+            {copy.submitting}
           </>
         ) : (
           <>
-            Login
+            {copy.submit}
             <ArrowRight className="size-4" aria-hidden />
           </>
         )}
       </Button>
 
       <p className="text-center text-sm text-muted-foreground">
-        Don&apos;t have an account?{" "}
-        <Link to="/register" className="link-primary">
-          Sign up
+        {copy.noAccount}{" "}
+        <Link to={ROUTES.register} className="link-primary">
+          {copy.signUp}
         </Link>
       </p>
     </form>

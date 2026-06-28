@@ -1,3 +1,4 @@
+import { AUTH_COPY } from "@/features/auth/constants/auth-content";
 import type { LoginRequest, LoginResponse } from "@/features/auth/types/login.types";
 
 const MOCK_DELAY_MS = 1200;
@@ -9,10 +10,10 @@ export async function login(request: LoginRequest): Promise<LoginResponse> {
   await new Promise((resolve) => setTimeout(resolve, MOCK_DELAY_MS));
 
   if (request.email === "fail@company.com") {
-    throw new Error("Invalid email or password. Please try again.");
+    throw new Error(AUTH_COPY.api.invalidCredentials);
   }
 
   return {
-    message: `Welcome back! Signed in as ${request.email}`,
+    message: AUTH_COPY.api.welcomeBack(request.email),
   };
 }

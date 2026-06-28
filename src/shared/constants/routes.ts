@@ -1,0 +1,23 @@
+/** Central route paths — single source of truth for navigation & redirects */
+export const ROUTES = {
+  home: "/",
+  login: "/login",
+  register: "/register",
+  forgotPassword: "/forgot-password",
+  app: {
+    root: "/app",
+    dashboard: "/app/dashboard",
+    dataInput: "/app/data-input",
+    dataInputStep1: "/app/data-input/step-1",
+    dataInputStep2: "/app/data-input/step-2",
+    dataInputStep3: "/app/data-input/step-3",
+    uploadDoc: "/app/documents/upload",
+    aiReview: "/app/documents/ai-review",
+    emissionDetail: "/app/emissions/detail",
+    ecoScore: "/app/eco-score",
+    recommendations: "/app/recommendations",
+    reports: "/app/reports",
+    company: "/app/company",
+    settings: "/app/settings",
+  },
+} as const;

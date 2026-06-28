@@ -1,6 +1,10 @@
 import { Linkedin, Twitter } from "lucide-react";
+import { Link } from "react-router";
 import { Logo } from "@/shared/components/logo";
-import { FOOTER_COLUMNS } from "@/features/marketing/constants/marketing-content";
+import {
+  FOOTER_COLUMNS,
+  FOOTER_COPY,
+} from "@/features/marketing/constants/marketing-content";
 import { cn } from "@/shared/lib/utils";
 
 const currentYear = new Date().getFullYear();
@@ -16,8 +20,7 @@ export function MarketingFooter() {
           <div className="sm:col-span-2 lg:col-span-1">
             <Logo variant="onDark" />
             <p className="mt-6 text-sm leading-relaxed text-footer-muted">
-              Empowering global organizations to track, reduce, and report their
-              carbon footprint with scientific precision and total transparency.
+              {FOOTER_COPY.tagline}
             </p>
           </div>
 
@@ -28,18 +31,32 @@ export function MarketingFooter() {
               </h3>
               <ul className="mt-6 space-y-4">
                 {column.links.map((link) => (
-                  <li key={link}>
-                    <a
-                      href="#"
-                      className={cn(
-                        "text-sm transition-colors duration-150 focus-ring rounded-sm",
-                        link === "Sustainability Report"
-                          ? "text-accent/80 hover:text-accent"
-                          : "text-white hover:text-secondary",
-                      )}
-                    >
-                      {link}
-                    </a>
+                  <li key={link.id}>
+                    {link.href.startsWith("#") ? (
+                      <a
+                        href={link.href}
+                        className={cn(
+                          "text-sm transition-colors duration-150 focus-ring rounded-sm",
+                          link.id === FOOTER_COPY.highlightLinkId
+                            ? "text-accent/80 hover:text-accent"
+                            : "text-white hover:text-secondary",
+                        )}
+                      >
+                        {link.label}
+                      </a>
+                    ) : (
+                      <Link
+                        to={link.href}
+                        className={cn(
+                          "text-sm transition-colors duration-150 focus-ring rounded-sm",
+                          link.id === FOOTER_COPY.highlightLinkId
+                            ? "text-accent/80 hover:text-accent"
+                            : "text-white hover:text-secondary",
+                        )}
+                      >
+                        {link.label}
+                      </Link>
+                    )}
                   </li>
                 ))}
               </ul>
@@ -49,7 +66,7 @@ export function MarketingFooter() {
 
         <div className="mt-16 flex flex-col items-center justify-between gap-6 border-t border-white/10 pt-8 sm:flex-row sm:items-center">
           <p className="text-xs font-medium text-footer-muted">
-            © {currentYear} EcoMetric GHG Accounting. All rights reserved.
+            {FOOTER_COPY.copyright.replace("{year}", String(currentYear))}
           </p>
           <div className="flex gap-6">
             <a

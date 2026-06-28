@@ -1,11 +1,13 @@
+import { AUTH_COPY } from "@/features/auth/constants/auth-content";
 import { Lock } from "lucide-react";
 import { cn } from "@/shared/lib/utils";
 
 type SecureBadgeProps = {
   className?: string;
+  label?: string;
 };
 
-export function SecureBadge({ className }: SecureBadgeProps) {
+export function SecureBadge({ className, label = AUTH_COPY.secureBadge }: SecureBadgeProps) {
   return (
     <div
       className={cn(
@@ -15,7 +17,7 @@ export function SecureBadge({ className }: SecureBadgeProps) {
     >
       <Lock className="size-3.5 text-muted-foreground" aria-hidden />
       <span className="text-xs font-medium tracking-wide text-muted-foreground uppercase">
-        Secure workspace login
+        {label}
       </span>
     </div>
   );
