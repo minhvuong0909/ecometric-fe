@@ -1,10 +1,12 @@
-import { Menu, PanelLeftClose, PanelLeftOpen, X } from "lucide-react";
+import type { LucideIcon } from "lucide-react";
+import { Briefcase, Menu, PanelLeftClose, PanelLeftOpen, X } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { NavLink, Outlet, useLocation } from "react-router";
 import { AppTopBar } from "@/features/app/components/app-top-bar";
 import { LogoutButton } from "@/features/app/components/logout-button";
 import { APP_SHARED_COPY } from "@/features/app/constants/app-copy";
 import { useAuthStore } from "@/features/auth/stores/auth-store";
+import { BUSINESSES_COPY } from "@/features/businesses/constants/businesses-copy";
 import { Logo } from "@/shared/components/logo";
 import { Button } from "@/shared/components/ui/button";
 import { APP_NAV_ITEMS } from "@/shared/constants/figma-screens";
@@ -12,7 +14,27 @@ import { ROUTES } from "@/shared/constants/routes";
 import { getInitials } from "@/shared/lib/get-initials";
 import { cn } from "@/shared/lib/utils";
 
-const NAV_BY_ID = new Map(APP_NAV_ITEMS.map((item) => [item.id, item]));
+type NavEntry = {
+  id: string;
+  title: string;
+  path: string;
+  navIcon?: LucideIcon;
+};
+
+/** Mục điều hướng ngoài các màn hình figma (vd: khu vực Doanh nghiệp). */
+const EXTRA_NAV_ITEMS: NavEntry[] = [
+  {
+    id: "businesses",
+    title: BUSINESSES_COPY.nav,
+    path: ROUTES.app.businesses,
+    navIcon: Briefcase,
+  },
+];
+
+const NAV_RESOLVER = new Map<string, NavEntry>([
+  ...APP_NAV_ITEMS.map((item) => [item.id, item as NavEntry] as const),
+  ...EXTRA_NAV_ITEMS.map((item) => [item.id, item] as const),
+]);
 const SIDEBAR_COLLAPSED_KEY = "ecometric.sidebarCollapsed";
 
 function readCollapsed(): boolean {
@@ -41,7 +63,7 @@ function SidebarNav({ collapsed = false, onNavigate }: SidebarBodyProps) {
             </p>
           )}
           {group.ids.map((id) => {
-            const item = NAV_BY_ID.get(id);
+            const item = NAV_RESOLVER.get(id);
             if (!item) return null;
             const Icon = item.navIcon;
             return (

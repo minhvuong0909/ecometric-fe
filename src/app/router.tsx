@@ -7,6 +7,10 @@ import {
   GuestOnly,
   RequireAuth,
 } from "@/features/auth/components/route-guards";
+import { BusinessCreatePage } from "@/features/businesses/pages/business-create-page";
+import { BusinessDetailPage } from "@/features/businesses/pages/business-detail-page";
+import { BusinessEditPage } from "@/features/businesses/pages/business-edit-page";
+import { BusinessesPage } from "@/features/businesses/pages/businesses-page";
 import { ForgotPasswordPage } from "@/features/auth/pages/forgot-password-page";
 import { LoginPage } from "@/features/auth/pages/login-page";
 import { RegisterPage } from "@/features/auth/pages/register-page";
@@ -71,6 +75,22 @@ const router = createBrowserRouter([
           {
             path: "account/change-password",
             element: <ChangePasswordPage />,
+          },
+          {
+            path: "businesses",
+            element: <BusinessesPage />,
+          },
+          {
+            path: "businesses/new",
+            element: <BusinessCreatePage />,
+          },
+          {
+            path: "businesses/:id",
+            element: <BusinessDetailPage />,
+          },
+          {
+            path: "businesses/:id/edit",
+            element: <BusinessEditPage />,
           },
           ...APP_ROUTE_CONFIG.map(({ path, screenId }) => ({
             path,

@@ -21,5 +21,9 @@ export const ROUTES = {
     settings: "/app/settings",
     account: "/app/account",
     changePassword: "/app/account/change-password",
+    businesses: "/app/businesses",
+    businessCreate: "/app/businesses/new",
+    businessDetail: (id: string) => `/app/businesses/${id}`,
+    businessEdit: (id: string) => `/app/businesses/${id}/edit`,
   },
 } as const;

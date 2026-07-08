@@ -1,5 +1,10 @@
 export * as businessesApi from "./api/businesses.api";
 
+export { BusinessesPage } from "./pages/businesses-page";
+export { BusinessDetailPage } from "./pages/business-detail-page";
+export { BusinessCreatePage } from "./pages/business-create-page";
+export { BusinessEditPage } from "./pages/business-edit-page";
+
 export { BUSINESS_QUERY_KEYS } from "./hooks/query-keys";
 export { useBusinesses } from "./hooks/use-businesses";
 export { useBusiness } from "./hooks/use-business";

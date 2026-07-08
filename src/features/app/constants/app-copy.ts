@@ -19,7 +19,7 @@ export const APP_SHARED_COPY = {
     closeMenu: "Đóng menu điều hướng",
   },
   navGroups: [
-    { label: "Tổng quan", ids: ["dashboard"] },
+    { label: "Tổng quan", ids: ["dashboard", "businesses"] },
     {
       label: "Kiểm kê phát thải",
       ids: ["company", "data-input", "emission-detail"],
