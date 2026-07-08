@@ -10,7 +10,7 @@ export function MarketingHero() {
     <section
       id="top"
       className={cn(
-        "relative overflow-hidden pb-24 pt-20 lg:pb-32 lg:pt-24",
+        "relative scroll-mt-16 overflow-hidden pb-24 pt-20 lg:pb-32 lg:pt-24",
         "bg-[radial-gradient(ellipse_at_top_right,rgba(74,222,128,0.08),transparent_55%)]",
       )}
     >
@@ -58,9 +58,7 @@ export function MarketingHero() {
             className="pointer-events-none absolute -bottom-12 -left-12 size-48 rounded-full bg-secondary-foreground/10 blur-3xl"
             aria-hidden
           />
-          <div className="relative rounded-xl border border-white/60 bg-card/40 p-6 shadow-2xl backdrop-blur-md">
-            <DashboardPreview />
-          </div>
+          <DashboardPreview className="relative" />
         </div>
       </div>
     </section>

@@ -8,6 +8,7 @@ import {
 } from "@/features/marketing/constants/marketing-content";
 import { ROUTES } from "@/shared/constants/routes";
 import { Button } from "@/shared/components/ui/button";
+import { Reveal } from "@/shared/components/reveal";
 import { cn } from "@/shared/lib/utils";
 
 function formatPrice(monthlyPrice: number, interval: PricingInterval) {
@@ -21,9 +22,9 @@ export function MarketingPricing() {
   const [interval, setInterval] = useState<PricingInterval>("monthly");
 
   return (
-    <section id="pricing" className="bg-background py-24">
+    <section id="pricing" className="scroll-mt-16 bg-background py-24">
       <div className="mx-auto max-w-7xl px-6 lg:px-8">
-        <div className="mx-auto mb-16 max-w-2xl text-center">
+        <Reveal className="mx-auto mb-16 max-w-2xl text-center">
           <h2 className="text-3xl font-semibold tracking-tight text-secondary-foreground sm:text-4xl">
             {PRICING_SECTION.title}
           </h2>
@@ -63,10 +64,10 @@ export function MarketingPricing() {
               {PRICING_SECTION.annually}
             </button>
           </div>
-        </div>
+        </Reveal>
 
         <div className="grid items-start gap-6 lg:grid-cols-3">
-          {PRICING_TIERS.map((tier) => {
+          {PRICING_TIERS.map((tier, index) => {
             const isHighlighted = tier.highlighted;
             const price =
               "monthlyPrice" in tier
@@ -74,10 +75,10 @@ export function MarketingPricing() {
                 : null;
 
             return (
+              <Reveal key={tier.id} delay={index * 90} className="flex">
               <article
-                key={tier.id}
                 className={cn(
-                  "relative flex flex-col rounded-lg border p-8",
+                  "relative flex w-full flex-col rounded-xl border p-8",
                   isHighlighted
                     ? "border-accent bg-secondary-foreground text-primary-foreground shadow-xl lg:-mt-3 lg:pb-10 lg:pt-10"
                     : "border-border bg-card",
@@ -176,6 +177,7 @@ export function MarketingPricing() {
                   )}
                 </Button>
               </article>
+              </Reveal>
             );
           })}
         </div>

@@ -15,7 +15,7 @@ export function HomePage() {
         <CardHeader>
           <CardTitle>EcoMetric</CardTitle>
           <CardDescription>
-            Carbon accounting platform — sign in to access your workspace.
+            Carbon accounting platform. Sign in to access your workspace.
           </CardDescription>
         </CardHeader>
         <CardContent>

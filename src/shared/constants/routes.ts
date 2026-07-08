@@ -19,5 +19,7 @@ export const ROUTES = {
     reports: "/app/reports",
     company: "/app/company",
     settings: "/app/settings",
+    account: "/app/account",
+    changePassword: "/app/account/change-password",
   },
 } as const;

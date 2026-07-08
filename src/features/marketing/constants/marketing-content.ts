@@ -1,8 +1,7 @@
 import { ROUTES } from "@/shared/constants/routes";
 
 export const NAV_LINKS = [
-  { label: "Trang chủ", href: ROUTES.home, id: "home" },
-  { label: "Giới thiệu", href: "#features", id: "about" },
+  { label: "Trang chủ", href: "#top", id: "home" },
   { label: "Tính năng", href: "#features", id: "features" },
   { label: "Bảng giá", href: "#pricing", id: "pricing" },
   { label: "Liên hệ", href: "#contact", id: "contact" },
@@ -13,8 +12,8 @@ export const HERO_COPY = {
   titleLead: "Tự động hóa Kiểm kê Carbon.",
   titleHighlight: "Bứt tốc Đạt chuẩn ESG.",
   description:
-    "Dễ dàng theo dõi và báo cáo toàn diện phát thải Phạm vi 1, 2 và 3 với nền tảng phân tích dữ liệu siêu chính xác – giải pháp chuyên biệt nâng tầm vị thế cho các đội ngũ phát triển bền vững hiện đại.",
-  ctaPrimary: "Trải nghiệm ngay miễn phí",
+    "Dễ dàng theo dõi và báo cáo toàn diện phát thải Phạm vi 1, 2 và 3 với nền tảng phân tích dữ liệu siêu chính xác. Giải pháp chuyên biệt nâng tầm vị thế cho các đội ngũ phát triển bền vững hiện đại.",
+  ctaPrimary: "Dùng thử miễn phí",
   ctaSecondary: "Xem video giới thiệu",
 } as const;
 
@@ -29,7 +28,7 @@ export const FEATURES = [
   {
     title: "Tích hợp Dữ liệu Đầu vào",
     description:
-      "Kết nối mượt mà hệ thống ERP, API dịch vụ tiện ích và các bảng tính để tự động thu thập dữ liệu hoạt động với độ chính xác lên tới 99,9%.",
+      "Kết nối mượt mà hệ thống ERP, API dịch vụ tiện ích và các bảng tính để tự động thu thập dữ liệu hoạt động với độ chính xác cao và nhất quán.",
     icon: "database" as const,
   },
   {
@@ -84,7 +83,7 @@ export const PRICING_TIERS = [
       "Xuất dữ liệu sẵn sàng kiểm toán",
       "Hỗ trợ 10 tài khoản người dùng",
     ],
-    cta: "Bắt đầu ngay",
+    cta: "Dùng thử miễn phí",
     highlighted: true,
     badge: "PHỔ BIẾN NHẤT",
   },
@@ -99,7 +98,7 @@ export const PRICING_TIERS = [
       "Quản lý chuyên trách hỗ trợ đối tác",
       "Không giới hạn tài khoản người dùng",
     ],
-    cta: "Liên hệ bộ phận kinh doanh",
+    cta: "Liên hệ tư vấn",
     highlighted: false,
   },
 ] as const;
@@ -107,9 +106,9 @@ export const PRICING_TIERS = [
 export const CTA_SECTION = {
   title: "Bạn đã sẵn sàng dẫn dắt xu hướng chuyển dịch chưa?",
   description:
-    "Hãy tham gia cùng hơn 2.500 doanh nghiệp đang sử dụng EcoMetric để thúc đẩy hành động vì khí hậu và minh bạch hóa báo cáo.",
-  primary: "Trải nghiệm ngay miễn phí",
-  secondary: "Đặt lịch tư vấn chuyên sâu",
+    "Hãy tham gia cùng các đội ngũ phát triển bền vững đang sử dụng EcoMetric để thúc đẩy hành động vì khí hậu và minh bạch hóa báo cáo.",
+  primary: "Dùng thử miễn phí",
+  secondary: "Liên hệ tư vấn",
 } as const;
 
 export const FOOTER_COPY = {

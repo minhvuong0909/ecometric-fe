@@ -45,5 +45,9 @@
   --input: #c1c8c2;
   --ring: #006d36;
 
+  /*
+   * Shape scale (locked): surfaces/cards/panels = rounded-xl,
+   * controls (button/input/toggle) = rounded-md, pills/badges = rounded-full.
+   */
   --radius: 0.5rem;
 }

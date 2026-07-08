@@ -1,6 +1,12 @@
 import { Navigate, createBrowserRouter, RouterProvider } from "react-router";
 import { APP_ROUTE_CONFIG } from "@/features/app/app-route-config";
 import { APP_PAGE_REGISTRY } from "@/features/app/app-page-registry";
+import { AccountPage } from "@/features/app/pages/account-page";
+import { ChangePasswordPage } from "@/features/app/pages/change-password-page";
+import {
+  GuestOnly,
+  RequireAuth,
+} from "@/features/auth/components/route-guards";
 import { ForgotPasswordPage } from "@/features/auth/pages/forgot-password-page";
 import { LoginPage } from "@/features/auth/pages/login-page";
 import { RegisterPage } from "@/features/auth/pages/register-page";
@@ -28,11 +34,19 @@ const router = createBrowserRouter([
       },
       {
         path: "login",
-        element: <LoginPage />,
+        element: (
+          <GuestOnly>
+            <LoginPage />
+          </GuestOnly>
+        ),
       },
       {
         path: "register",
-        element: <RegisterPage />,
+        element: (
+          <GuestOnly>
+            <RegisterPage />
+          </GuestOnly>
+        ),
       },
       {
         path: "forgot-password",
@@ -40,11 +54,23 @@ const router = createBrowserRouter([
       },
       {
         path: "app",
-        element: <AppLayout />,
+        element: (
+          <RequireAuth>
+            <AppLayout />
+          </RequireAuth>
+        ),
         children: [
           {
             index: true,
             element: <Navigate to={ROUTES.app.dashboard} replace />,
+          },
+          {
+            path: "account",
+            element: <AccountPage />,
+          },
+          {
+            path: "account/change-password",
+            element: <ChangePasswordPage />,
           },
           ...APP_ROUTE_CONFIG.map(({ path, screenId }) => ({
             path,

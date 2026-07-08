@@ -62,7 +62,7 @@ export function MarketingHeader() {
           </Link>
           <Button
             asChild
-            className="h-10 bg-secondary-foreground px-6 font-bold tracking-wide text-primary-foreground hover:bg-secondary-foreground/90 active:bg-secondary-foreground/80"
+            className="h-10 bg-accent px-6 font-bold tracking-wide text-accent-foreground hover:bg-accent/90 active:bg-accent/80"
           >
             <Link to={ROUTES.register}>{HEADER_COPY.startTrial}</Link>
           </Button>
@@ -108,7 +108,7 @@ export function MarketingHeader() {
               </Button>
               <Button
                 asChild
-                className="w-full bg-secondary-foreground font-bold tracking-wide text-primary-foreground hover:bg-secondary-foreground/90"
+                className="w-full bg-accent font-bold tracking-wide text-accent-foreground hover:bg-accent/90"
               >
                 <Link to={ROUTES.register} onClick={() => setMobileOpen(false)}>
                   {HEADER_COPY.startTrial}

@@ -56,7 +56,7 @@ export const APP_SCREENS: FigmaScreen[] = [
   },
   {
     id: "input-1",
-    title: "Nhập liệu — Bước 1",
+    title: "Nhập liệu: Bước 1",
     description: "Chọn kỳ báo cáo và ranh giới tổ chức.",
     figmaNodeId: "74:8225",
     path: ROUTES.app.dataInputStep1,
@@ -65,7 +65,7 @@ export const APP_SCREENS: FigmaScreen[] = [
   },
   {
     id: "input-2",
-    title: "Nhập liệu — Bước 2",
+    title: "Nhập liệu: Bước 2",
     description: "Nhập dữ liệu hoạt động Phạm vi 1 và Phạm vi 2.",
     figmaNodeId: "74:8403",
     path: ROUTES.app.dataInputStep2,
@@ -74,7 +74,7 @@ export const APP_SCREENS: FigmaScreen[] = [
   },
   {
     id: "input-3",
-    title: "Nhập liệu — Bước 3",
+    title: "Nhập liệu: Bước 3",
     description: "Thêm Phạm vi 3 và dữ liệu chuỗi cung ứng.",
     figmaNodeId: "74:8602",
     path: ROUTES.app.dataInputStep3,
@@ -189,6 +189,6 @@ export function getScreenByPath(path: string) {
 export const SCREEN_PLACEHOLDER_COPY = {
   scaffoldTitle: "Khung màn hình",
   scaffoldDescription:
-    "Giao diện đang được triển khai. Điều hướng và luồng làm việc đã sẵn sàng — dùng các nút bên dưới để tiếp tục.",
+    "Giao diện đang được triển khai. Điều hướng và luồng làm việc đã sẵn sàng, dùng các nút bên dưới để tiếp tục.",
   openFigma: "Mở frame Figma",
 } as const;

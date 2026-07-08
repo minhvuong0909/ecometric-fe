@@ -3,75 +3,68 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import {
   AlertCircle,
   ArrowRight,
-  CheckCircle2,
   Eye,
   EyeOff,
   Loader2,
   Lock,
   Mail,
+  User,
 } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
-import { Link, useLocation, useNavigate } from "react-router";
+import { Link, useNavigate } from "react-router";
 import { AuthField } from "@/features/auth/components/auth-field";
-import { useLogin } from "@/features/auth/hooks/use-login";
+import { useRegister } from "@/features/auth/hooks/use-register";
 import {
-  loginSchema,
-  type LoginFormValues,
-} from "@/features/auth/schemas/login-schema";
+  registerSchema,
+  type RegisterFormValues,
+} from "@/features/auth/schemas/register-schema";
 import { Button } from "@/shared/components/ui/button";
-import { Checkbox } from "@/shared/components/ui/checkbox";
-import { Label } from "@/shared/components/ui/label";
 import { ROUTES } from "@/shared/constants/routes";
 import { getApiErrorMessage } from "@/shared/lib/get-error-message";
 import { cn } from "@/shared/lib/utils";
 
-type LoginFormProps = {
+type RegisterFormProps = {
   className?: string;
 };
 
-export function LoginForm({ className }: LoginFormProps) {
-  const copy = AUTH_COPY.login;
+export function RegisterForm({ className }: RegisterFormProps) {
+  const copy = AUTH_COPY.register;
   const [showPassword, setShowPassword] = useState(false);
   const navigate = useNavigate();
-  const location = useLocation();
-  const loginMutation = useLogin();
+  const registerMutation = useRegister();
 
   const {
     register,
     handleSubmit,
-    setValue,
-    watch,
     formState: { errors },
-  } = useForm<LoginFormValues>({
-    resolver: zodResolver(loginSchema),
+  } = useForm<RegisterFormValues>({
+    resolver: zodResolver(registerSchema),
     defaultValues: {
+      fullName: "",
       email: "",
       password: "",
-      rememberMe: false,
     },
   });
 
-  const rememberMe = watch("rememberMe");
-
-  const onSubmit = (values: LoginFormValues) => {
-    loginMutation.mutate({ email: values.email, password: values.password });
+  const onSubmit = (values: RegisterFormValues) => {
+    registerMutation.mutate({
+      fullName: values.fullName,
+      email: values.email,
+      password: values.password,
+    });
   };
 
-  const serverError = loginMutation.error
-    ? getApiErrorMessage(loginMutation.error)
+  const serverError = registerMutation.error
+    ? getApiErrorMessage(registerMutation.error)
     : null;
-  const successMessage = loginMutation.isSuccess
-    ? AUTH_COPY.api.welcomeBack(loginMutation.data.user.email)
-    : null;
-  const isSubmitting = loginMutation.isPending;
+  const isSubmitting = registerMutation.isPending;
 
   useEffect(() => {
-    if (loginMutation.isSuccess) {
-      const from = (location.state as { from?: string } | null)?.from;
-      navigate(from ?? ROUTES.app.dashboard, { replace: true });
+    if (registerMutation.isSuccess) {
+      navigate(ROUTES.app.dashboard, { replace: true });
     }
-  }, [loginMutation.isSuccess, navigate, location.state]);
+  }, [registerMutation.isSuccess, navigate]);
 
   return (
     <form
@@ -80,6 +73,18 @@ export function LoginForm({ className }: LoginFormProps) {
       noValidate
       aria-busy={isSubmitting}
     >
+      <AuthField
+        id="fullName"
+        label={copy.fullNameLabel}
+        icon={User}
+        type="text"
+        autoComplete="name"
+        placeholder={copy.fullNamePlaceholder}
+        disabled={isSubmitting}
+        error={errors.fullName?.message}
+        {...register("fullName")}
+      />
+
       <AuthField
         id="email"
         label={copy.emailLabel}
@@ -97,7 +102,7 @@ export function LoginForm({ className }: LoginFormProps) {
         label={copy.passwordLabel}
         icon={Lock}
         type={showPassword ? "text" : "password"}
-        autoComplete="current-password"
+        autoComplete="new-password"
         placeholder={copy.passwordPlaceholder}
         disabled={isSubmitting}
         error={errors.password?.message}
@@ -121,28 +126,6 @@ export function LoginForm({ className }: LoginFormProps) {
         {...register("password")}
       />
 
-      <div className="flex items-center justify-between gap-4">
-        <div className="flex items-center gap-2">
-          <Checkbox
-            id="rememberMe"
-            checked={rememberMe}
-            disabled={isSubmitting}
-            onCheckedChange={(checked) =>
-              setValue("rememberMe", checked === true, { shouldDirty: true })
-            }
-          />
-          <Label htmlFor="rememberMe" className="cursor-pointer font-normal">
-            {copy.rememberMe}
-          </Label>
-        </div>
-        <Link
-          to={ROUTES.forgotPassword}
-          className="link-primary text-sm tracking-wide"
-        >
-          {copy.forgotPassword}
-        </Link>
-      </div>
-
       {serverError ? (
         <p
           className="flex items-start gap-2 rounded-lg border border-destructive/30 bg-destructive/5 px-4 py-3 text-sm text-destructive"
@@ -150,16 +133,6 @@ export function LoginForm({ className }: LoginFormProps) {
         >
           <AlertCircle className="mt-0.5 size-4 shrink-0" aria-hidden />
           <span>{serverError}</span>
-        </p>
-      ) : null}
-
-      {successMessage ? (
-        <p
-          className="flex items-start gap-2 rounded-lg border border-primary/30 bg-primary/5 px-4 py-3 text-sm text-primary"
-          role="status"
-        >
-          <CheckCircle2 className="mt-0.5 size-4 shrink-0" aria-hidden />
-          <span>{successMessage}</span>
         </p>
       ) : null}
 
@@ -184,9 +157,9 @@ export function LoginForm({ className }: LoginFormProps) {
       </Button>
 
       <p className="text-center text-sm text-muted-foreground">
-        {copy.noAccount}{" "}
-        <Link to={ROUTES.register} className="link-primary">
-          {copy.signUp}
+        {copy.hasAccount}{" "}
+        <Link to={ROUTES.login} className="link-primary font-medium">
+          {copy.signIn}
         </Link>
       </p>
     </form>

@@ -20,7 +20,7 @@ export function ForgotPasswordPage() {
     <div className="flex min-h-dvh flex-col bg-background lg:flex-row">
       <section className="flex flex-1 flex-col bg-card lg:max-w-[54%]">
         <div className="flex flex-1 flex-col justify-center px-6 py-12 sm:px-12 lg:px-24 lg:py-16">
-          <div className="mx-auto w-full max-w-md space-y-8">
+          <div className="mx-auto w-full max-w-md space-y-8 animate-fade-up">
             <Logo />
             <header className="space-y-3">
               <h1 className="text-4xl font-bold tracking-tight text-foreground sm:text-5xl">

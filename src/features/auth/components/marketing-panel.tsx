@@ -73,16 +73,6 @@ export function MarketingPanel({ className, variant = "login" }: MarketingPanelP
                 </li>
               ))}
             </ol>
-
-            <div className="rounded-xl border border-white/10 bg-white/5 p-5">
-              <div className="mb-3 flex items-center justify-between text-xs font-medium tracking-widest text-white/70 uppercase">
-                <span>{registerCopy.progressLabel}</span>
-                <span>{registerCopy.progressDuration}</span>
-              </div>
-              <div className="h-2 overflow-hidden rounded-full bg-white/10">
-                <div className="h-full w-3/4 rounded-full bg-accent" />
-              </div>
-            </div>
           </>
         )}
       </div>

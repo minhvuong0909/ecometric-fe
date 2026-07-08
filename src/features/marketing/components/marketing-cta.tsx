@@ -2,15 +2,16 @@ import { CTA_SECTION } from "@/features/marketing/constants/marketing-content";
 import { Link } from "react-router";
 import { ROUTES } from "@/shared/constants/routes";
 import { Button } from "@/shared/components/ui/button";
+import { Reveal } from "@/shared/components/reveal";
 
 export function MarketingCta() {
   return (
-    <section className="relative overflow-hidden bg-secondary-foreground py-24">
+    <section id="contact" className="relative scroll-mt-16 overflow-hidden bg-secondary-foreground py-24">
       <div
         className="pointer-events-none absolute -right-36 top-0 size-[600px] rounded-full bg-accent/5 blur-3xl"
         aria-hidden
       />
-      <div className="relative mx-auto max-w-4xl px-6 text-center lg:px-8">
+      <Reveal className="relative mx-auto max-w-4xl px-6 text-center lg:px-8">
         <h2 className="text-3xl font-bold tracking-tight text-white sm:text-5xl sm:leading-tight">
           {CTA_SECTION.title}
         </h2>
@@ -34,7 +35,7 @@ export function MarketingCta() {
             <Link to={ROUTES.register}>{CTA_SECTION.secondary}</Link>
           </Button>
         </div>
-      </div>
+      </Reveal>
     </section>
   );
 }

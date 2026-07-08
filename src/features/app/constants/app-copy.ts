@@ -2,18 +2,39 @@ export const APP_SHARED_COPY = {
   topBar: {
     companyLabel: "Doanh nghiệp",
     companyName: "Northstar Foods",
-    period: "Tháng 6 2026",
     search: "Tìm kiếm",
+    searchPlaceholder: "Tìm màn hình, báo cáo, cài đặt…",
+    searchShortcut: "Ctrl K",
+    searchEmpty: "Không tìm thấy kết quả cho",
+    searchClose: "Đóng tìm kiếm",
     notifications: "Thông báo",
-    avatarLabel: "Tài khoản AR",
-    avatarInitials: "AR",
   },
   sidebarTagline: "Kiểm kê carbon cho SME",
+  logout: "Đăng xuất",
+  loggingOut: "Đang đăng xuất…",
+  sidebar: {
+    collapse: "Thu gọn thanh bên",
+    expand: "Mở rộng thanh bên",
+    openMenu: "Mở menu điều hướng",
+    closeMenu: "Đóng menu điều hướng",
+  },
+  navGroups: [
+    { label: "Tổng quan", ids: ["dashboard"] },
+    {
+      label: "Kiểm kê phát thải",
+      ids: ["company", "data-input", "emission-detail"],
+    },
+    {
+      label: "Phân tích & Báo cáo",
+      ids: ["eco-score", "recommendations", "reports"],
+    },
+    { label: "Hệ thống", ids: ["settings"] },
+  ],
   wizardSteps: [
-    "Bước 1 — Hồ sơ Doanh nghiệp",
-    "Bước 2 — Ngành nghề & Kỳ báo cáo",
-    "Bước 3 — Nguồn phát thải",
-    "Bước 4 — Nhập dữ liệu",
+    "Bước 1: Hồ sơ Doanh nghiệp",
+    "Bước 2: Ngành nghề & Kỳ báo cáo",
+    "Bước 3: Nguồn phát thải",
+    "Bước 4: Nhập dữ liệu",
   ],
 } as const;
 
@@ -223,7 +244,7 @@ export const AI_REVIEW_COPY = {
   title: "Kiểm tra dữ liệu trích xuất",
   description:
     "Vui lòng kiểm tra và xác nhận các chi tiết được trích xuất bên dưới. Một giá trị (Sản lượng tiêu thụ) đã bị cảnh báo cần xác minh thủ công do có sự biến động bất thường so với hóa đơn trước.",
-  warning: "+15.2% so với kỳ trước — cần xác minh sản lượng tiêu thụ điện",
+  warning: "+15.2% so với kỳ trước, cần xác minh sản lượng tiêu thụ điện",
   fields: [
     { label: "Loại tài liệu", value: "Hóa đơn tiện ích (Điện)" },
     { label: "Kỳ hóa đơn", value: "Tháng 6/2024" },
