@@ -53,6 +53,8 @@ type RequestOptions = {
   auth?: boolean;
   /** Có thử refresh token khi gặp 401 hay không (mặc định true) */
   retryOnUnauthorized?: boolean;
+  /** Header bổ sung (vd: X-Business-Id) */
+  headers?: Record<string, string>;
   signal?: AbortSignal;
 };
 
@@ -69,7 +71,11 @@ async function parseResponse(response: Response): Promise<unknown> {
   }
 }
 
-function buildHeaders(auth: boolean, hasBody: boolean): Headers {
+function buildHeaders(
+  auth: boolean,
+  hasBody: boolean,
+  extra?: Record<string, string>,
+): Headers {
   const headers = new Headers();
   if (hasBody) {
     headers.set("Content-Type", "application/json");
@@ -78,6 +84,11 @@ function buildHeaders(auth: boolean, hasBody: boolean): Headers {
     const token = getAccessToken();
     if (token) {
       headers.set("Authorization", `Bearer ${token}`);
+    }
+  }
+  if (extra) {
+    for (const [key, value] of Object.entries(extra)) {
+      headers.set(key, value);
     }
   }
   return headers;
@@ -128,12 +139,12 @@ async function rawRequest<T>(
   path: string,
   options: RequestOptions,
 ): Promise<T> {
-  const { method = "GET", body, auth = true, signal } = options;
+  const { method = "GET", body, auth = true, headers, signal } = options;
   const hasBody = body !== undefined && body !== null;
 
   const response = await fetch(`${API_BASE_URL}${path}`, {
     method,
-    headers: buildHeaders(auth, hasBody),
+    headers: buildHeaders(auth, hasBody, headers),
     body: hasBody ? JSON.stringify(body) : undefined,
     signal,
   });
