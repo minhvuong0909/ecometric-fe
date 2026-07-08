@@ -41,22 +41,25 @@ export function MarketingFeatures() {
               >
                 <article
                   className={cn(
-                    "flex w-full flex-col rounded-xl border p-6 transition-colors duration-150",
+                    "group flex w-full flex-col rounded-xl border p-6 eco-card-hover",
                     isFeatured
                       ? "border-primary/20 bg-[radial-gradient(ellipse_at_top_left,rgba(0,166,62,0.10),transparent_60%)] lg:p-10"
                       : index === 1
-                        ? "border-border bg-secondary/60 hover:border-ring/60"
-                        : "border-border bg-background hover:border-ring/60",
+                        ? "border-border bg-secondary/60"
+                        : "border-border bg-background",
                   )}
                 >
                   <div
                     className={cn(
-                      "mb-6 flex items-center justify-center rounded-lg bg-secondary",
+                      "mb-6 flex items-center justify-center rounded-lg bg-secondary transition-colors duration-200 group-hover:bg-primary",
                       isFeatured ? "size-14" : "size-12",
                     )}
                   >
                     <Icon
-                      className={cn("text-primary", isFeatured ? "size-6" : "size-5")}
+                      className={cn(
+                        "text-primary transition-colors duration-200 group-hover:text-primary-foreground",
+                        isFeatured ? "size-6" : "size-5",
+                      )}
                       aria-hidden
                     />
                   </div>

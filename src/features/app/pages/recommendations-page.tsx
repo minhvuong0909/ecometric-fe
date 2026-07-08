@@ -47,7 +47,7 @@ export function RecommendationsPage() {
 
       <div className="grid gap-6 lg:grid-cols-3">
         {copy.cards.map((card) => (
-          <AppPanel key={card.title}>
+          <AppPanel key={card.title} interactive className="group">
             <span
               className={cn(
                 "inline-flex rounded-full px-2.5 py-1 text-xs font-bold",
@@ -56,7 +56,9 @@ export function RecommendationsPage() {
             >
               {card.priority}
             </span>
-            <h3 className="mt-4 text-lg font-semibold text-secondary-foreground">{card.title}</h3>
+            <h3 className="mt-4 text-lg font-semibold text-secondary-foreground transition-colors group-hover:text-primary">
+              {card.title}
+            </h3>
             <p className="mt-1 text-xs font-bold tracking-wide text-muted-foreground uppercase">
               {card.related}
             </p>

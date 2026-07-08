@@ -54,6 +54,26 @@
   .link-muted {
     @apply text-muted-foreground transition-colors duration-150 hover:text-foreground active:text-foreground/80 rounded-sm outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background;
   }
+
+  /* Thẻ có thể tương tác: nhấc nhẹ + đổ bóng + viền xanh khi hover */
+  .eco-card-hover {
+    @apply transition-all duration-200 ease-out hover:-translate-y-1 hover:border-primary/30 hover:shadow-lg hover:shadow-primary/5;
+  }
+
+  /* Bề mặt tĩnh (panel lớn): chỉ tăng bóng nhẹ, không dịch chuyển */
+  .eco-surface-hover {
+    @apply transition-shadow duration-200 ease-out hover:shadow-md;
+  }
+
+  /* Hàng bảng / mục danh sách: đổi nền mượt kèm gạch nhấn bên trái */
+  .eco-row-hover {
+    @apply transition-colors duration-150 hover:bg-primary/[0.04];
+  }
+
+  /* Ô nhỏ / tile: đổi nền + viền khi hover */
+  .eco-tile-hover {
+    @apply transition-all duration-200 ease-out hover:-translate-y-0.5 hover:border-primary/40 hover:bg-primary/[0.03];
+  }
 }
 
 /* Entrance motion for auth surfaces */
@@ -160,6 +180,12 @@
 
   .eco-reveal {
     opacity: 1 !important;
+    transform: none !important;
+  }
+
+  /* Không dịch chuyển khi người dùng yêu cầu giảm chuyển động */
+  .eco-card-hover:hover,
+  .eco-tile-hover:hover {
     transform: none !important;
   }
 }

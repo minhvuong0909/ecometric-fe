@@ -20,7 +20,7 @@ export function EcoScorePage() {
       />
 
       <div className="grid gap-6 lg:grid-cols-3">
-        <AppPanel className="flex flex-col items-center justify-center text-center lg:col-span-1">
+        <AppPanel className="flex flex-col items-center justify-center text-center lg:col-span-1" interactive>
           <p className="text-xs font-bold tracking-widest text-muted-foreground uppercase">Điểm Eco</p>
           <p className="mt-4 text-6xl font-bold text-secondary-foreground">
             {copy.score}
@@ -31,7 +31,7 @@ export function EcoScorePage() {
 
         <div className="grid gap-4 sm:grid-cols-2 lg:col-span-2">
           {copy.subMetrics.map((metric) => (
-            <AppPanel key={metric.title} title={metric.title} bodyClassName="space-y-3">
+            <AppPanel key={metric.title} title={metric.title} bodyClassName="space-y-3" interactive>
               <p className="text-sm text-muted-foreground">{metric.target}</p>
               <div className="h-2 overflow-hidden rounded-full bg-muted">
                 <div
@@ -57,7 +57,7 @@ export function EcoScorePage() {
           {copy.changes.map((change) => (
             <li
               key={change}
-              className="rounded-lg border border-border bg-muted/30 px-4 py-3 text-sm text-secondary-foreground"
+              className="rounded-lg border border-border bg-muted/30 px-4 py-3 text-sm text-secondary-foreground eco-tile-hover"
             >
               {change}
             </li>

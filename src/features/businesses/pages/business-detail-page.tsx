@@ -1,11 +1,14 @@
-import { ArrowLeft, Loader2, Pencil, Trash2 } from "lucide-react";
+import { ArrowLeft, Loader2, Pencil, Trash2, Users } from "lucide-react";
 import type { ReactNode } from "react";
 import { Link, useNavigate, useParams } from "react-router";
 import { AppPageHeader } from "@/features/app/components/app-page-header";
 import { AppPanel } from "@/features/app/components/app-panel";
 import { useAuthStore } from "@/features/auth/stores/auth-store";
 import { BusinessStatusBadge } from "@/features/businesses/components/business-status-badge";
-import { BUSINESSES_COPY } from "@/features/businesses/constants/businesses-copy";
+import {
+  BUSINESSES_COPY,
+  MEMBERS_COPY,
+} from "@/features/businesses/constants/businesses-copy";
 import { useBusiness } from "@/features/businesses/hooks/use-business";
 import { useDeleteBusiness } from "@/features/businesses/hooks/use-delete-business";
 import { Button } from "@/shared/components/ui/button";
@@ -49,6 +52,12 @@ export function BusinessDetailPage() {
         actions={
           business ? (
             <div className="flex flex-wrap gap-3">
+              <Button asChild variant="outline">
+                <Link to={ROUTES.app.businessMembers(business.id)}>
+                  <Users className="size-4" aria-hidden />
+                  {MEMBERS_COPY.manageCta}
+                </Link>
+              </Button>
               <Button asChild variant="outline">
                 <Link to={ROUTES.app.businessEdit(business.id)}>
                   <Pencil className="size-4" aria-hidden />
@@ -99,6 +108,7 @@ export function BusinessDetailPage() {
           <AppPanel
             title={copy.infoTitle}
             badge={<BusinessStatusBadge status={business.status} />}
+            interactive
           >
             <dl className="space-y-4">
               <DetailRow label={copy.fields.name}>{business.name}</DetailRow>
@@ -126,7 +136,7 @@ export function BusinessDetailPage() {
             </dl>
           </AppPanel>
 
-          <AppPanel title={copy.metaTitle}>
+          <AppPanel title={copy.metaTitle} interactive>
             <dl className="space-y-4">
               <DetailRow label={copy.fields.country}>
                 {business.country}

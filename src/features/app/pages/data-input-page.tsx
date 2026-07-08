@@ -21,13 +21,13 @@ export function DataInputPage() {
       />
 
       <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
-        <div className="rounded-xl border border-border bg-card px-6 py-4 shadow-sm">
+        <div className="rounded-xl border border-border bg-card px-6 py-4 shadow-sm eco-card-hover">
           <p className="text-[11px] font-bold tracking-wide text-muted-foreground uppercase">
             {APP_SHARED_COPY.topBar.companyLabel}
           </p>
           <p className="text-lg font-semibold">{APP_SHARED_COPY.topBar.companyName}</p>
         </div>
-        <div className="min-w-[280px] rounded-xl border border-border bg-card p-5 shadow-sm">
+        <div className="min-w-[280px] rounded-xl border border-border bg-card p-5 shadow-sm eco-surface-hover">
           <div className="mb-2 flex items-center justify-between text-sm font-semibold">
             <span>{copy.completeness}</span>
           </div>
@@ -41,11 +41,11 @@ export function DataInputPage() {
         {copy.cards.map((card, index) => {
           const Icon = CARD_ICONS[index];
           return (
-            <AppPanel key={card.title} bodyClassName="space-y-6">
+            <AppPanel key={card.title} bodyClassName="space-y-6" interactive className="group">
               <div className="flex items-start justify-between gap-4">
                 <div className="flex items-center gap-4">
-                  <div className="flex size-12 items-center justify-center rounded-xl bg-secondary">
-                    <Icon className="size-5 text-primary" aria-hidden />
+                  <div className="flex size-12 items-center justify-center rounded-xl bg-secondary transition-colors duration-200 group-hover:bg-primary">
+                    <Icon className="size-5 text-primary transition-colors duration-200 group-hover:text-primary-foreground" aria-hidden />
                   </div>
                   <div>
                     <h2 className="text-lg font-semibold text-secondary-foreground">{card.title}</h2>

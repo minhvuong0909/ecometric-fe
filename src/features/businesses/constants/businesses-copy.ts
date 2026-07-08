@@ -1,4 +1,10 @@
-import type { BusinessStatus } from "@/features/businesses/types/businesses.types";
+import type { UserRole } from "@/features/auth/types/auth.types";
+import type {
+  BusinessStatus,
+  ManageableMemberStatus,
+  ManageableRole,
+  MemberStatus,
+} from "@/features/businesses/types/businesses.types";
 
 export const BUSINESS_STATUS_LABELS: Record<BusinessStatus, string> = {
   ACTIVE: "Đang hoạt động",
@@ -137,5 +143,84 @@ export const BUSINESSES_COPY = {
     emailRequired: "Vui lòng nhập email quản trị viên.",
     emailInvalid: "Email không hợp lệ.",
     websiteInvalid: "Website không hợp lệ.",
+  },
+} as const;
+
+/* ── Thành viên doanh nghiệp ── */
+
+export const MEMBER_ROLE_LABELS: Record<UserRole, string> = {
+  SYSTEM_ADMIN: "Quản trị hệ thống",
+  COMPANY_ADMIN: "Quản trị doanh nghiệp",
+  BRANCH_MANAGER: "Quản lý chi nhánh",
+  STAFF: "Nhân viên",
+  VIEWER: "Người xem",
+};
+
+export const MEMBER_STATUS_LABELS: Record<MemberStatus, string> = {
+  INVITED: "Đã mời",
+  ACTIVE: "Đang hoạt động",
+  DISABLED: "Vô hiệu hoá",
+  REMOVED: "Đã gỡ",
+};
+
+/** Các vai trò có thể gán cho thành viên (khớp validator BE). */
+export const MANAGEABLE_ROLE_OPTIONS: { value: ManageableRole; label: string }[] =
+  [
+    { value: "COMPANY_ADMIN", label: MEMBER_ROLE_LABELS.COMPANY_ADMIN },
+    { value: "BRANCH_MANAGER", label: MEMBER_ROLE_LABELS.BRANCH_MANAGER },
+    { value: "STAFF", label: MEMBER_ROLE_LABELS.STAFF },
+    { value: "VIEWER", label: MEMBER_ROLE_LABELS.VIEWER },
+  ];
+
+/** Các trạng thái có thể đặt cho thành viên (khớp validator BE). */
+export const MANAGEABLE_STATUS_OPTIONS: {
+  value: ManageableMemberStatus;
+  label: string;
+}[] = [
+  { value: "ACTIVE", label: MEMBER_STATUS_LABELS.ACTIVE },
+  { value: "DISABLED", label: MEMBER_STATUS_LABELS.DISABLED },
+  { value: "REMOVED", label: MEMBER_STATUS_LABELS.REMOVED },
+];
+
+export const MEMBERS_COPY = {
+  nav: "Thành viên",
+  breadcrumbs: [
+    { label: "Doanh nghiệp" },
+    { label: "Thành viên", active: true },
+  ],
+  title: "Thành viên",
+  description:
+    "Quản lý vai trò và trạng thái của thành viên trong doanh nghiệp.",
+  back: "Quay lại doanh nghiệp",
+  manageCta: "Quản lý thành viên",
+  searchPlaceholder: "Tìm theo tên hoặc email…",
+  filterAllRoles: "Tất cả vai trò",
+  filterAllStatuses: "Tất cả trạng thái",
+  loading: "Đang tải thành viên…",
+  error: "Không tải được danh sách thành viên. Vui lòng thử lại.",
+  empty: "Chưa có thành viên nào.",
+  emptyFiltered: "Không tìm thấy thành viên phù hợp.",
+  columns: {
+    member: "Thành viên",
+    role: "Vai trò",
+    status: "Trạng thái",
+    joinedAt: "Ngày tham gia",
+    actions: "Thao tác",
+  },
+  remove: "Gỡ",
+  removeConfirm: (name: string) =>
+    `Gỡ "${name}" khỏi doanh nghiệp? Hành động này không thể hoàn tác.`,
+  roleUpdated: "Đã cập nhật vai trò.",
+  statusUpdated: "Đã cập nhật trạng thái.",
+  removed: "Đã gỡ thành viên.",
+  updating: "Đang cập nhật…",
+  noName: "Chưa đặt tên",
+  noValue: "—",
+  pagination: {
+    summary: (from: number, to: number, total: number) =>
+      `${from}–${to} trên ${total}`,
+    prev: "Trước",
+    next: "Sau",
+    page: (page: number, total: number) => `Trang ${page}/${total}`,
   },
 } as const;

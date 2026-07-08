@@ -10,6 +10,7 @@ import {
 import { BusinessCreatePage } from "@/features/businesses/pages/business-create-page";
 import { BusinessDetailPage } from "@/features/businesses/pages/business-detail-page";
 import { BusinessEditPage } from "@/features/businesses/pages/business-edit-page";
+import { BusinessMembersPage } from "@/features/businesses/pages/business-members-page";
 import { BusinessesPage } from "@/features/businesses/pages/businesses-page";
 import { ForgotPasswordPage } from "@/features/auth/pages/forgot-password-page";
 import { LoginPage } from "@/features/auth/pages/login-page";
@@ -91,6 +92,10 @@ const router = createBrowserRouter([
           {
             path: "businesses/:id/edit",
             element: <BusinessEditPage />,
+          },
+          {
+            path: "businesses/:id/members",
+            element: <BusinessMembersPage />,
           },
           ...APP_ROUTE_CONFIG.map(({ path, screenId }) => ({
             path,

@@ -177,7 +177,7 @@ export function BusinessesPage() {
                 {items.map((business) => (
                   <tr
                     key={business.id}
-                    className="border-b border-border last:border-0 hover:bg-muted/40"
+                    className="border-b border-border last:border-0 eco-row-hover"
                   >
                     <td className="px-6 py-4">
                       <Link

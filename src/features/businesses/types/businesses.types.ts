@@ -108,3 +108,53 @@ export type UpdateBusinessRequest = {
   website?: string;
   status?: BusinessStatus;
 };
+
+/* ── Business members ── */
+
+/** Vai trò có thể gán cho thành viên doanh nghiệp (không gồm SYSTEM_ADMIN). */
+export type ManageableRole =
+  | "COMPANY_ADMIN"
+  | "BRANCH_MANAGER"
+  | "STAFF"
+  | "VIEWER";
+
+/** Trạng thái có thể đặt cho thành viên (không gồm INVITED). */
+export type ManageableMemberStatus = "ACTIVE" | "DISABLED" | "REMOVED";
+
+export type BusinessMemberUser = {
+  id: string;
+  email: string;
+  fullName: string | null;
+};
+
+export type BusinessMember = {
+  id: string;
+  businessId: string;
+  user: BusinessMemberUser;
+  role: UserRole;
+  status: MemberStatus;
+  joinedAt: string | null;
+  createdAt: string;
+};
+
+/** data của GET /businesses/:businessId/members */
+export type BusinessMemberListResponse = {
+  items: BusinessMember[];
+  pagination: Pagination;
+};
+
+export type ListMembersParams = {
+  role?: ManageableRole;
+  status?: MemberStatus;
+  search?: string;
+  page?: number;
+  limit?: number;
+};
+
+export type ChangeMemberRoleRequest = {
+  role: ManageableRole;
+};
+
+export type ChangeMemberStatusRequest = {
+  status: ManageableMemberStatus;
+};

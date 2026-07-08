@@ -25,18 +25,18 @@ export function MetricCard({
   return (
     <article
       className={cn(
-        "flex flex-col gap-6 rounded-xl border border-border bg-card p-6 shadow-sm",
+        "group flex flex-col gap-6 rounded-xl border border-border bg-card p-6 shadow-sm eco-card-hover",
         className,
       )}
     >
       <div className="flex items-start justify-between gap-3">
         <div
           className={cn(
-            "flex size-10 items-center justify-center rounded-lg bg-secondary",
+            "flex size-10 items-center justify-center rounded-lg bg-secondary transition-colors duration-200 group-hover:bg-primary group-hover:text-primary-foreground",
             iconClassName,
           )}
         >
-          <Icon className="size-4 text-primary" aria-hidden />
+          <Icon className="size-4 text-primary transition-colors duration-200 group-hover:text-primary-foreground" aria-hidden />
         </div>
         {live ? (
           <span className="text-[10px] font-bold tracking-wide text-muted-foreground uppercase">

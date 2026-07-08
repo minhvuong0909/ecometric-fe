@@ -25,5 +25,6 @@ export const ROUTES = {
     businessCreate: "/app/businesses/new",
     businessDetail: (id: string) => `/app/businesses/${id}`,
     businessEdit: (id: string) => `/app/businesses/${id}/edit`,
+    businessMembers: (id: string) => `/app/businesses/${id}/members`,
   },
 } as const;

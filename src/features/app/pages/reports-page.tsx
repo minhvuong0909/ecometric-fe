@@ -24,7 +24,7 @@ export function ReportsPage() {
 
       <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
         {copy.reportTypes.map((type) => (
-          <AppPanel key={type.title} title={type.title} bodyClassName="flex flex-col justify-between gap-4">
+          <AppPanel key={type.title} title={type.title} bodyClassName="flex flex-col justify-between gap-4" interactive>
             <p className="text-sm text-muted-foreground">{type.desc}</p>
             <Button variant="outline" size="sm" className="w-full">
               Khởi tạo
@@ -52,7 +52,7 @@ export function ReportsPage() {
             </thead>
             <tbody>
               {copy.reports.map((report) => (
-                <tr key={report.name} className="border-b border-border last:border-0">
+                <tr key={report.name} className="border-b border-border last:border-0 eco-row-hover">
                   <td className="px-6 py-4 font-medium">{report.name}</td>
                   <td className="px-6 py-4 text-muted-foreground">{report.period}</td>
                   <td className="px-6 py-4 text-muted-foreground">{report.date}</td>

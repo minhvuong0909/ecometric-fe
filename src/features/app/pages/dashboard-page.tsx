@@ -62,12 +62,20 @@ export function DashboardPage() {
             </div>
             <ul className="flex-1 space-y-3">
               {copy.emissionBySource.items.map((item) => (
-                <li key={item.label} className="flex items-center justify-between text-sm">
+                <li
+                  key={item.label}
+                  className="group -mx-2 flex items-center justify-between rounded-md px-2 py-1.5 text-sm transition-colors hover:bg-primary/[0.05]"
+                >
                   <span className="flex items-center gap-2">
-                    <span className="size-3 rounded-sm bg-primary" aria-hidden />
+                    <span
+                      className="size-3 rounded-sm bg-primary transition-transform duration-200 group-hover:scale-125"
+                      aria-hidden
+                    />
                     {item.label}
                   </span>
-                  <span className="font-semibold">{item.value}</span>
+                  <span className="font-semibold transition-colors group-hover:text-primary">
+                    {item.value}
+                  </span>
                 </li>
               ))}
             </ul>
@@ -81,12 +89,17 @@ export function DashboardPage() {
         >
           <div className="flex h-48 items-end justify-between gap-2 px-2">
             {copy.monthlyTrend.months.map((month, index) => (
-              <div key={month} className="flex flex-1 flex-col items-center gap-2">
+              <div
+                key={month}
+                className="group flex flex-1 flex-col items-center gap-2"
+              >
                 <div
-                  className="w-full rounded-t-md bg-primary/80"
+                  className="w-full rounded-t-md bg-primary/70 transition-all duration-200 group-hover:bg-primary group-hover:shadow-md group-hover:shadow-primary/20"
                   style={{ height: `${40 + index * 12}%` }}
                 />
-                <span className="text-xs text-muted-foreground">{month}</span>
+                <span className="text-xs text-muted-foreground transition-colors group-hover:text-foreground">
+                  {month}
+                </span>
               </div>
             ))}
           </div>
@@ -101,11 +114,21 @@ export function DashboardPage() {
         >
           <div className="flex h-56 items-end justify-center gap-8 px-4">
             {copy.scopeBreakdown.scopes.map((scope) => (
-              <div key={scope.label} className="flex flex-1 flex-col items-center gap-2">
-                <div className="flex h-40 w-full items-end justify-center rounded-t-lg bg-primary/10">
-                  <div className={cn("w-16 rounded-t-lg bg-primary", scope.height)} />
+              <div
+                key={scope.label}
+                className="group flex flex-1 flex-col items-center gap-2"
+              >
+                <div className="flex h-40 w-full items-end justify-center rounded-t-lg bg-primary/10 transition-colors duration-200 group-hover:bg-primary/20">
+                  <div
+                    className={cn(
+                      "w-16 rounded-t-lg bg-primary transition-all duration-200 group-hover:shadow-md group-hover:shadow-primary/20",
+                      scope.height,
+                    )}
+                  />
                 </div>
-                <span className="text-xs font-medium text-muted-foreground">{scope.label}</span>
+                <span className="text-xs font-medium text-muted-foreground transition-colors group-hover:text-foreground">
+                  {scope.label}
+                </span>
               </div>
             ))}
           </div>
@@ -115,8 +138,13 @@ export function DashboardPage() {
           <AppPanel title={copy.insights.title}>
             <div className="space-y-6">
               {copy.insights.alerts.map((alert) => (
-                <div key={alert.title} className="space-y-2 border-b border-border pb-4 last:border-0 last:pb-0">
-                  <h3 className="font-semibold text-secondary-foreground">{alert.title}</h3>
+                <div
+                  key={alert.title}
+                  className="group -mx-2 space-y-2 rounded-lg border-b border-border px-2 py-2 transition-colors hover:bg-primary/[0.04] last:border-0"
+                >
+                  <h3 className="font-semibold text-secondary-foreground transition-colors group-hover:text-primary">
+                    {alert.title}
+                  </h3>
                   <p className="text-sm leading-relaxed text-muted-foreground">{alert.body}</p>
                 </div>
               ))}
@@ -126,7 +154,7 @@ export function DashboardPage() {
             </div>
           </AppPanel>
 
-          <div className="rounded-xl bg-secondary-foreground p-5 text-primary-foreground">
+          <div className="rounded-xl bg-secondary-foreground p-5 text-primary-foreground transition-shadow duration-200 hover:shadow-lg hover:shadow-primary/10">
             <p className="text-xs font-bold tracking-widest text-primary uppercase">
               {copy.insights.systemLabel}
             </p>
