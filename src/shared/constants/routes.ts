@@ -4,6 +4,7 @@ export const ROUTES = {
   login: "/login",
   register: "/register",
   forgotPassword: "/forgot-password",
+  acceptInvitation: "/invitations/accept",
   app: {
     root: "/app",
     dashboard: "/app/dashboard",
@@ -26,5 +27,6 @@ export const ROUTES = {
     businessDetail: (id: string) => `/app/businesses/${id}`,
     businessEdit: (id: string) => `/app/businesses/${id}/edit`,
     businessMembers: (id: string) => `/app/businesses/${id}/members`,
+    businessInvitations: (id: string) => `/app/businesses/${id}/invitations`,
   },
 } as const;

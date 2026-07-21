@@ -59,7 +59,7 @@ export function MarketingPanel({ className, variant = "login" }: MarketingPanelP
               {registerCopy.steps.map((step) => (
                 <li
                   key={step.label}
-                  className="flex items-center gap-4 rounded-xl border border-white/10 bg-white/5 p-4"
+                  className="flex items-center gap-4 rounded-xl border border-white/10 bg-white/5 p-4 transition-all duration-300 ease-out hover:bg-white/[0.08] hover:border-white/20 hover:-translate-y-0.5 hover:shadow-lg"
                 >
                   <div className="flex size-12 shrink-0 items-center justify-center rounded-lg bg-white/10">
                     <Check className="size-5 text-accent" aria-hidden />

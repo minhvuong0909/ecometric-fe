@@ -158,3 +158,44 @@ export type ChangeMemberRoleRequest = {
 export type ChangeMemberStatusRequest = {
   status: ManageableMemberStatus;
 };
+
+/* ── Business invitations ── */
+
+/** POST /businesses/:businessId/invitations */
+export type InviteMemberRequest = {
+  email: string;
+  role: ManageableRole;
+};
+
+export type ListInvitationsParams = {
+  status?: InvitationStatus;
+  email?: string;
+  page?: number;
+  limit?: number;
+};
+
+/** data của GET /businesses/:businessId/invitations */
+export type BusinessInvitationListResponse = {
+  items: BusinessInvitation[];
+  pagination: Pagination;
+};
+
+/** POST /invitations/accept */
+export type AcceptInvitationRequest = {
+  token: string;
+  fullName?: string;
+  password?: string;
+};
+
+export type AcceptInvitationResponse = {
+  success: true;
+  business: {
+    id: string;
+    name: string;
+  };
+  member: {
+    id: string;
+    role: UserRole;
+    status: MemberStatus;
+  };
+};

@@ -1,5 +1,6 @@
 import type {
   ListBusinessesParams,
+  ListInvitationsParams,
   ListMembersParams,
 } from "@/features/businesses/types/businesses.types";
 
@@ -30,4 +31,14 @@ export const MEMBER_QUERY_KEYS = {
     [...MEMBER_QUERY_KEYS.all(businessId), "detail"] as const,
   detail: (businessId: string, memberId: string) =>
     [...MEMBER_QUERY_KEYS.details(businessId), memberId] as const,
+};
+
+/** Query keys cho lời mời, gom theo từng businessId. */
+export const INVITATION_QUERY_KEYS = {
+  all: (businessId: string) =>
+    ["businesses", businessId, "invitations"] as const,
+  lists: (businessId: string) =>
+    [...INVITATION_QUERY_KEYS.all(businessId), "list"] as const,
+  list: (businessId: string, params: ListInvitationsParams) =>
+    [...INVITATION_QUERY_KEYS.lists(businessId), params] as const,
 };

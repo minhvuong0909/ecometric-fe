@@ -1,4 +1,4 @@
-import { ArrowLeft, Loader2, Pencil, Trash2, Users } from "lucide-react";
+import { ArrowLeft, Loader2, Mail, Pencil, Trash2, Users } from "lucide-react";
 import type { ReactNode } from "react";
 import { Link, useNavigate, useParams } from "react-router";
 import { AppPageHeader } from "@/features/app/components/app-page-header";
@@ -7,6 +7,7 @@ import { useAuthStore } from "@/features/auth/stores/auth-store";
 import { BusinessStatusBadge } from "@/features/businesses/components/business-status-badge";
 import {
   BUSINESSES_COPY,
+  INVITATIONS_COPY,
   MEMBERS_COPY,
 } from "@/features/businesses/constants/businesses-copy";
 import { useBusiness } from "@/features/businesses/hooks/use-business";
@@ -56,6 +57,12 @@ export function BusinessDetailPage() {
                 <Link to={ROUTES.app.businessMembers(business.id)}>
                   <Users className="size-4" aria-hidden />
                   {MEMBERS_COPY.manageCta}
+                </Link>
+              </Button>
+              <Button asChild variant="outline">
+                <Link to={ROUTES.app.businessInvitations(business.id)}>
+                  <Mail className="size-4" aria-hidden />
+                  {INVITATIONS_COPY.manageCta}
                 </Link>
               </Button>
               <Button asChild variant="outline">

@@ -1,6 +1,7 @@
 import type { UserRole } from "@/features/auth/types/auth.types";
 import type {
   BusinessStatus,
+  InvitationStatus,
   ManageableMemberStatus,
   ManageableRole,
   MemberStatus,
@@ -223,4 +224,97 @@ export const MEMBERS_COPY = {
     next: "Sau",
     page: (page: number, total: number) => `Trang ${page}/${total}`,
   },
+} as const;
+
+/* ── Lời mời doanh nghiệp ── */
+
+export const INVITATION_STATUS_LABELS: Record<InvitationStatus, string> = {
+  PENDING: "Đang chờ",
+  ACCEPTED: "Đã chấp nhận",
+  EXPIRED: "Hết hạn",
+  REVOKED: "Đã thu hồi",
+};
+
+export const INVITATION_STATUS_OPTIONS: {
+  value: InvitationStatus;
+  label: string;
+}[] = [
+  { value: "PENDING", label: INVITATION_STATUS_LABELS.PENDING },
+  { value: "ACCEPTED", label: INVITATION_STATUS_LABELS.ACCEPTED },
+  { value: "EXPIRED", label: INVITATION_STATUS_LABELS.EXPIRED },
+  { value: "REVOKED", label: INVITATION_STATUS_LABELS.REVOKED },
+];
+
+export const INVITATIONS_COPY = {
+  nav: "Lời mời",
+  breadcrumbs: [
+    { label: "Doanh nghiệp" },
+    { label: "Lời mời", active: true },
+  ],
+  title: "Lời mời",
+  description: "Mời thành viên mới và quản lý các lời mời đang chờ.",
+  back: "Quay lại doanh nghiệp",
+  manageCta: "Lời mời",
+  inviteTitle: "Mời thành viên",
+  inviteDescription: "Gửi email mời tham gia doanh nghiệp với vai trò phù hợp.",
+  labels: {
+    email: "Email",
+    role: "Vai trò",
+  },
+  placeholders: {
+    email: "nguoidung@congty.vn",
+  },
+  submitInvite: "Gửi lời mời",
+  submitting: "Đang gửi…",
+  inviteSuccess: "Đã gửi lời mời.",
+  searchPlaceholder: "Lọc theo email…",
+  filterAll: "Tất cả trạng thái",
+  loading: "Đang tải lời mời…",
+  error: "Không tải được danh sách lời mời. Vui lòng thử lại.",
+  empty: "Chưa có lời mời nào.",
+  emptyFiltered: "Không tìm thấy lời mời phù hợp.",
+  columns: {
+    email: "Email",
+    role: "Vai trò",
+    status: "Trạng thái",
+    expiresAt: "Hết hạn",
+    actions: "Thao tác",
+  },
+  resend: "Gửi lại",
+  resent: "Đã gửi lại lời mời.",
+  revoke: "Thu hồi",
+  revokeConfirm: (email: string) =>
+    `Thu hồi lời mời cho "${email}"? Người dùng sẽ không thể dùng liên kết cũ.`,
+  revoked: "Đã thu hồi lời mời.",
+  noValue: "—",
+  pagination: {
+    summary: (from: number, to: number, total: number) =>
+      `${from}–${to} trên ${total}`,
+    prev: "Trước",
+    next: "Sau",
+    page: (page: number, total: number) => `Trang ${page}/${total}`,
+  },
+} as const;
+
+export const ACCEPT_INVITATION_COPY = {
+  title: "Chấp nhận lời mời",
+  description:
+    "Hoàn tất tham gia doanh nghiệp. Nếu bạn chưa có tài khoản, hãy đặt họ tên và mật khẩu để tạo tài khoản mới.",
+  labels: {
+    fullName: "Họ và tên",
+    password: "Mật khẩu",
+  },
+  placeholders: {
+    fullName: "Nguyễn Văn A",
+    password: "Tối thiểu 8 ký tự",
+  },
+  hint: "Chỉ cần điền họ tên và mật khẩu nếu bạn là người dùng mới.",
+  submit: "Tham gia doanh nghiệp",
+  submitting: "Đang xử lý…",
+  missingToken: "Liên kết lời mời không hợp lệ hoặc thiếu mã.",
+  successTitle: "Tham gia thành công!",
+  successBody: (business: string) =>
+    `Bạn đã trở thành thành viên của "${business}".`,
+  goToApp: "Vào ứng dụng",
+  goToLogin: "Đăng nhập",
 } as const;

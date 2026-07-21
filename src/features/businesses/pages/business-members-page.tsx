@@ -3,6 +3,7 @@ import {
   ChevronLeft,
   ChevronRight,
   Loader2,
+  Mail,
   Search,
   Trash2,
 } from "lucide-react";
@@ -13,6 +14,7 @@ import { AppPageHeader } from "@/features/app/components/app-page-header";
 import { AppPanel } from "@/features/app/components/app-panel";
 import { MemberStatusBadge } from "@/features/businesses/components/member-status-badge";
 import {
+  INVITATIONS_COPY,
   MANAGEABLE_ROLE_OPTIONS,
   MANAGEABLE_STATUS_OPTIONS,
   MEMBER_ROLE_LABELS,
@@ -129,6 +131,14 @@ export function BusinessMembersPage() {
         breadcrumbs={copy.breadcrumbs}
         title={business ? `${copy.title} · ${business.name}` : copy.title}
         description={copy.description}
+        actions={
+          <Button asChild variant="outline">
+            <Link to={ROUTES.app.businessInvitations(businessId)}>
+              <Mail className="size-4" aria-hidden />
+              {INVITATIONS_COPY.manageCta}
+            </Link>
+          </Button>
+        }
       />
 
       <Button asChild variant="ghost" size="sm" className="text-muted-foreground">

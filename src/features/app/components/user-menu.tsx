@@ -60,11 +60,11 @@ export function UserMenu({ className }: UserMenuProps) {
           ) : null}
         </DropdownMenuLabel>
         <DropdownMenuSeparator />
-        <DropdownMenuItem onSelect={() => navigate(ROUTES.app.account)}>
+        <DropdownMenuItem onSelect={() => navigate(ROUTES.app.settings)}>
           <UserRound aria-hidden />
           {copy.account}
         </DropdownMenuItem>
-        <DropdownMenuItem onSelect={() => navigate(ROUTES.app.changePassword)}>
+        <DropdownMenuItem onSelect={() => navigate(ROUTES.app.settings)}>
           <KeyRound aria-hidden />
           {copy.changePassword}
         </DropdownMenuItem>

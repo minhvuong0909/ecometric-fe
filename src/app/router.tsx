@@ -1,15 +1,15 @@
 import { Navigate, createBrowserRouter, RouterProvider } from "react-router";
 import { APP_ROUTE_CONFIG } from "@/features/app/app-route-config";
 import { APP_PAGE_REGISTRY } from "@/features/app/app-page-registry";
-import { AccountPage } from "@/features/app/pages/account-page";
-import { ChangePasswordPage } from "@/features/app/pages/change-password-page";
 import {
   GuestOnly,
   RequireAuth,
 } from "@/features/auth/components/route-guards";
+import { AcceptInvitationPage } from "@/features/businesses/pages/accept-invitation-page";
 import { BusinessCreatePage } from "@/features/businesses/pages/business-create-page";
 import { BusinessDetailPage } from "@/features/businesses/pages/business-detail-page";
 import { BusinessEditPage } from "@/features/businesses/pages/business-edit-page";
+import { BusinessInvitationsPage } from "@/features/businesses/pages/business-invitations-page";
 import { BusinessMembersPage } from "@/features/businesses/pages/business-members-page";
 import { BusinessesPage } from "@/features/businesses/pages/businesses-page";
 import { ForgotPasswordPage } from "@/features/auth/pages/forgot-password-page";
@@ -19,6 +19,8 @@ import { PublicWebsitePage } from "@/features/marketing/pages/public-website-pag
 import { AppLayout } from "@/layouts/app-layout";
 import { RootLayout } from "@/layouts/root-layout";
 import { ROUTES } from "@/shared/constants/routes";
+
+import { SsoCallbackPage } from "@/features/auth/pages/sso-callback-page";
 
 function getAppScreenElement(screenId: keyof typeof APP_PAGE_REGISTRY) {
   const Page = APP_PAGE_REGISTRY[screenId];
@@ -54,8 +56,16 @@ const router = createBrowserRouter([
         ),
       },
       {
+        path: "sso-callback",
+        element: <SsoCallbackPage />,
+      },
+      {
         path: "forgot-password",
         element: <ForgotPasswordPage />,
+      },
+      {
+        path: "invitations/accept",
+        element: <AcceptInvitationPage />,
       },
       {
         path: "app",
@@ -68,14 +78,6 @@ const router = createBrowserRouter([
           {
             index: true,
             element: <Navigate to={ROUTES.app.dashboard} replace />,
-          },
-          {
-            path: "account",
-            element: <AccountPage />,
-          },
-          {
-            path: "account/change-password",
-            element: <ChangePasswordPage />,
           },
           {
             path: "businesses",
@@ -96,6 +98,10 @@ const router = createBrowserRouter([
           {
             path: "businesses/:id/members",
             element: <BusinessMembersPage />,
+          },
+          {
+            path: "businesses/:id/invitations",
+            element: <BusinessInvitationsPage />,
           },
           ...APP_ROUTE_CONFIG.map(({ path, screenId }) => ({
             path,
