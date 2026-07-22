@@ -1,7 +1,7 @@
 import { useState } from "react";
-import { useNavigate } from "react-router";
+import { Link, useNavigate } from "react-router";
 import { toast } from "sonner";
-import { Droplets, Fuel, Trash2, Truck, Zap, Calculator, Loader2 } from "lucide-react";
+import { Droplets, Fuel, Trash2, Truck, Zap, Calculator, Loader2, Sparkles, UploadCloud, ArrowRight } from "lucide-react";
 import { AppPageHeader } from "@/features/app/components/app-page-header";
 import { AppPanel } from "@/features/app/components/app-panel";
 import { DATA_INPUT_COPY, APP_SHARED_COPY } from "@/features/app/constants/app-copy";
@@ -105,6 +105,38 @@ export function DataInputPage() {
               style={{ width: `${completenessPercent}%` }}
             />
           </div>
+        </div>
+      </div>
+
+      {/* Banner AI Upload hóa đơn thay vì nhập thủ công */}
+      <div className="relative overflow-hidden rounded-2xl border border-primary/20 bg-gradient-to-r from-emerald-950 via-teal-900 to-secondary-foreground p-6 text-white shadow-lg">
+        <div className="flex flex-col gap-6 lg:flex-row lg:items-center lg:justify-between">
+          <div className="flex items-start gap-4">
+            <div className="flex size-12 shrink-0 items-center justify-center rounded-xl bg-accent/20 text-accent border border-accent/30 shadow-inner">
+              <Sparkles className="size-6 text-accent" />
+            </div>
+            <div className="space-y-1">
+              <div className="flex items-center gap-2">
+                <span className="rounded-full bg-accent px-2.5 py-0.5 text-[10px] font-bold text-accent-foreground uppercase tracking-wider">
+                  Nhanh & Tự động
+                </span>
+                <h3 className="text-base font-bold text-white">Bạn không muốn nhập số liệu thủ công?</h3>
+              </div>
+              <p className="text-sm text-emerald-100/80 leading-relaxed max-w-2xl">
+                Tải lên ngay hóa đơn EVN, chứng từ nhiên liệu hoặc phiếu thu phí. Công nghệ AI của EcoMetric sẽ tự động trích xuất và kiểm tra số liệu cho bạn.
+              </p>
+            </div>
+          </div>
+          <Button
+            asChild
+            className="shrink-0 bg-accent text-accent-foreground font-bold hover:bg-accent/90 shadow-md transition-all duration-200 hover:scale-[1.02] px-5 py-5"
+          >
+            <Link to={ROUTES.app.uploadDoc} className="flex items-center gap-2">
+              <UploadCloud className="size-5" />
+              Tải hóa đơn đính kèm (AI Scan)
+              <ArrowRight className="size-4" />
+            </Link>
+          </Button>
         </div>
       </div>
 
