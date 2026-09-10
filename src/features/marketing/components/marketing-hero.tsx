@@ -21,20 +21,22 @@ export function MarketingHero() {
             <span className="text-xs font-medium text-primary">{HERO_COPY.badge}</span>
           </div>
 
-          <h1 className="text-4xl font-bold tracking-tight text-secondary-foreground sm:text-5xl lg:text-[3rem] lg:leading-[1.15]">
+          <h1 className="text-4xl font-extrabold tracking-tight text-foreground sm:text-5xl lg:text-[3.25rem] lg:leading-[1.15]">
             {HERO_COPY.titleLead}{" "}
-            <span className="text-primary">{HERO_COPY.titleHighlight}</span>
+            <span className="bg-gradient-to-r from-emerald-600 to-teal-500 bg-clip-text text-transparent">
+              {HERO_COPY.titleHighlight}
+            </span>
           </h1>
 
           <p className="max-w-lg text-lg leading-relaxed text-muted-foreground">
             {HERO_COPY.description}
           </p>
 
-          <div className="flex flex-col gap-3 pt-2 sm:flex-row sm:items-center">
+          <div className="flex flex-col gap-3.5 pt-2 sm:flex-row sm:items-center">
             <Button
               asChild
               size="lg"
-              className="h-14 bg-accent px-8 text-sm font-bold tracking-wide text-accent-foreground shadow-sm hover:bg-accent/90 active:bg-accent/80"
+              className="h-13 bg-gradient-to-r from-emerald-600 to-teal-600 px-8 text-sm font-bold tracking-wide text-white shadow-lg shadow-emerald-600/25 hover:from-emerald-700 hover:to-teal-700"
             >
               <Link to={ROUTES.register}>{HERO_COPY.ctaPrimary}</Link>
             </Button>
@@ -42,10 +44,26 @@ export function MarketingHero() {
               asChild
               variant="outline"
               size="lg"
-              className="h-14 gap-2 border-2 border-secondary-foreground/10 px-8 text-sm font-bold tracking-wide text-secondary-foreground hover:bg-muted active:bg-muted/80"
+              className="h-13 gap-2 border border-border/80 px-8 text-sm font-bold tracking-wide text-foreground hover:bg-muted"
             >
-              <Link to={ROUTES.register}>{HERO_COPY.ctaSecondary}</Link>
+              <a href="#workflow">Tìm hiểu quy trình 3 bước</a>
             </Button>
+          </div>
+
+          {/* Real-world trust counters */}
+          <div className="pt-6 border-t border-border/60 grid grid-cols-3 gap-4">
+            <div>
+              <p className="text-2xl font-extrabold text-foreground">150+</p>
+              <p className="text-xs text-muted-foreground">Doanh nghiệp tin dùng</p>
+            </div>
+            <div>
+              <p className="text-2xl font-extrabold text-emerald-600 dark:text-emerald-400">90%</p>
+              <p className="text-xs text-muted-foreground">Tiết kiệm thời gian</p>
+            </div>
+            <div>
+              <p className="text-2xl font-extrabold text-foreground">100%</p>
+              <p className="text-xs text-muted-foreground">Sẵn sàng kiểm toán</p>
+            </div>
           </div>
         </div>
 

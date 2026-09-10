@@ -1,53 +1,84 @@
-/* EcoMetric design tokens — mapped from Figma ecometrix */
+/* EcoMetric design tokens — CleanTech Design System */
 
 :root {
-  --font-family-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
+  --font-family-sans: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
 
-  /* Brand */
-  --ecometric-green: #006d36;
-  --ecometric-green-dark: #062c1e;
-  --ecometric-green-bright: #4ade80;
-  --ecometric-text: #00150c;
-  --ecometric-muted: #414844;
-  --ecometric-border: #c1c8c2;
-  --ecometric-page: #f7f9fb;
-  --ecometric-footer-muted: #709582;
+  /* Brand core */
+  --ecometric-green: #059669;
+  --ecometric-green-dark: #064e3b;
+  --ecometric-green-bright: #10b981;
+  --ecometric-text: #0f172a;
+  --ecometric-muted: #64748b;
+  --ecometric-border: #e2e8f0;
+  --ecometric-page: #f8fafc;
+  --ecometric-footer-muted: #64748b;
 
   /* Semantic (surface-specific) */
   --footer-muted: var(--ecometric-footer-muted);
 
-  /* shadcn semantic tokens (HSL components for Tailwind v4) */
-  --background: #f7f9fb;
-  --foreground: #00150c;
+  /* Light Theme (CleanTech crisp palette) */
+  --background: #f8fafc;
+  --foreground: #0f172a;
 
   --card: #ffffff;
-  --card-foreground: #00150c;
+  --card-foreground: #0f172a;
 
   --popover: #ffffff;
-  --popover-foreground: #00150c;
+  --popover-foreground: #0f172a;
 
-  --primary: #006d36;
+  --primary: #059669;
   --primary-foreground: #ffffff;
 
-  --secondary: #dcfce7;
-  --secondary-foreground: #062c1e;
+  --secondary: #ecfdf5;
+  --secondary-foreground: #0f172a;
 
-  --muted: #eceef0;
-  --muted-foreground: #414844;
+  --muted: #f1f5f9;
+  --muted-foreground: #64748b;
 
-  --accent: #4ade80;
-  --accent-foreground: #062c1e;
+  --accent: #10b981;
+  --accent-foreground: #ffffff;
 
-  --destructive: #dc2626;
+  --destructive: #ef4444;
   --destructive-foreground: #ffffff;
 
-  --border: #c1c8c2;
-  --input: #c1c8c2;
-  --ring: #006d36;
+  --border: #e2e8f0;
+  --input: #e2e8f0;
+  --ring: #059669;
 
-  /*
-   * Shape scale (locked): surfaces/cards/panels = rounded-xl,
-   * controls (button/input/toggle) = rounded-md, pills/badges = rounded-full.
-   */
-  --radius: 0.5rem;
+  --radius: 0.75rem;
+}
+
+/* Dark Theme (Obsidian CleanTech palette) */
+.dark {
+  --background: #090e11;
+  --foreground: #f1f5f9;
+
+  --card: #111a17;
+  --card-foreground: #f1f5f9;
+
+  --popover: #111a17;
+  --popover-foreground: #f1f5f9;
+
+  --primary: #10b981;
+  --primary-foreground: #022c22;
+
+  --secondary: #162822;
+  --secondary-foreground: #f1f5f9;
+
+  --muted: #17231f;
+  --muted-foreground: #94a3b8;
+
+  --accent: #34d399;
+  --accent-foreground: #022c22;
+
+  --destructive: #f87171;
+  --destructive-foreground: #ffffff;
+
+  --border: #1e332b;
+  --input: #1e332b;
+  --ring: #10b981;
+
+  --ecometric-page: #090e11;
+  --ecometric-text: #f1f5f9;
+  --ecometric-border: #1e332b;
 }

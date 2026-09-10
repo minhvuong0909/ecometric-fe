@@ -5,11 +5,8 @@ import {
   Leaf,
   TrendingDown,
 } from "lucide-react";
-import { useState } from "react";
 import { AUTH_COPY } from "@/features/auth/constants/auth-content";
 import { cn } from "@/shared/lib/utils";
-
-const PRODUCT_IMAGE_SRC = "/product-dashboard.png";
 
 const BAR_HEIGHT_CLASSES = [
   "h-[51%]",
@@ -27,29 +24,6 @@ type DashboardPreviewProps = {
 
 export function DashboardPreview({ className }: DashboardPreviewProps) {
   const copy = AUTH_COPY.dashboardPreview;
-  const [imageFailed, setImageFailed] = useState(false);
-
-  if (!imageFailed) {
-    return (
-      <div
-        className={cn(
-          "overflow-hidden rounded-xl border border-white/10 bg-card shadow-2xl",
-          className,
-        )}
-      >
-        <img
-          src={PRODUCT_IMAGE_SRC}
-          alt={copy.imageAlt}
-          width={1024}
-          height={768}
-          loading="lazy"
-          decoding="async"
-          className="block h-auto w-full"
-          onError={() => setImageFailed(true)}
-        />
-      </div>
-    );
-  }
 
   return (
     <div

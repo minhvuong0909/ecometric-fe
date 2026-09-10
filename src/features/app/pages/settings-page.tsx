@@ -21,6 +21,7 @@ import { AppPageHeader } from "@/features/app/components/app-page-header";
 import { AppPanel } from "@/features/app/components/app-panel";
 import { SETTINGS_COPY } from "@/features/app/constants/app-copy";
 import { Button } from "@/shared/components/ui/button";
+import { ConfirmDialog } from "@/shared/components/ui/confirm-dialog";
 import { Input } from "@/shared/components/ui/input";
 import { Label } from "@/shared/components/ui/label";
 import { cn } from "@/shared/lib/utils";
@@ -56,6 +57,10 @@ export function SettingsPage() {
   const [inviteRole, setInviteRole] = useState<"Admin" | "Editor" | "Viewer">("Editor");
   const [inviteName, setInviteName] = useState("");
   const [isInviting, setIsInviting] = useState(false);
+  const [deleteMemberTarget, setDeleteMemberTarget] = useState<{
+    id: string;
+    email: string;
+  } | null>(null);
 
   // States cho Tab 2: Thông báo
   const [notifThreshold, setNotifThreshold] = useState(true);
@@ -114,10 +119,7 @@ export function SettingsPage() {
       toast.error("Bạn không thể xóa chính mình khỏi không gian làm việc.");
       return;
     }
-    if (window.confirm(`Bạn có chắc chắn muốn xóa thành viên ${email} khỏi không gian làm việc?`)) {
-      setMembers((prev) => prev.filter((m) => m.id !== id));
-      toast.success("Đã xóa thành viên thành công.");
-    }
+    setDeleteMemberTarget({ id, email });
   };
 
   const handleSaveNotifications = () => {
@@ -567,6 +569,29 @@ export function SettingsPage() {
           </div>
         )}
       </div>
+
+      <ConfirmDialog
+        open={Boolean(deleteMemberTarget)}
+        onOpenChange={(open) => !open && setDeleteMemberTarget(null)}
+        title="Xác nhận xóa thành viên"
+        description={
+          deleteMemberTarget
+            ? `Bạn có chắc chắn muốn xóa thành viên ${deleteMemberTarget.email} khỏi không gian làm việc?`
+            : ""
+        }
+        confirmText="Xóa thành viên"
+        cancelText="Hủy"
+        variant="destructive"
+        onConfirm={() => {
+          if (deleteMemberTarget) {
+            setMembers((prev) =>
+              prev.filter((m) => m.id !== deleteMemberTarget.id),
+            );
+            toast.success("Đã xóa thành viên thành công.");
+            setDeleteMemberTarget(null);
+          }
+        }}
+      />
     </div>
   );
 }

@@ -142,7 +142,7 @@ function SidebarUser({ collapsed = false }: SidebarBodyProps) {
   return (
     <div className="border-t border-border p-3">
       <div className="mb-1 flex items-center gap-3 rounded-lg px-3 py-2">
-        <span className="flex size-9 shrink-0 items-center justify-center rounded-full bg-secondary-foreground text-xs font-bold text-accent">
+        <span className="flex size-9 shrink-0 items-center justify-center rounded-full bg-primary/10 text-xs font-bold text-primary border border-primary/20">
           {initials}
         </span>
         <div className="min-w-0">

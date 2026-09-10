@@ -6,6 +6,7 @@ import {
   Mail,
   Search,
   Trash2,
+  Users,
 } from "lucide-react";
 import type { ReactNode } from "react";
 import { useMemo, useState } from "react";
@@ -33,7 +34,10 @@ import type {
   MemberStatus,
 } from "@/features/businesses/types/businesses.types";
 import { Button } from "@/shared/components/ui/button";
+import { ConfirmDialog } from "@/shared/components/ui/confirm-dialog";
+import { EmptyState } from "@/shared/components/ui/empty-state";
 import { Input } from "@/shared/components/ui/input";
+import { TableSkeleton } from "@/shared/components/ui/skeleton";
 import { ROUTES } from "@/shared/constants/routes";
 import { useDebouncedValue } from "@/shared/hooks/use-debounced-value";
 import { getApiErrorMessage } from "@/shared/lib/get-error-message";
@@ -111,13 +115,14 @@ export function BusinessMembersPage() {
     );
   };
 
+  const [removeTarget, setRemoveTarget] = useState<{
+    id: string;
+    name: string;
+  } | null>(null);
+
   const handleRemove = (member: BusinessMember) => {
     const name = member.user.fullName || member.user.email;
-    if (!window.confirm(copy.removeConfirm(name))) return;
-    setActionError(null);
-    removeMutation.mutate(member.id, {
-      onError: (err) => setActionError(getApiErrorMessage(err)),
-    });
+    setRemoveTarget({ id: member.id, name });
   };
 
   const from = pagination ? (pagination.page - 1) * pagination.limit + 1 : 0;
@@ -210,18 +215,17 @@ export function BusinessMembersPage() {
         </div>
 
         {isLoading ? (
-          <div className="flex items-center gap-2 p-6 text-sm text-muted-foreground">
-            <Loader2 className="size-4 animate-spin" aria-hidden />
-            {copy.loading}
-          </div>
+          <TableSkeleton columns={5} rows={4} />
         ) : isError ? (
           <p className="p-6 text-sm text-destructive" role="alert">
             {getApiErrorMessage(error)}
           </p>
         ) : items.length === 0 ? (
-          <p className="p-10 text-center text-sm text-muted-foreground">
-            {hasFilters ? copy.emptyFiltered : copy.empty}
-          </p>
+          <EmptyState
+            icon={Users}
+            title={hasFilters ? "Không tìm thấy thành viên phù hợp" : "Chưa có thành viên nào"}
+            description={hasFilters ? copy.emptyFiltered : copy.empty}
+          />
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full min-w-[840px] text-left text-sm">
@@ -376,6 +380,28 @@ export function BusinessMembersPage() {
           </div>
         ) : null}
       </AppPanel>
+
+      <ConfirmDialog
+        open={Boolean(removeTarget)}
+        onOpenChange={(open) => !open && setRemoveTarget(null)}
+        title="Xác nhận gỡ thành viên"
+        description={
+          removeTarget ? copy.removeConfirm(removeTarget.name) : ""
+        }
+        confirmText="Gỡ thành viên"
+        cancelText="Hủy"
+        variant="destructive"
+        isLoading={removeMutation.isPending}
+        onConfirm={() => {
+          if (removeTarget) {
+            setActionError(null);
+            removeMutation.mutate(removeTarget.id, {
+              onError: (err) => setActionError(getApiErrorMessage(err)),
+              onSettled: () => setRemoveTarget(null),
+            });
+          }
+        }}
+      />
     </div>
   );
 }

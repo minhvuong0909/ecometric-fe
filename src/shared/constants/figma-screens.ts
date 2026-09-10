@@ -24,12 +24,6 @@ export type FigmaScreen = {
   nextLabel?: string;
 };
 
-export const FIGMA_FILE_KEY = "BzmfxP0dmTwmf72pb7U7Mv";
-
-export function figmaFrameUrl(nodeId: string) {
-  return `https://www.figma.com/design/${FIGMA_FILE_KEY}/ecometrix?node-id=${nodeId.replace(":", "-")}`;
-}
-
 export const APP_SCREENS: FigmaScreen[] = [
   {
     id: "dashboard",
@@ -185,10 +179,3 @@ export const APP_NAV_ITEMS = APP_NAV_ORDER.map((id) => {
 export function getScreenByPath(path: string) {
   return APP_SCREENS.find((screen) => screen.path === path);
 }
-
-export const SCREEN_PLACEHOLDER_COPY = {
-  scaffoldTitle: "Khung màn hình",
-  scaffoldDescription:
-    "Giao diện đang được triển khai. Điều hướng và luồng làm việc đã sẵn sàng, dùng các nút bên dưới để tiếp tục.",
-  openFigma: "Mở frame Figma",
-} as const;

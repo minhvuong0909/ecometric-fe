@@ -41,8 +41,11 @@ import type {
   InvitationStatus,
 } from "@/features/businesses/types/businesses.types";
 import { Button } from "@/shared/components/ui/button";
+import { ConfirmDialog } from "@/shared/components/ui/confirm-dialog";
+import { EmptyState } from "@/shared/components/ui/empty-state";
 import { Input } from "@/shared/components/ui/input";
 import { Label } from "@/shared/components/ui/label";
+import { TableSkeleton } from "@/shared/components/ui/skeleton";
 import { ROUTES } from "@/shared/constants/routes";
 import { useDebouncedValue } from "@/shared/hooks/use-debounced-value";
 import { getApiErrorMessage } from "@/shared/lib/get-error-message";
@@ -126,12 +129,13 @@ export function BusinessInvitationsPage() {
     });
   };
 
+  const [revokeTarget, setRevokeTarget] = useState<{
+    id: string;
+    email: string;
+  } | null>(null);
+
   const handleRevoke = (invitation: BusinessInvitation) => {
-    if (!window.confirm(copy.revokeConfirm(invitation.email))) return;
-    setActionError(null);
-    revokeMutation.mutate(invitation.id, {
-      onError: (err) => setActionError(getApiErrorMessage(err)),
-    });
+    setRevokeTarget({ id: invitation.id, email: invitation.email });
   };
 
   const from = pagination ? (pagination.page - 1) * pagination.limit + 1 : 0;
@@ -289,18 +293,17 @@ export function BusinessInvitationsPage() {
         </div>
 
         {isLoading ? (
-          <div className="flex items-center gap-2 p-6 text-sm text-muted-foreground">
-            <Loader2 className="size-4 animate-spin" aria-hidden />
-            {copy.loading}
-          </div>
+          <TableSkeleton columns={5} rows={4} />
         ) : isError ? (
           <p className="p-6 text-sm text-destructive" role="alert">
             {getApiErrorMessage(error)}
           </p>
         ) : items.length === 0 ? (
-          <p className="p-10 text-center text-sm text-muted-foreground">
-            {hasFilters ? copy.emptyFiltered : copy.empty}
-          </p>
+          <EmptyState
+            icon={Mail}
+            title={hasFilters ? "Không tìm thấy lời mời phù hợp" : "Chưa có lời mời nào"}
+            description={hasFilters ? copy.emptyFiltered : copy.empty}
+          />
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full min-w-[760px] text-left text-sm">
@@ -430,6 +433,28 @@ export function BusinessInvitationsPage() {
           </div>
         ) : null}
       </AppPanel>
+
+      <ConfirmDialog
+        open={Boolean(revokeTarget)}
+        onOpenChange={(open) => !open && setRevokeTarget(null)}
+        title="Xác nhận thu hồi lời mời"
+        description={
+          revokeTarget ? copy.revokeConfirm(revokeTarget.email) : ""
+        }
+        confirmText="Thu hồi lời mời"
+        cancelText="Hủy"
+        variant="destructive"
+        isLoading={revokeMutation.isPending}
+        onConfirm={() => {
+          if (revokeTarget) {
+            setActionError(null);
+            revokeMutation.mutate(revokeTarget.id, {
+              onError: (err) => setActionError(getApiErrorMessage(err)),
+              onSettled: () => setRevokeTarget(null),
+            });
+          }
+        }}
+      />
     </div>
   );
 }

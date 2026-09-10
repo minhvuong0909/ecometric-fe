@@ -48,7 +48,7 @@ export function AppPageHeader({
             ))}
           </nav>
         ) : null}
-        <h1 className="text-2xl font-semibold tracking-tight text-secondary-foreground sm:text-3xl">
+        <h1 className="text-2xl font-bold tracking-tight text-foreground sm:text-3xl">
           {title}
         </h1>
         {description ? (

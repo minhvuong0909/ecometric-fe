@@ -1,5 +1,6 @@
 import { ArrowLeft, Loader2, Mail, Pencil, Trash2, Users } from "lucide-react";
 import type { ReactNode } from "react";
+import { useState } from "react";
 import { Link, useNavigate, useParams } from "react-router";
 import { AppPageHeader } from "@/features/app/components/app-page-header";
 import { AppPanel } from "@/features/app/components/app-panel";
@@ -13,6 +14,7 @@ import {
 import { useBusiness } from "@/features/businesses/hooks/use-business";
 import { useDeleteBusiness } from "@/features/businesses/hooks/use-delete-business";
 import { Button } from "@/shared/components/ui/button";
+import { ConfirmDialog } from "@/shared/components/ui/confirm-dialog";
 import { ROUTES } from "@/shared/constants/routes";
 import { getApiErrorMessage } from "@/shared/lib/get-error-message";
 
@@ -36,13 +38,11 @@ export function BusinessDetailPage() {
 
   const { data: business, isLoading, isError, error } = useBusiness(id);
   const deleteMutation = useDeleteBusiness();
+  const [confirmOpen, setConfirmOpen] = useState(false);
 
   const handleDelete = () => {
     if (!business) return;
-    if (!window.confirm(copy.deleteConfirm(business.name))) return;
-    deleteMutation.mutate(business.id, {
-      onSuccess: () => navigate(ROUTES.app.businesses, { replace: true }),
-    });
+    setConfirmOpen(true);
   };
 
   return (
@@ -161,6 +161,26 @@ export function BusinessDetailPage() {
           </AppPanel>
         </div>
       )}
+
+      <ConfirmDialog
+        open={confirmOpen}
+        onOpenChange={setConfirmOpen}
+        title="Xác nhận xóa doanh nghiệp"
+        description={business ? copy.deleteConfirm(business.name) : ""}
+        confirmText="Xóa doanh nghiệp"
+        cancelText="Hủy"
+        variant="destructive"
+        isLoading={deleteMutation.isPending}
+        onConfirm={() => {
+          if (business) {
+            deleteMutation.mutate(business.id, {
+              onSuccess: () =>
+                navigate(ROUTES.app.businesses, { replace: true }),
+              onSettled: () => setConfirmOpen(false),
+            });
+          }
+        }}
+      />
     </div>
   );
 }

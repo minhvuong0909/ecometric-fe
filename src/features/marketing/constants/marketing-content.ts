@@ -2,9 +2,10 @@ import { ROUTES } from "@/shared/constants/routes";
 
 export const NAV_LINKS = [
   { label: "Trang chủ", href: "#top", id: "home" },
+  { label: "Quy trình", href: "#workflow", id: "workflow" },
   { label: "Tính năng", href: "#features", id: "features" },
   { label: "Bảng giá", href: "#pricing", id: "pricing" },
-  { label: "Liên hệ", href: "#contact", id: "contact" },
+  { label: "Hỏi đáp", href: "#faq", id: "faq" },
 ] as const;
 
 export const HERO_COPY = {

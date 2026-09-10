@@ -1,4 +1,5 @@
 import {
+  Building2,
   ChevronLeft,
   ChevronRight,
   Loader2,
@@ -22,7 +23,10 @@ import { useBusinesses } from "@/features/businesses/hooks/use-businesses";
 import { useDeleteBusiness } from "@/features/businesses/hooks/use-delete-business";
 import type { BusinessStatus } from "@/features/businesses/types/businesses.types";
 import { Button } from "@/shared/components/ui/button";
+import { ConfirmDialog } from "@/shared/components/ui/confirm-dialog";
+import { EmptyState } from "@/shared/components/ui/empty-state";
 import { Input } from "@/shared/components/ui/input";
+import { TableSkeleton } from "@/shared/components/ui/skeleton";
 import { ROUTES } from "@/shared/constants/routes";
 import { getApiErrorMessage } from "@/shared/lib/get-error-message";
 import { useDebouncedValue } from "@/shared/hooks/use-debounced-value";
@@ -57,6 +61,11 @@ export function BusinessesPage() {
   const deleteMutation = useDeleteBusiness();
 
   const items = data?.items ?? [];
+  const [deleteTarget, setDeleteTarget] = useState<{
+    id: string;
+    name: string;
+  } | null>(null);
+
   const pagination = data?.pagination;
   const hasFilters = Boolean(search) || Boolean(status);
 
@@ -68,8 +77,7 @@ export function BusinessesPage() {
   };
 
   const handleDelete = (id: string, name: string) => {
-    if (!window.confirm(BUSINESSES_COPY.detail.deleteConfirm(name))) return;
-    deleteMutation.mutate(id);
+    setDeleteTarget({ id, name });
   };
 
   const from = pagination ? (pagination.page - 1) * pagination.limit + 1 : 0;
@@ -134,18 +142,27 @@ export function BusinessesPage() {
         </div>
 
         {isLoading ? (
-          <div className="flex items-center gap-2 p-6 text-sm text-muted-foreground">
-            <Loader2 className="size-4 animate-spin" aria-hidden />
-            {copy.loading}
-          </div>
+          <TableSkeleton columns={5} rows={5} />
         ) : isError ? (
           <p className="p-6 text-sm text-destructive" role="alert">
             {getApiErrorMessage(error)}
           </p>
         ) : items.length === 0 ? (
-          <p className="p-10 text-center text-sm text-muted-foreground">
-            {hasFilters ? copy.emptyFiltered : copy.empty}
-          </p>
+          <EmptyState
+            icon={Building2}
+            title={hasFilters ? "Không tìm thấy doanh nghiệp phù hợp" : "Chưa có doanh nghiệp nào"}
+            description={hasFilters ? copy.emptyFiltered : copy.empty}
+            action={
+              !hasFilters && isAdmin ? (
+                <Button asChild size="sm" className="bg-primary text-primary-foreground font-bold">
+                  <Link to={ROUTES.app.businessCreate}>
+                    <Plus className="size-4 mr-1.5" />
+                    {copy.createCta}
+                  </Link>
+                </Button>
+              ) : undefined
+            }
+          />
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full min-w-[720px] text-left text-sm">
@@ -273,6 +290,28 @@ export function BusinessesPage() {
           </div>
         ) : null}
       </AppPanel>
+
+      <ConfirmDialog
+        open={Boolean(deleteTarget)}
+        onOpenChange={(open) => !open && setDeleteTarget(null)}
+        title="Xác nhận xóa doanh nghiệp"
+        description={
+          deleteTarget
+            ? BUSINESSES_COPY.detail.deleteConfirm(deleteTarget.name)
+            : ""
+        }
+        confirmText="Xóa doanh nghiệp"
+        cancelText="Hủy"
+        variant="destructive"
+        isLoading={deleteMutation.isPending}
+        onConfirm={() => {
+          if (deleteTarget) {
+            deleteMutation.mutate(deleteTarget.id, {
+              onSettled: () => setDeleteTarget(null),
+            });
+          }
+        }}
+      />
     </div>
   );
 }

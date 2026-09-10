@@ -10,4 +10,18 @@ export default defineConfig({
       "@": path.resolve(__dirname, "./src"),
     },
   },
+  build: {
+    rollupOptions: {
+      output: {
+        manualChunks: {
+          vendor: ["react", "react-dom", "react-router"],
+          charts: ["recharts"],
+          query: ["@tanstack/react-query"],
+          clerk: ["@clerk/react"],
+          ui: ["lucide-react", "sonner", "clsx", "tailwind-merge"],
+        },
+      },
+    },
+    chunkSizeWarningLimit: 800,
+  },
 });

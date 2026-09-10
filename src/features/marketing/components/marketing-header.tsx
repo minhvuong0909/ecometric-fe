@@ -2,6 +2,7 @@ import { Menu, X } from "lucide-react";
 import { useState } from "react";
 import { Link } from "react-router";
 import { Logo } from "@/shared/components/logo";
+import { ThemeToggle } from "@/shared/components/theme-toggle";
 import {
   HEADER_COPY,
   NAV_LINKS,
@@ -53,7 +54,8 @@ export function MarketingHeader() {
           </nav>
         </div>
 
-        <div className="hidden items-center gap-6 md:flex">
+        <div className="hidden items-center gap-4 md:flex">
+          <ThemeToggle />
           <Link
             to={ROUTES.login}
             className="text-sm font-semibold tracking-wide text-muted-foreground transition-colors duration-150 hover:text-foreground focus-ring rounded-sm"
@@ -62,24 +64,26 @@ export function MarketingHeader() {
           </Link>
           <Button
             asChild
-            className="h-10 bg-accent px-6 font-bold tracking-wide text-accent-foreground hover:bg-accent/90 active:bg-accent/80"
+            className="h-10 bg-gradient-to-r from-emerald-600 to-teal-600 px-6 font-bold tracking-wide text-white shadow-md shadow-emerald-600/20 hover:from-emerald-700 hover:to-teal-700"
           >
             <Link to={ROUTES.register}>{HEADER_COPY.startTrial}</Link>
           </Button>
         </div>
 
-        <Button
-          type="button"
-          variant="ghost"
-          size="icon"
-          className="md:hidden"
-          aria-expanded={mobileOpen}
-          aria-controls="mobile-nav"
-          aria-label={mobileOpen ? HEADER_COPY.closeMenu : HEADER_COPY.openMenu}
-          onClick={() => setMobileOpen((open) => !open)}
-        >
-          {mobileOpen ? <X className="size-5" /> : <Menu className="size-5" />}
-        </Button>
+        <div className="flex items-center gap-2 md:hidden">
+          <ThemeToggle />
+          <Button
+            type="button"
+            variant="ghost"
+            size="icon"
+            aria-expanded={mobileOpen}
+            aria-controls="mobile-nav"
+            aria-label={mobileOpen ? HEADER_COPY.closeMenu : HEADER_COPY.openMenu}
+            onClick={() => setMobileOpen((open) => !open)}
+          >
+            {mobileOpen ? <X className="size-5" /> : <Menu className="size-5" />}
+          </Button>
+        </div>
       </div>
 
       {mobileOpen ? (
