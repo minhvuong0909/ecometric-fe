@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { toast } from "sonner";
 import {
   FileText,
@@ -15,11 +15,23 @@ import {
   Globe,
   FileCheck,
   Zap,
+  Loader2,
 } from "lucide-react";
 import { AppPageHeader } from "@/features/app/components/app-page-header";
 import { AppPanel } from "@/features/app/components/app-panel";
 import { MetricCard } from "@/features/app/components/metric-card";
 import { REPORTS_COPY } from "@/features/app/constants/app-copy";
+import {
+  useCreateReport,
+  useDeleteReport,
+  useDownloadReport,
+  useGenerateReport,
+  useReports,
+} from "@/features/app/hooks/use-reports";
+import { useReportingPeriods } from "@/features/app/hooks/use-app-meta";
+import { createReportingPeriod } from "@/features/app/api/meta.api";
+import { useBusinessStore } from "@/shared/stores/business-store";
+import type { ReportType } from "@/features/app/types/app.types";
 import { Button } from "@/shared/components/ui/button";
 import { Input } from "@/shared/components/ui/input";
 import { cn } from "@/shared/lib/utils";
@@ -31,8 +43,8 @@ type ReportItem = {
   period: string;
   date: string;
   size: string;
-  format: "PDF" | "XLSX";
-  status: "Sẵn sàng" | "Đã xuất" | "Bản nháp";
+  format: "PDF" | "XLSX" | "JSON";
+  status: "Sẵn sàng" | "Đã xuất" | "Bản nháp" | "Đang khởi tạo";
   downloads: number;
 };
 
@@ -138,15 +150,60 @@ const STATUS_CONFIG: Record<
     label: "Bản nháp",
     className: "bg-muted text-muted-foreground border-border",
   },
+  "Đang khởi tạo": {
+    label: "Đang khởi tạo",
+    className: "bg-amber-500/10 text-amber-700 border-amber-500/20",
+  },
 };
 
 export function ReportsPage() {
   const copy = REPORTS_COPY;
+  const { activeBusinessId } = useBusinessStore();
 
-  const [reports, setReports] = useState<ReportItem[]>(INITIAL_REPORTS);
+  const { data: reportsData, refetch: refetchReports } = useReports(activeBusinessId);
+  const { data: periodsData } = useReportingPeriods(activeBusinessId);
+
+  const createReportMutation = useCreateReport();
+  const generateReportMutation = useGenerateReport();
+  const downloadReportMutation = useDownloadReport();
+  const deleteReportMutation = useDeleteReport();
+
   const [selectedStatusFilter, setSelectedStatusFilter] = useState<string>("Tất cả");
   const [searchTerm, setSearchTerm] = useState("");
   const [generatingId, setGeneratingId] = useState<string | null>(null);
+
+  // Map dữ liệu từ API hoặc fallback INITIAL_REPORTS
+  const reports: ReportItem[] = useMemo(() => {
+    if (reportsData && reportsData.items.length > 0) {
+      return reportsData.items.map((r) => {
+        let status: ReportItem["status"] = "Bản nháp";
+        if (r.status === "COMPLETED") status = "Sẵn sàng";
+        else if (r.status === "GENERATING") status = "Đang khởi tạo";
+
+        const framework =
+          r.type === "GHG_PROTOCOL"
+            ? "GHG Protocol"
+            : r.type === "CSRD_ESRS_E1"
+            ? "CSRD / ESRS E1"
+            : r.type === "ISO_14064"
+            ? "ISO 14064"
+            : "Tổng hợp ESG";
+
+        return {
+          id: r.id,
+          name: r.title,
+          framework,
+          period: "Năm 2026",
+          date: r.createdAt ? new Date(r.createdAt).toLocaleDateString("vi-VN") : "Gần đây",
+          size: "2.5 MB",
+          format: "PDF",
+          status,
+          downloads: 1,
+        };
+      });
+    }
+    return INITIAL_REPORTS;
+  }, [reportsData]);
 
   const filteredReports = reports.filter((report) => {
     const matchesSearch =
@@ -157,36 +214,72 @@ export function ReportsPage() {
     return matchesSearch && matchesStatus;
   });
 
-  const handleGenerateReport = (templateTitle: string, templateId: string) => {
+  const handleGenerateReport = async (templateTitle: string, templateId: string) => {
+    if (!activeBusinessId) {
+      toast.error("Vui lòng chọn doanh nghiệp trước khi khởi tạo báo cáo");
+      return;
+    }
+
     setGeneratingId(templateId);
     toast.loading(`Đang khởi tạo ${templateTitle}...`, { id: "gen-toast" });
 
-    setTimeout(() => {
-      const newReport: ReportItem = {
-        id: Date.now().toString(),
-        name: `${templateTitle} - Tháng 6 2026`,
-        framework: templateTitle,
-        period: "Tháng 6 2026",
-        date: "Hôm nay",
-        size: "3.5 MB",
-        format: "PDF",
-        status: "Sẵn sàng",
-        downloads: 1,
-      };
-      setReports((prev) => [newReport, ...prev]);
+    try {
+      let periodId = periodsData?.items?.[0]?.id;
+      if (!periodId) {
+        const newPeriod = await createReportingPeriod({
+          businessId: activeBusinessId,
+          name: "Năm 2026",
+          startDate: new Date("2026-01-01T00:00:00.000Z").toISOString(),
+          endDate: new Date("2026-12-31T23:59:59.000Z").toISOString(),
+        });
+        periodId = newPeriod.id;
+      }
+
+      let type: ReportType = "GHG_PROTOCOL";
+      if (templateId === "csrd") type = "CSRD_ESRS_E1";
+      else if (templateId === "iso") type = "ISO_14064";
+      else if (templateId === "tcfd") type = "INTERNAL_SUMMARY";
+
+      const created = await createReportMutation.mutateAsync({
+        businessId: activeBusinessId,
+        reportingPeriodId: periodId,
+        title: `${templateTitle} - ${new Date().toLocaleDateString("vi-VN")}`,
+        type,
+      });
+
+      await generateReportMutation.mutateAsync(created.id);
+      await refetchReports();
+      toast.success(`Khởi tạo ${templateTitle} thành công! Worker đang biên soạn dữ liệu.`, { id: "gen-toast" });
+    } catch (err: any) {
+      toast.error(err?.message || "Khởi tạo báo cáo thất bại", { id: "gen-toast" });
+    } finally {
       setGeneratingId(null);
-      toast.success(`Khởi tạo ${templateTitle} thành công!`, { id: "gen-toast" });
-    }, 1200);
+    }
   };
 
-  const handleDownload = (name: string) => {
-    toast.success(`Đang tải file ${name} về máy...`);
+  const handleDownload = async (reportId: string, name: string) => {
+    toast.loading(`Đang tải file ${name}...`, { id: "dl-toast" });
+    try {
+      if (reportId === "sample" || reportId === "latest" || !reportsData?.items?.some((r) => r.id === reportId)) {
+        toast.info("Đã xuất bản mẫu báo cáo tiêu chuẩn.", { id: "dl-toast" });
+        return;
+      }
+      await downloadReportMutation.mutateAsync({ id: reportId, fileName: `${name}.json` });
+      toast.success(`Tải file ${name} thành công!`, { id: "dl-toast" });
+    } catch (err: any) {
+      toast.error(err?.message || "Tải xuống thất bại", { id: "dl-toast" });
+    }
   };
 
-  const handleDeleteReport = (id: string, name: string) => {
-    setReports((prev) => prev.filter((r) => r.id !== id));
-    toast.success(`Đã xóa báo cáo ${name}`);
+  const handleDeleteReport = async (id: string, name: string) => {
+    try {
+      await deleteReportMutation.mutateAsync(id);
+      toast.success(`Đã xóa báo cáo ${name}`);
+    } catch (err: any) {
+      toast.error(err?.message || "Xóa báo cáo thất bại");
+    }
   };
+
 
   return (
     <div className="space-y-8">
@@ -323,7 +416,14 @@ export function ReportsPage() {
                     size="sm"
                     className="w-full font-bold group-hover:bg-primary group-hover:text-primary-foreground transition-all gap-1.5"
                   >
-                    {isGen ? "Đang khởi tạo..." : "Khởi tạo ngay"}
+                    {isGen ? (
+                      <>
+                        <Loader2 className="size-3.5 animate-spin" />
+                        Đang khởi tạo...
+                      </>
+                    ) : (
+                      "Khởi tạo ngay"
+                    )}
                   </Button>
                 </div>
               </AppPanel>
@@ -451,7 +551,7 @@ export function ReportsPage() {
                             <Button
                               variant="outline"
                               size="sm"
-                              onClick={() => handleDownload(report.name)}
+                              onClick={() => handleDownload(report.id, report.name)}
                               className="gap-1 text-xs font-semibold"
                             >
                               <Download className="size-3.5" />
@@ -489,7 +589,7 @@ export function ReportsPage() {
         <AppPanel title="Cấu trúc Báo cáo Chuẩn" className="space-y-4">
           <div className="rounded-xl border border-border bg-card p-4 space-y-3 shadow-inner">
             <div className="flex items-center gap-3 border-b border-border pb-3">
-              <div className="flex size-10 items-center justify-center rounded-lg bg-secondary-foreground text-accent font-bold text-sm">
+              <div className="flex size-10 items-center justify-center rounded-lg bg-primary/15 text-primary border border-primary/25 font-bold text-sm">
                 PDF
               </div>
               <div>
@@ -521,7 +621,7 @@ export function ReportsPage() {
           </div>
 
           <Button
-            onClick={() => handleDownload("Bao_cao_Chuan_GHG_Protocol.pdf")}
+            onClick={() => handleDownload("sample", "Bao_cao_Chuan_GHG_Protocol")}
             className="w-full bg-primary text-primary-foreground font-bold shadow-md gap-2"
           >
             <Download className="size-4" />

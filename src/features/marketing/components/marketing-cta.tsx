@@ -6,9 +6,9 @@ import { Reveal } from "@/shared/components/reveal";
 
 export function MarketingCta() {
   return (
-    <section id="contact" className="relative scroll-mt-16 overflow-hidden bg-secondary-foreground py-24">
+    <section id="contact" className="relative scroll-mt-16 overflow-hidden bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 dark:from-[#09120e] dark:via-[#0c1813] dark:to-[#070d0a] border-t border-border/80 py-24">
       <div
-        className="pointer-events-none absolute -right-36 top-0 size-[600px] rounded-full bg-accent/5 blur-3xl"
+        className="pointer-events-none absolute -right-36 top-0 size-[600px] rounded-full bg-emerald-500/10 blur-3xl"
         aria-hidden
       />
       <Reveal className="relative mx-auto max-w-4xl px-6 text-center lg:px-8">

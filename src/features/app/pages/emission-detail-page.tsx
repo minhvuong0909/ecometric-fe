@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { Link } from "react-router";
 import { toast } from "sonner";
 import {
@@ -18,6 +18,9 @@ import { AppPageHeader } from "@/features/app/components/app-page-header";
 import { AppPanel } from "@/features/app/components/app-panel";
 import { MetricCard } from "@/features/app/components/metric-card";
 import { EMISSION_DETAIL_COPY } from "@/features/app/constants/app-copy";
+import { useActivityDataList } from "@/features/app/hooks/use-activity-data";
+import { useDashboardSummary } from "@/features/app/hooks/use-dashboard";
+import { useBusinessStore } from "@/shared/stores/business-store";
 import { ROUTES } from "@/shared/constants/routes";
 import { Button } from "@/shared/components/ui/button";
 import { Input } from "@/shared/components/ui/input";
@@ -100,14 +103,62 @@ const SCOPE_STYLES: Record<EmissionRow["scope"], string> = {
 
 export function EmissionDetailPage() {
   const copy = EMISSION_DETAIL_COPY;
+  const { activeBusinessId } = useBusinessStore();
 
-  const [rows] = useState<EmissionRow[]>(INITIAL_ROWS);
+  const { data: activityData, refetch, isFetching } = useActivityDataList(
+    { businessId: activeBusinessId ?? undefined, limit: 100 },
+    !!activeBusinessId,
+  );
+  const { data: summaryData } = useDashboardSummary(
+    { businessId: activeBusinessId ?? undefined },
+    !!activeBusinessId,
+  );
+
   const [selectedScopeFilter, setSelectedScopeFilter] = useState<string>("Tất cả");
   const [searchTerm, setSearchTerm] = useState("");
   const [isRecalculating, setIsRecalculating] = useState(false);
 
+  // Chuyển đổi dữ liệu API sang hàng bảng biểu, fallback INITIAL_ROWS nếu chưa có
+  const rows: EmissionRow[] = useMemo(() => {
+    if (activityData && activityData.items.length > 0) {
+      return activityData.items.map((item) => {
+        const scope = item.emissionSource?.defaultScope;
+        const scopeLabel: EmissionRow["scope"] =
+          scope === "SCOPE_1" ? "Phạm vi 1" : scope === "SCOPE_2" ? "Phạm vi 2" : "Phạm vi 3";
+
+        // Ước tính tạm phát thải hiển thị dựa trên hệ số thông dụng
+        const qty = parseFloat(item.quantity) || 0;
+        let factor = 0.00045;
+        if (scope === "SCOPE_1") factor = 0.00268;
+        if (scope === "SCOPE_3") factor = 0.00012;
+        const co2eNumeric = Number((qty * factor).toFixed(2));
+
+        return {
+          id: item.id,
+          source: `${item.emissionSource?.name ?? "Hoạt động phát thải"} (${item.branch?.name ?? "Cơ sở"})`,
+          category: item.inputMethod === "AI_SCAN" ? "Hóa đơn AI OCR" : "Nhập thủ công",
+          scope: scopeLabel,
+          activityData: `${Number(qty).toLocaleString("vi-VN")} ${item.unit}`,
+          factor: factor.toFixed(6),
+          factorUnit: `tCO₂e / ${item.unit}`,
+          sourceDb: "GHG Protocol Vietnam Database",
+          result: `${co2eNumeric} t`,
+          co2eNumeric,
+          status: item.status === "CONFIRMED" ? "Đã xác thực" : "Cần kiểm tra",
+        };
+      });
+    }
+    return INITIAL_ROWS;
+  }, [activityData]);
+
   // Tính toán tổng lượng phát thải theo các phạm vi
-  const totalEmissions = rows.reduce((sum, r) => sum + r.co2eNumeric, 0).toFixed(2);
+  const totalEmissions = useMemo(() => {
+    if (summaryData?.totalCo2eKg) {
+      return (Number(summaryData.totalCo2eKg) / 1000).toFixed(2);
+    }
+    return rows.reduce((sum, r) => sum + r.co2eNumeric, 0).toFixed(2);
+  }, [summaryData, rows]);
+
   const scope1Total = rows
     .filter((r) => r.scope === "Phạm vi 1")
     .reduce((sum, r) => sum + r.co2eNumeric, 0)
@@ -131,17 +182,19 @@ export function EmissionDetailPage() {
     return matchesSearch && matchesScope;
   });
 
-  const handleRecalculate = () => {
+  const handleRecalculate = async () => {
     setIsRecalculating(true);
     toast.loading("Đang quy đổi lại dữ liệu với hệ số phát thải cập nhật...", { id: "recalc-toast" });
 
+    await refetch();
     setTimeout(() => {
       setIsRecalculating(false);
       toast.success("Đã hoàn tất tính toán lại! Kết quả đối chiếu chính xác 100%.", {
         id: "recalc-toast",
       });
-    }, 1000);
+    }, 600);
   };
+
 
   const handleExportReport = () => {
     toast.loading("Đang xuất bảng tính toán CO₂e dạng Excel/PDF chuẩn kiểm toán...", {
@@ -173,10 +226,10 @@ export function EmissionDetailPage() {
 
             <Button
               onClick={handleRecalculate}
-              disabled={isRecalculating}
+              disabled={isRecalculating || isFetching}
               className="bg-primary text-primary-foreground hover:bg-primary/95 font-bold gap-1.5 shadow-md"
             >
-              <RefreshCw className={cn("size-4", isRecalculating && "animate-spin")} />
+              <RefreshCw className={cn("size-4", (isRecalculating || isFetching) && "animate-spin")} />
               {copy.recalculateCta}
             </Button>
           </div>

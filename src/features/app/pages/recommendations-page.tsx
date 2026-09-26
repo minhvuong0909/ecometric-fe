@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { Link } from "react-router";
 import { toast } from "sonner";
 import {
@@ -17,6 +17,12 @@ import { AppPageHeader } from "@/features/app/components/app-page-header";
 import { AppPanel } from "@/features/app/components/app-panel";
 import { MetricCard } from "@/features/app/components/metric-card";
 import { RECOMMENDATIONS_COPY } from "@/features/app/constants/app-copy";
+import {
+  useGenerateRecommendations,
+  useRecommendations,
+  useUpdateRecommendationStatus,
+} from "@/features/app/hooks/use-recommendations";
+import { useBusinessStore } from "@/shared/stores/business-store";
 import { ROUTES } from "@/shared/constants/routes";
 import { Button } from "@/shared/components/ui/button";
 import { Input } from "@/shared/components/ui/input";
@@ -94,10 +100,51 @@ const PRIORITY_STYLES: Record<RecommendationCard["priority"], string> = {
 
 export function RecommendationsPage() {
   const copy = RECOMMENDATIONS_COPY;
+  const { activeBusinessId } = useBusinessStore();
 
-  const [cards, setCards] = useState<RecommendationCard[]>(INITIAL_RECOMMENDATIONS);
+  const { data: recData, refetch, isFetching } = useRecommendations(activeBusinessId);
+  const generateMutation = useGenerateRecommendations();
+  const updateStatusMutation = useUpdateRecommendationStatus();
+
   const [selectedFilter, setSelectedFilter] = useState("Tất cả");
   const [searchTerm, setSearchTerm] = useState("");
+
+  // Map API recommendations sang card giao diện, fallback INITIAL_RECOMMENDATIONS
+  const cards: RecommendationCard[] = useMemo(() => {
+    if (recData && recData.items.length > 0) {
+      return recData.items.map((r) => {
+        let priority: RecommendationCard["priority"] = "Ưu tiên trung bình";
+        if (r.priority === "CRITICAL" || r.priority === "HIGH") priority = "Ưu tiên cao";
+        else if (r.priority === "LOW") priority = "Ưu tiên thấp";
+
+        let status: RecommendationCard["status"] = "Chờ thực hiện";
+        if (r.status === "IN_PROGRESS") status = "Đang triển khai";
+        else if (r.status === "COMPLETED") status = "Hoàn thành";
+
+        const reduction = r.impactEstimateKgCo2e
+          ? `${(Number(r.impactEstimateKgCo2e) / 1000).toFixed(1)} tCO₂e/năm`
+          : "1.5 tCO₂e/năm";
+
+        return {
+          id: r.id,
+          title: r.title,
+          priority,
+          scopeCategory: r.sourceCategory ?? "Năng lượng & Phát thải",
+          focusArea: r.branch?.name ?? "Toàn doanh nghiệp",
+          reductionPotential: reduction,
+          costSaving: "30,000,000 ₫/năm",
+          payback: "10 tháng",
+          actions: [
+            r.description,
+            "Lên kế hoạch và phân bổ ngân sách triển khai.",
+            "Báo cáo kết quả giảm phát thải sau 6 tháng.",
+          ],
+          status,
+        };
+      });
+    }
+    return INITIAL_RECOMMENDATIONS;
+  }, [recData]);
 
   const filteredCards = cards.filter((card) => {
     const matchesSearch =
@@ -110,11 +157,30 @@ export function RecommendationsPage() {
     return matchesSearch && matchesFilter;
   });
 
-  const handleAddToRoadmap = (title: string, id: string) => {
-    setCards((prev) =>
-      prev.map((c) => (c.id === id ? { ...c, status: "Đang triển khai" } : c)),
-    );
-    toast.success(`Đã thêm "${title}" vào Lộ trình giảm phát thải 2026!`);
+  const handleGenerate = async () => {
+    if (!activeBusinessId) {
+      toast.error("Vui lòng chọn doanh nghiệp");
+      return;
+    }
+    toast.loading("Đang phân tích điểm nóng phát thải và đề xuất giải pháp...", { id: "rec-toast" });
+    try {
+      await generateMutation.mutateAsync(activeBusinessId);
+      await refetch();
+      toast.success("Sinh khuyến nghị thành công!", { id: "rec-toast" });
+    } catch (err: any) {
+      toast.error(err?.message || "Không thể sinh khuyến nghị", { id: "rec-toast" });
+    }
+  };
+
+  const handleAddToRoadmap = async (title: string, id: string) => {
+    toast.loading(`Đang cập nhật trạng thái...`, { id: "status-toast" });
+    try {
+      await updateStatusMutation.mutateAsync({ id, status: "IN_PROGRESS" });
+      await refetch();
+      toast.success(`Đã thêm "${title}" vào Lộ trình giảm phát thải 2026!`, { id: "status-toast" });
+    } catch (err: any) {
+      toast.error(err?.message || "Cập nhật thất bại", { id: "status-toast" });
+    }
   };
 
   return (
@@ -123,7 +189,18 @@ export function RecommendationsPage() {
         breadcrumbs={copy.breadcrumbs}
         title={copy.title}
         description={copy.description}
+        actions={
+          <Button
+            onClick={handleGenerate}
+            disabled={generateMutation.isPending || isFetching}
+            className="bg-primary text-primary-foreground font-bold hover:bg-primary/95 shadow-md gap-2"
+          >
+            <Sparkles className={cn("size-4", (generateMutation.isPending || isFetching) && "animate-spin")} />
+            Phân tích & Đề xuất mới
+          </Button>
+        }
       />
+
 
       {/* Thẻ Thống kê Khuyến nghị */}
       <div className="grid gap-6 sm:grid-cols-2 xl:grid-cols-4">

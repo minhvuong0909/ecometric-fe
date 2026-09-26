@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import {
   Edit2,
@@ -18,10 +18,14 @@ import {
   Factory,
   Pencil,
   Trash2,
+  Loader2,
 } from "lucide-react";
 import { AppPageHeader } from "@/features/app/components/app-page-header";
 import { AppPanel } from "@/features/app/components/app-panel";
 import { COMPANY_COPY } from "@/features/app/constants/app-copy";
+import { useBranches } from "@/features/app/hooks/use-app-meta";
+import { updateBusiness } from "@/features/businesses/api/businesses.api";
+import { useBusinessStore } from "@/shared/stores/business-store";
 import { Button } from "@/shared/components/ui/button";
 import { Input } from "@/shared/components/ui/input";
 import { Label } from "@/shared/components/ui/label";
@@ -69,12 +73,16 @@ const INITIAL_FACILITIES: FacilityItem[] = [
 
 export function CompanyPage() {
   const copy = COMPANY_COPY;
+  const { activeBusiness, setActiveBusiness } = useBusinessStore();
+  const { data: branchesData } = useBranches(activeBusiness?.id);
+
   const [isEditing, setIsEditing] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
   const [facilities, setFacilities] = useState<FacilityItem[]>(INITIAL_FACILITIES);
 
   // Form states cho thông tin chung
-  const [companyName, setCompanyName] = useState("Northstar Foods Co., Ltd");
-  const [taxCode, setTaxCode] = useState("0123456789");
+  const [companyName, setCompanyName] = useState(activeBusiness?.name ?? "Northstar Foods Co., Ltd");
+  const [taxCode, setTaxCode] = useState(activeBusiness?.taxCode ?? "0123456789");
   const [email, setEmail] = useState("contact@northstarfoods.com");
   const [phone, setPhone] = useState("+84 28 1234 5678");
   const [address, setAddress] = useState("Tầng 12, Tòa nhà Bitexco, Quận 1, TP. HCM");
@@ -88,6 +96,29 @@ export function CompanyPage() {
 
   // State tạm thời khi hủy sửa
   const [backupState, setBackupState] = useState<Record<string, string>>({});
+
+  useEffect(() => {
+    if (activeBusiness) {
+      setCompanyName(activeBusiness.name);
+      if (activeBusiness.taxCode) setTaxCode(activeBusiness.taxCode);
+    }
+  }, [activeBusiness]);
+
+  useEffect(() => {
+    if (branchesData && branchesData.items.length > 0) {
+      setFacilities(
+        branchesData.items.map((b, idx) => ({
+          id: b.id,
+          name: b.name,
+          type: b.isHeadquarters ? "Trụ sở chính" : "Chi nhánh / Cơ sở",
+          location: b.address ?? "Việt Nam",
+          status: "Hoạt động",
+          impact: idx === 0 ? "Cao" : "Trung bình",
+          emissionShare: `${Math.round(100 / branchesData.items.length)}%`,
+        })),
+      );
+    }
+  }, [branchesData]);
 
   const handleStartEdit = () => {
     setBackupState({
@@ -122,10 +153,28 @@ export function CompanyPage() {
     toast.info("Đã hủy các thay đổi.");
   };
 
-  const handleSave = () => {
-    setIsEditing(false);
-    toast.success("Cập nhật hồ sơ doanh nghiệp thành công!");
+  const handleSave = async () => {
+    if (activeBusiness?.id) {
+      setIsSaving(true);
+      try {
+        const updated = await updateBusiness(activeBusiness.id, {
+          name: companyName,
+          taxCode: taxCode,
+        });
+        setActiveBusiness(updated);
+        toast.success("Cập nhật hồ sơ doanh nghiệp thành công!");
+      } catch (err: any) {
+        toast.error(err?.message || "Cập nhật hồ sơ thất bại");
+      } finally {
+        setIsSaving(false);
+        setIsEditing(false);
+      }
+    } else {
+      setIsEditing(false);
+      toast.success("Cập nhật hồ sơ doanh nghiệp thành công!");
+    }
   };
+
 
   const handleAddFacility = () => {
     const newFacility: FacilityItem = {
@@ -167,9 +216,10 @@ export function CompanyPage() {
               <Button
                 size="sm"
                 onClick={handleSave}
+                disabled={isSaving}
                 className="bg-primary text-primary-foreground hover:bg-primary/95 gap-1.5 font-bold shadow-md"
               >
-                <Save className="size-4" />
+                {isSaving ? <Loader2 className="size-4 animate-spin" /> : <Save className="size-4" />}
                 Lưu thay đổi
               </Button>
             </div>
@@ -186,7 +236,7 @@ export function CompanyPage() {
       />
 
       {/* Header Banner: Thẻ danh tính Doanh nghiệp cao cấp */}
-      <div className="relative overflow-hidden rounded-2xl border border-border bg-gradient-to-r from-secondary-foreground via-slate-900 to-slate-950 p-6 text-white shadow-md">
+      <div className="relative overflow-hidden rounded-2xl border border-border bg-gradient-to-r from-slate-950 via-slate-900 to-slate-950 dark:from-[#09120e] dark:via-[#0e1c16] dark:to-[#070d0a] p-6 text-white shadow-md">
         <div className="flex flex-col gap-6 md:flex-row md:items-center md:justify-between">
           <div className="flex items-center gap-5">
             <div className="flex size-20 shrink-0 items-center justify-center rounded-2xl bg-accent text-accent-foreground font-black text-2xl shadow-lg border-2 border-white/20">

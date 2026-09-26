@@ -51,21 +51,21 @@
 /* Dark Theme (Obsidian CleanTech palette) */
 .dark {
   --background: #090e11;
-  --foreground: #f1f5f9;
+  --foreground: #e2e8f0;
 
   --card: #111a17;
-  --card-foreground: #f1f5f9;
+  --card-foreground: #e2e8f0;
 
   --popover: #111a17;
-  --popover-foreground: #f1f5f9;
+  --popover-foreground: #e2e8f0;
 
   --primary: #10b981;
   --primary-foreground: #022c22;
 
   --secondary: #162822;
-  --secondary-foreground: #f1f5f9;
+  --secondary-foreground: #a7f3d0;
 
-  --muted: #17231f;
+  --muted: #131f1a;
   --muted-foreground: #94a3b8;
 
   --accent: #34d399;
@@ -79,6 +79,6 @@
   --ring: #10b981;
 
   --ecometric-page: #090e11;
-  --ecometric-text: #f1f5f9;
+  --ecometric-text: #e2e8f0;
   --ecometric-border: #1e332b;
 }

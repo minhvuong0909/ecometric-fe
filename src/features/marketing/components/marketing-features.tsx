@@ -4,6 +4,7 @@ import {
   FEATURES_SECTION,
 } from "@/features/marketing/constants/marketing-content";
 import { Reveal } from "@/shared/components/reveal";
+import { SpotlightCard } from "@/shared/components/motion/spotlight-card";
 import { cn } from "@/shared/lib/utils";
 
 const ICONS = {
@@ -17,7 +18,7 @@ export function MarketingFeatures() {
     <section id="features" className="scroll-mt-16 bg-card py-24">
       <div className="mx-auto max-w-7xl px-6 lg:px-8">
         <Reveal className="mb-16 max-w-2xl">
-          <h2 className="text-3xl font-semibold tracking-tight text-secondary-foreground sm:text-4xl">
+          <h2 className="text-3xl font-bold tracking-tight text-secondary-foreground sm:text-4xl">
             {FEATURES_SECTION.title}
           </h2>
           <p className="mt-4 text-base leading-relaxed text-muted-foreground">
@@ -39,11 +40,13 @@ export function MarketingFeatures() {
                   isFeatured && "md:col-span-2 lg:col-span-2 lg:row-span-2",
                 )}
               >
-                <article
+                <SpotlightCard
+                  enableTilt={isFeatured}
+                  maxTilt={3}
                   className={cn(
-                    "group flex w-full flex-col rounded-xl border p-6 eco-card-hover",
+                    "group flex w-full flex-col p-6 eco-card-hover",
                     isFeatured
-                      ? "border-primary/20 bg-[radial-gradient(ellipse_at_top_left,rgba(0,166,62,0.10),transparent_60%)] lg:p-10"
+                      ? "border-primary/30 bg-[radial-gradient(ellipse_at_top_left,rgba(0,166,62,0.12),transparent_60%)] lg:p-10 shadow-lg shadow-emerald-500/5"
                       : index === 1
                         ? "border-border bg-secondary/60"
                         : "border-border bg-background",
@@ -88,7 +91,7 @@ export function MarketingFeatures() {
                       <ArrowRight className="size-3.5" aria-hidden />
                     </a>
                   ) : null}
-                </article>
+                </SpotlightCard>
               </Reveal>
             );
           })}

@@ -1,3 +1,4 @@
+import { useMemo } from "react";
 import { Link } from "react-router";
 import {
   AlertCircle,
@@ -5,23 +6,62 @@ import {
   TrendingUp,
   Sparkles,
   Award,
+  RefreshCw,
 } from "lucide-react";
+import { toast } from "sonner";
 import { AppPageHeader } from "@/features/app/components/app-page-header";
 import { AppPanel } from "@/features/app/components/app-panel";
 import { ECO_SCORE_COPY } from "@/features/app/constants/app-copy";
+import { useCalculateEcoScore, useEcoScores } from "@/features/app/hooks/use-eco-score";
+import { useReportingPeriods } from "@/features/app/hooks/use-app-meta";
+import { useBusinessStore } from "@/shared/stores/business-store";
 import { ROUTES } from "@/shared/constants/routes";
 import { Button } from "@/shared/components/ui/button";
 import { cn } from "@/shared/lib/utils";
 
 export function EcoScorePage() {
   const copy = ECO_SCORE_COPY;
-  const scoreNum = parseInt(copy.score, 10) || 72;
+  const { activeBusinessId } = useBusinessStore();
+
+  const { data: scoresData, refetch, isFetching } = useEcoScores(activeBusinessId);
+  const { data: periodsData } = useReportingPeriods(activeBusinessId);
+  const calculateMutation = useCalculateEcoScore();
+
+  const latestScore = scoresData?.items?.[0];
+
+  const scoreNum = latestScore ? Math.round(Number(latestScore.score)) : parseInt(copy.score, 10) || 72;
+  const levelText = latestScore ? `Hạng ${latestScore.level}` : copy.efficiency;
 
   // Tính toán thông số cho vòng tròn SVG đo chỉ số
   const radius = 55;
   const strokeWidth = 10;
   const circumference = 2 * Math.PI * radius; // ~345.57
   const strokeDashoffset = circumference - (scoreNum / 100) * circumference;
+
+  const handleRecalculate = async () => {
+    if (!activeBusinessId) {
+      toast.error("Vui lòng chọn doanh nghiệp");
+      return;
+    }
+
+    const periodId = periodsData?.items?.[0]?.id;
+    if (!periodId) {
+      toast.info("Cần có kỳ báo cáo để tính Eco-Score");
+      return;
+    }
+
+    toast.loading("Đang tính toán lại Eco-Score...", { id: "score-toast" });
+    try {
+      await calculateMutation.mutateAsync({
+        businessId: activeBusinessId,
+        reportingPeriodId: periodId,
+      });
+      await refetch();
+      toast.success("Tính điểm Eco-score thành công!", { id: "score-toast" });
+    } catch (err: any) {
+      toast.error(err?.message || "Không thể tính toán Eco-Score", { id: "score-toast" });
+    }
+  };
 
   // Cấu hình icons cho mục Thay đổi
   const changesWithIcons = [
@@ -31,6 +71,19 @@ export function EcoScorePage() {
     { text: copy.changes[3], icon: Sparkles, color: "text-indigo-500 border-indigo-100 bg-indigo-50/50" },
   ];
 
+  // 4 chỉ số phụ từ API nếu có
+  const subMetrics = useMemo(() => {
+    if (latestScore) {
+      return [
+        { title: "Cường độ phát thải", progress: Math.round(Number(latestScore.emissionScore)), target: "Mục tiêu: 80%" },
+        { title: "Xu hướng suy giảm", progress: Math.round(Number(latestScore.trendScore)), target: "Mục tiêu: 75%" },
+        { title: "Độ đầy đủ của dữ liệu", progress: Math.round(Number(latestScore.dataCompletenessScore)), target: "Mục tiêu: 90%" },
+        { title: "Kế hoạch hành động", progress: Math.round(Number(latestScore.actionScore)), target: "Mục tiêu: 70%" },
+      ];
+    }
+    return copy.subMetrics;
+  }, [latestScore, copy.subMetrics]);
+
   // Dải màu cho 4 chỉ số phụ
   const gradientStyles = [
     "bg-gradient-to-r from-emerald-400 to-teal-500 shadow-sm shadow-emerald-400/20",
@@ -39,6 +92,7 @@ export function EcoScorePage() {
     "bg-gradient-to-r from-purple-400 to-pink-500 shadow-sm shadow-purple-400/20",
   ];
 
+
   return (
     <div className="space-y-8">
       <AppPageHeader
@@ -46,9 +100,20 @@ export function EcoScorePage() {
         title={copy.title}
         description={copy.description}
         actions={
-          <Button asChild className="bg-accent font-bold text-accent-foreground hover:bg-accent/90 shadow-md">
-            <Link to={ROUTES.app.recommendations}>{copy.improveCta}</Link>
-          </Button>
+          <div className="flex items-center gap-2">
+            <Button
+              onClick={handleRecalculate}
+              disabled={calculateMutation.isPending || isFetching}
+              variant="outline"
+              className="font-bold gap-2"
+            >
+              <RefreshCw className={cn("size-4", (calculateMutation.isPending || isFetching) && "animate-spin")} />
+              Tính toán lại
+            </Button>
+            <Button asChild className="bg-accent font-bold text-accent-foreground hover:bg-accent/90 shadow-md">
+              <Link to={ROUTES.app.recommendations}>{copy.improveCta}</Link>
+            </Button>
+          </div>
         }
       />
 
@@ -86,7 +151,7 @@ export function EcoScorePage() {
             </svg>
             <div className="absolute flex flex-col items-center justify-center">
               <p className="text-5xl font-bold tracking-tight text-secondary-foreground">
-                {copy.score}
+                {scoreNum}
               </p>
               <p className="text-xs font-bold text-muted-foreground/80 uppercase mt-0.5">
                 {copy.scoreMax}
@@ -95,12 +160,12 @@ export function EcoScorePage() {
           </div>
           <p className="mt-5 text-sm font-bold text-primary flex items-center gap-1">
             <Sparkles className="size-3.5 animate-pulse" />
-            {copy.efficiency}
+            {levelText}
           </p>
         </AppPanel>
 
         <div className="grid gap-4 sm:grid-cols-2 lg:col-span-2">
-          {copy.subMetrics.map((metric, idx) => (
+          {subMetrics.map((metric, idx) => (
             <AppPanel key={metric.title} title={metric.title} bodyClassName="space-y-4" interactive>
               <div className="flex items-center justify-between text-sm">
                 <span className="font-semibold text-secondary-foreground">{metric.progress}%</span>

@@ -52,7 +52,11 @@
   }
 
   .link-muted {
-    @apply text-muted-foreground transition-colors duration-150 hover:text-foreground active:text-foreground/80 rounded-sm outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background;
+    @apply text-muted-foreground transition-all duration-200 hover:bg-primary/10 hover:text-primary active:bg-primary/15 rounded-lg px-2.5 py-1 outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background;
+  }
+
+  .nav-pill {
+    @apply text-muted-foreground transition-all duration-200 hover:bg-primary/10 hover:text-primary active:bg-primary/15 rounded-lg px-3 py-1.5 outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background;
   }
 
   /* Thẻ có thể tương tác: nhấc nhẹ + đổ bóng + viền xanh khi hover */
@@ -73,6 +77,16 @@
   /* Ô nhỏ / tile: đổi nền + viền khi hover */
   .eco-tile-hover {
     @apply transition-all duration-200 ease-out hover:-translate-y-0.5 hover:border-primary/40 hover:bg-primary/[0.03];
+  }
+
+  /* Hiệu ứng đàn hồi xúc giác (Tactile push) khi click hoặc chạm ngón tay */
+  .eco-tactile {
+    @apply transition-transform duration-100 ease-out active:scale-[0.97] motion-reduce:active:scale-100 cursor-pointer;
+  }
+
+  /* Viền sáng dạ quang (Glow aura) cho thẻ nổi bật */
+  .eco-glow-emerald {
+    box-shadow: 0 0 30px -8px rgba(16, 185, 129, 0.28);
   }
 }
 

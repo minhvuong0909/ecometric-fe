@@ -13,7 +13,7 @@ export function MarketingFooter() {
   return (
     <footer
       id="contact"
-      className="border-t border-white/5 bg-secondary-foreground pt-20 pb-10"
+      className="border-t border-border/80 bg-slate-950 dark:bg-[#070d0a] pt-20 pb-10 text-slate-300"
     >
       <div className="mx-auto max-w-7xl px-6 lg:px-8">
         <div className="grid w-full gap-12 sm:grid-cols-2 lg:grid-cols-4 lg:gap-16">
@@ -36,10 +36,10 @@ export function MarketingFooter() {
                       <a
                         href={link.href}
                         className={cn(
-                          "text-sm transition-colors duration-150 focus-ring rounded-sm",
+                          "inline-flex text-sm transition-all duration-200 focus-ring px-2.5 py-1 -mx-2.5 rounded-lg",
                           link.id === FOOTER_COPY.highlightLinkId
-                            ? "text-accent/80 hover:text-accent"
-                            : "text-white hover:text-secondary",
+                            ? "text-emerald-400 font-semibold hover:bg-emerald-500/15 hover:text-emerald-300"
+                            : "text-slate-300 hover:bg-white/10 hover:text-emerald-400 dark:text-slate-400 dark:hover:bg-primary/15 dark:hover:text-emerald-400",
                         )}
                       >
                         {link.label}
@@ -48,10 +48,10 @@ export function MarketingFooter() {
                       <Link
                         to={link.href}
                         className={cn(
-                          "text-sm transition-colors duration-150 focus-ring rounded-sm",
+                          "inline-flex text-sm transition-all duration-200 focus-ring px-2.5 py-1 -mx-2.5 rounded-lg",
                           link.id === FOOTER_COPY.highlightLinkId
-                            ? "text-accent/80 hover:text-accent"
-                            : "text-white hover:text-secondary",
+                            ? "text-emerald-400 font-semibold hover:bg-emerald-500/15 hover:text-emerald-300"
+                            : "text-slate-300 hover:bg-white/10 hover:text-emerald-400 dark:text-slate-400 dark:hover:bg-primary/15 dark:hover:text-emerald-400",
                         )}
                       >
                         {link.label}
@@ -68,13 +68,13 @@ export function MarketingFooter() {
           <p className="text-xs font-medium text-footer-muted">
             {FOOTER_COPY.copyright.replace("{year}", String(currentYear))}
           </p>
-          <div className="flex gap-6">
+          <div className="flex gap-4">
             <a
               href="https://linkedin.com"
               target="_blank"
               rel="noopener noreferrer"
               aria-label="LinkedIn"
-              className="text-white/70 transition-colors duration-150 hover:text-white focus-ring rounded-sm"
+              className="text-white/70 transition-all duration-200 hover:bg-white/10 hover:text-emerald-400 p-2 rounded-lg focus-ring"
             >
               <Linkedin className="size-5" aria-hidden />
             </a>
@@ -83,7 +83,7 @@ export function MarketingFooter() {
               target="_blank"
               rel="noopener noreferrer"
               aria-label="Twitter"
-              className="text-white/70 transition-colors duration-150 hover:text-white focus-ring rounded-sm"
+              className="text-white/70 transition-all duration-200 hover:bg-white/10 hover:text-emerald-400 p-2 rounded-lg focus-ring"
             >
               <Twitter className="size-5" aria-hidden />
             </a>

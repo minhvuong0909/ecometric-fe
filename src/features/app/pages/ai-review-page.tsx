@@ -1,5 +1,5 @@
-import { useState } from "react";
-import { Link, useNavigate } from "react-router";
+import { useEffect, useState } from "react";
+import { Link, useNavigate, useSearchParams } from "react-router";
 import { toast } from "sonner";
 import {
   AlertTriangle,
@@ -17,10 +17,20 @@ import {
   Building2,
   Calendar,
   Zap,
+  Loader2,
 } from "lucide-react";
 import { AppPageHeader } from "@/features/app/components/app-page-header";
 import { AppPanel } from "@/features/app/components/app-panel";
 import { AI_REVIEW_COPY } from "@/features/app/constants/app-copy";
+import {
+  useConfirmInvoiceScan,
+  useInvoiceScanDetail,
+  useRejectInvoiceScan,
+  useRetryInvoiceScan,
+} from "@/features/app/hooks/use-ai-scan";
+import { useBranches, useEmissionSources, useReportingPeriods } from "@/features/app/hooks/use-app-meta";
+import { createReportingPeriod } from "@/features/app/api/meta.api";
+import { useBusinessStore } from "@/shared/stores/business-store";
 import { ROUTES } from "@/shared/constants/routes";
 import { Button } from "@/shared/components/ui/button";
 import { Input } from "@/shared/components/ui/input";
@@ -30,6 +40,18 @@ import { cn } from "@/shared/lib/utils";
 export function AiReviewPage() {
   const copy = AI_REVIEW_COPY;
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const docId = searchParams.get("id");
+  const { activeBusinessId } = useBusinessStore();
+
+  const { data: scanDoc, isLoading: isLoadingDoc } = useInvoiceScanDetail(docId, !!docId);
+  const { data: branchesData } = useBranches(activeBusinessId);
+  const { data: periodsData } = useReportingPeriods(activeBusinessId);
+  const { data: sourcesData } = useEmissionSources();
+
+  const confirmMutation = useConfirmInvoiceScan();
+  const rejectMutation = useRejectInvoiceScan();
+  const retryMutation = useRetryInvoiceScan();
 
   // State chỉnh sửa số liệu
   const [docType, setDocType] = useState("Hóa đơn tiện ích (Điện)");
@@ -41,24 +63,108 @@ export function AiReviewPage() {
   const [isVerified, setIsVerified] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
 
+  // Pre-fill từ dữ liệu bóc tách của API nếu có
+  useEffect(() => {
+    if (scanDoc) {
+      if (scanDoc.fileName) setDocType(`Hóa đơn: ${scanDoc.fileName}`);
+      const extracted = scanDoc.extractedData as any;
+      if (extracted) {
+        if (extracted.quantity) setElectricityKwh(String(extracted.quantity));
+        if (extracted.totalAmount) {
+          setTotalCost(`${Number(extracted.totalAmount).toLocaleString("vi-VN")} ₫`);
+        }
+        if (extracted.periodStart && extracted.periodEnd) {
+          const d = new Date(extracted.periodStart);
+          setPeriod(`Tháng ${d.getMonth() + 1}/${d.getFullYear()}`);
+        }
+      }
+      if (scanDoc.status === "CONFIRMED") setIsVerified(true);
+    }
+  }, [scanDoc]);
+
   const handleVerify = () => {
     setIsVerified(true);
-    toast.success("Đã xác nhận dữ liệu trích xuất thành công!");
+    toast.success("Đã xác nhận dữ liệu trích xuất hợp lệ!");
   };
 
-  const handleReExtract = () => {
-    toast.loading("Đang gửi yêu cầu bóc tách lại tới mô hình AI...", { id: "re-extract" });
-    setTimeout(() => {
-      toast.success("Đã hoàn tất trích xuất lại!", { id: "re-extract" });
-    }, 1000);
+  const handleReject = async () => {
+    if (!docId) {
+      toast.info("Đã từ chối chứng từ.");
+      return;
+    }
+    try {
+      await rejectMutation.mutateAsync({ id: docId, reason: "Người dùng từ chối trích xuất" });
+      toast.success("Đã từ chối tài liệu trích xuất.");
+      navigate(ROUTES.app.uploadDoc);
+    } catch (err: any) {
+      toast.error(err?.message || "Không thể từ chối tài liệu");
+    }
   };
 
-  const handleProceedToCalculation = () => {
-    toast.success("Đã ghi nhận dữ liệu vào sổ cái carbon! Đang tải bảng tính toán...");
-    setTimeout(() => {
-      navigate(ROUTES.app.emissionDetail);
-    }, 600);
+  const handleReExtract = async () => {
+    if (!docId) {
+      toast.info("Chưa có ID tài liệu để gửi lại");
+      return;
+    }
+    try {
+      await retryMutation.mutateAsync(docId);
+      toast.success("Đã gửi yêu cầu bóc tách lại tới mô hình AI!");
+    } catch (err: any) {
+      toast.error(err?.message || "Không thể gửi yêu cầu trích xuất lại");
+    }
   };
+
+  const handleProceedToCalculation = async () => {
+    if (!docId) {
+      toast.success("Đã ghi nhận dữ liệu vào sổ cái carbon! Đang tải bảng tính toán...");
+      setTimeout(() => navigate(ROUTES.app.emissionDetail), 500);
+      return;
+    }
+
+    toast.loading("Đang xác nhận hóa đơn và ghi nhận phát thải...", { id: "confirm-toast" });
+
+    try {
+      // 1. Tìm hoặc tạo kỳ báo cáo
+      let periodId = periodsData?.items?.[0]?.id;
+      if (!periodId && activeBusinessId) {
+        const newPeriod = await createReportingPeriod({
+          businessId: activeBusinessId,
+          name: "Năm 2026",
+          startDate: new Date("2026-01-01T00:00:00.000Z").toISOString(),
+          endDate: new Date("2026-12-31T23:59:59.000Z").toISOString(),
+        });
+        periodId = newPeriod.id;
+      }
+
+      const branchId = branchesData?.items?.[0]?.id;
+      const sources = sourcesData?.items ?? [];
+      const elecSource = sources.find((s) => s.code.toLowerCase().includes("elec") || s.name.toLowerCase().includes("điện"));
+
+      const now = new Date();
+      const periodStart = new Date(Date.UTC(now.getFullYear(), now.getMonth(), 1)).toISOString();
+      const periodEnd = new Date(Date.UTC(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59)).toISOString();
+
+      await confirmMutation.mutateAsync({
+        id: docId,
+        body: {
+          reportingPeriodId: periodId!,
+          branchId,
+          emissionSourceId: elecSource?.id,
+          quantity: parseFloat(electricityKwh) || 1500,
+          unit: "kWh",
+          periodStart,
+          periodEnd,
+          reviewNotes: "Đã duyệt và xác nhận từ màn hình AI Review",
+        },
+      });
+
+      toast.success("Xác nhận hóa đơn và ghi nhận phát thải thành công!", { id: "confirm-toast" });
+      setTimeout(() => navigate(ROUTES.app.emissionDetail), 500);
+    } catch (err: any) {
+      toast.error(err?.message || "Không thể xác nhận hóa đơn", { id: "confirm-toast" });
+    }
+  };
+
 
   return (
     <div className="space-y-8">
@@ -114,7 +220,10 @@ export function AiReviewPage() {
             <div className="flex items-center gap-2">
               <FileText className="size-5 text-primary" />
               <div>
-                <h3 className="text-sm font-bold text-secondary-foreground">Tài liệu scan: hoa-don-dien-t6.pdf</h3>
+                <h3 className="text-sm font-bold text-secondary-foreground flex items-center gap-2">
+                  Tài liệu scan: {scanDoc?.fileName ?? "hoa-don-dien-t6.pdf"}
+                  {isLoadingDoc && <Loader2 className="size-3.5 animate-spin text-primary" />}
+                </h3>
                 <p className="text-[11px] text-muted-foreground">Tải lên 14/06/2026 • 2.4 MB</p>
               </div>
             </div>
@@ -365,10 +474,11 @@ export function AiReviewPage() {
             <Button
               type="button"
               variant="ghost"
-              onClick={() => toast.error("Đã từ chối tài liệu này.")}
+              onClick={handleReject}
+              disabled={rejectMutation.isPending}
               className="text-destructive hover:bg-destructive/10"
             >
-              <XCircle className="size-4" />
+              {rejectMutation.isPending ? <Loader2 className="size-4 animate-spin" /> : <XCircle className="size-4" />}
               Từ chối
             </Button>
           </div>
@@ -386,10 +496,20 @@ export function AiReviewPage() {
 
         <Button
           onClick={handleProceedToCalculation}
+          disabled={confirmMutation.isPending}
           className="bg-accent text-accent-foreground font-bold hover:bg-accent/90 shadow-md px-6 py-5 text-base flex items-center gap-2"
         >
-          {copy.calculateCta}
-          <ArrowRight className="size-5" />
+          {confirmMutation.isPending ? (
+            <>
+              <Loader2 className="size-5 animate-spin" />
+              Đang xác nhận & chuyển đổi...
+            </>
+          ) : (
+            <>
+              {copy.calculateCta}
+              <ArrowRight className="size-5" />
+            </>
+          )}
         </Button>
       </div>
     </div>

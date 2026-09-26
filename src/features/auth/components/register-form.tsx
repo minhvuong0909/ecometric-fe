@@ -158,7 +158,7 @@ export function RegisterForm({ className }: RegisterFormProps) {
 
         <Button
           type="submit"
-          className="h-12 w-full bg-accent text-sm font-semibold tracking-wide text-accent-foreground shadow-md transition-all hover:bg-accent/90 hover:shadow-lg active:bg-accent/80"
+          className="eco-tactile h-12 w-full bg-gradient-to-r from-emerald-600 to-teal-600 text-sm font-bold tracking-wide text-white shadow-lg shadow-emerald-600/25 transition-all hover:from-emerald-700 hover:to-teal-700"
           disabled={isSubmitting}
           aria-busy={isSubmitting}
           data-loading={isSubmitting}
@@ -179,7 +179,7 @@ export function RegisterForm({ className }: RegisterFormProps) {
 
       <div className="relative flex items-center justify-center pt-1">
         <div className="absolute inset-0 flex items-center">
-          <span className="w-full border-t border-border" />
+          <span className="w-full border-t border-border/80" />
         </div>
         <span className="relative bg-card px-3 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
           Hoặc tạo tài khoản bằng Google

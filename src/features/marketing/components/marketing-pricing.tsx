@@ -42,10 +42,10 @@ export function MarketingPricing() {
               aria-pressed={interval === "monthly"}
               onClick={() => setInterval("monthly")}
               className={cn(
-                "rounded-md px-6 py-2 text-sm font-bold tracking-wide transition-colors duration-150 focus-ring",
+                "rounded-md px-6 py-2 text-sm font-bold tracking-wide transition-all duration-150 focus-ring eco-tactile",
                 interval === "monthly"
-                  ? "bg-secondary-foreground text-primary-foreground"
-                  : "text-muted-foreground hover:text-foreground",
+                  ? "bg-primary text-primary-foreground shadow-xs"
+                  : "text-muted-foreground hover:bg-primary/10 hover:text-primary",
               )}
             >
               {PRICING_SECTION.monthly}
@@ -55,10 +55,10 @@ export function MarketingPricing() {
               aria-pressed={interval === "annually"}
               onClick={() => setInterval("annually")}
               className={cn(
-                "rounded-md px-6 py-2 text-sm font-bold tracking-wide transition-colors duration-150 focus-ring",
+                "rounded-md px-6 py-2 text-sm font-bold tracking-wide transition-all duration-150 focus-ring eco-tactile",
                 interval === "annually"
-                  ? "bg-secondary-foreground text-primary-foreground"
-                  : "text-muted-foreground hover:text-foreground",
+                  ? "bg-primary text-primary-foreground shadow-xs"
+                  : "text-muted-foreground hover:bg-primary/10 hover:text-primary",
               )}
             >
               {PRICING_SECTION.annually}
@@ -78,61 +78,41 @@ export function MarketingPricing() {
               <Reveal key={tier.id} delay={index * 90} className="flex">
               <article
                 className={cn(
-                  "relative flex w-full flex-col rounded-xl border p-8",
+                  "relative flex w-full flex-col rounded-2xl border p-8 transition-all duration-300",
                   isHighlighted
-                    ? "border-accent bg-secondary-foreground text-primary-foreground shadow-xl lg:-mt-3 lg:pb-10 lg:pt-10"
-                    : "border-border bg-card",
+                    ? "border-2 border-primary bg-gradient-to-b from-primary/10 via-card to-card shadow-2xl shadow-primary/10 lg:-mt-3 lg:pb-10 lg:pt-10"
+                    : "border-border/80 bg-card hover:border-primary/40",
                 )}
               >
                 {isHighlighted && "badge" in tier ? (
-                  <span className="absolute -top-3 left-1/2 -translate-x-1/2 rounded-full bg-accent px-4 py-1 text-xs font-bold tracking-wider text-accent-foreground uppercase">
+                  <span className="absolute -top-3 left-1/2 -translate-x-1/2 rounded-full bg-primary px-4 py-1 text-xs font-bold tracking-wider text-primary-foreground uppercase shadow-md">
                     {tier.badge}
                   </span>
                 ) : null}
 
                 <h3
                   className={cn(
-                    "text-xl font-semibold",
-                    isHighlighted ? "text-white" : "text-secondary-foreground",
+                    "text-xl font-bold",
+                    isHighlighted ? "text-primary" : "text-foreground",
                   )}
                 >
                   {tier.name}
                 </h3>
-                <p
-                  className={cn(
-                    "mt-2 text-sm",
-                    isHighlighted ? "text-secondary" : "text-muted-foreground",
-                  )}
-                >
+                <p className="mt-2 text-sm text-muted-foreground">
                   {tier.description}
                 </p>
 
                 <div className="mt-6 flex items-baseline gap-1">
                   {"priceLabel" in tier && tier.priceLabel ? (
-                    <span
-                      className={cn(
-                        "text-4xl font-bold tracking-tight",
-                        isHighlighted ? "text-white" : "text-secondary-foreground",
-                      )}
-                    >
+                    <span className="text-4xl font-extrabold tracking-tight text-foreground">
                       {tier.priceLabel}
                     </span>
                   ) : (
                     <>
-                      <span
-                        className={cn(
-                          "text-4xl font-bold tracking-tight",
-                          isHighlighted ? "text-white" : "text-secondary-foreground",
-                        )}
-                      >
+                      <span className="text-4xl font-extrabold tracking-tight text-foreground">
                         ${price}
                       </span>
-                      <span
-                        className={cn(
-                          "text-base",
-                          isHighlighted ? "text-secondary" : "text-muted-foreground",
-                        )}
-                      >
+                      <span className="text-base text-muted-foreground">
                         {PRICING_SECTION.perMonth}
                       </span>
                     </>
@@ -142,20 +122,8 @@ export function MarketingPricing() {
                 <ul className="mt-8 flex flex-1 flex-col gap-4">
                   {tier.features.map((feature) => (
                     <li key={feature} className="flex items-start gap-3 text-sm">
-                      <Check
-                        className={cn(
-                          "mt-0.5 size-4 shrink-0",
-                          isHighlighted ? "text-accent" : "text-primary",
-                        )}
-                        aria-hidden
-                      />
-                      <span
-                        className={
-                          isHighlighted ? "text-white" : "text-foreground"
-                        }
-                      >
-                        {feature}
-                      </span>
+                      <Check className="mt-0.5 size-4 shrink-0 text-primary" aria-hidden />
+                      <span className="text-foreground">{feature}</span>
                     </li>
                   ))}
                 </ul>
@@ -164,10 +132,10 @@ export function MarketingPricing() {
                   asChild
                   variant={isHighlighted ? "default" : "outline"}
                   className={cn(
-                    "mt-8 h-12 w-full text-sm font-bold tracking-wide",
+                    "eco-tactile mt-8 h-12 w-full text-sm font-bold tracking-wide",
                     isHighlighted
-                      ? "bg-accent text-accent-foreground hover:bg-accent/90 active:bg-accent/80"
-                      : "border-2 border-secondary-foreground text-secondary-foreground hover:bg-muted",
+                      ? "bg-gradient-to-r from-emerald-600 to-teal-600 text-white shadow-lg shadow-emerald-600/25 hover:from-emerald-700 hover:to-teal-700"
+                      : "border border-border/80 text-foreground hover:bg-muted",
                   )}
                 >
                   {tier.id === "enterprise" ? (

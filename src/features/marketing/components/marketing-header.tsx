@@ -21,17 +21,17 @@ export function MarketingHeader() {
           <Link to={ROUTES.home} className="focus-ring rounded-sm" aria-label="EcoMetric trang chủ">
             <Logo />
           </Link>
-          <nav aria-label="Chính" className="hidden items-center gap-12 md:flex">
+          <nav aria-label="Chính" className="hidden items-center gap-1 md:flex">
             {NAV_LINKS.map((link) =>
               link.href.startsWith("#") ? (
                 <a
                   key={link.id}
                   href={link.href}
                   className={cn(
-                    "text-sm font-semibold tracking-wide transition-colors duration-150 focus-ring rounded-sm",
+                    "text-sm font-semibold tracking-wide transition-all duration-200 focus-ring px-3 py-1.5 rounded-lg",
                     link.id === "home"
-                      ? "text-primary"
-                      : "text-muted-foreground hover:text-foreground active:text-foreground/80",
+                      ? "text-primary bg-primary/10"
+                      : "text-muted-foreground hover:bg-primary/10 hover:text-primary active:bg-primary/15",
                   )}
                 >
                   {link.label}
@@ -41,10 +41,10 @@ export function MarketingHeader() {
                   key={link.id}
                   to={link.href}
                   className={cn(
-                    "text-sm font-semibold tracking-wide transition-colors duration-150 focus-ring rounded-sm",
+                    "text-sm font-semibold tracking-wide transition-all duration-200 focus-ring px-3 py-1.5 rounded-lg",
                     link.id === "home"
-                      ? "text-primary"
-                      : "text-muted-foreground hover:text-foreground active:text-foreground/80",
+                      ? "text-primary bg-primary/10"
+                      : "text-muted-foreground hover:bg-primary/10 hover:text-primary active:bg-primary/15",
                   )}
                 >
                   {link.label}
@@ -54,11 +54,11 @@ export function MarketingHeader() {
           </nav>
         </div>
 
-        <div className="hidden items-center gap-4 md:flex">
+        <div className="hidden items-center gap-3 md:flex">
           <ThemeToggle />
           <Link
             to={ROUTES.login}
-            className="text-sm font-semibold tracking-wide text-muted-foreground transition-colors duration-150 hover:text-foreground focus-ring rounded-sm"
+            className="text-sm font-semibold tracking-wide text-muted-foreground transition-all duration-200 hover:bg-primary/10 hover:text-primary px-3 py-1.5 rounded-lg focus-ring"
           >
             {HEADER_COPY.login}
           </Link>
@@ -97,7 +97,7 @@ export function MarketingHeader() {
               <li key={link.id}>
                 <a
                   href={link.href}
-                  className="block rounded-md px-2 py-2.5 text-sm font-semibold tracking-wide text-muted-foreground transition-colors hover:bg-muted hover:text-foreground focus-ring"
+                  className="block rounded-lg px-3 py-2 text-sm font-semibold tracking-wide text-muted-foreground transition-all duration-200 hover:bg-primary/10 hover:text-primary focus-ring"
                   onClick={() => setMobileOpen(false)}
                 >
                   {link.label}
@@ -112,7 +112,7 @@ export function MarketingHeader() {
               </Button>
               <Button
                 asChild
-                className="w-full bg-accent font-bold tracking-wide text-accent-foreground hover:bg-accent/90"
+                className="w-full bg-gradient-to-r from-emerald-600 to-teal-600 font-bold tracking-wide text-white hover:from-emerald-700 hover:to-teal-700"
               >
                 <Link to={ROUTES.register} onClick={() => setMobileOpen(false)}>
                   {HEADER_COPY.startTrial}

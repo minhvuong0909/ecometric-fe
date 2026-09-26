@@ -74,10 +74,11 @@ async function parseResponse(response: Response): Promise<unknown> {
 function buildHeaders(
   auth: boolean,
   hasBody: boolean,
+  isFormData: boolean,
   extra?: Record<string, string>,
 ): Headers {
   const headers = new Headers();
-  if (hasBody) {
+  if (hasBody && !isFormData) {
     headers.set("Content-Type", "application/json");
   }
   if (auth) {
@@ -89,6 +90,12 @@ function buildHeaders(
   if (extra) {
     for (const [key, value] of Object.entries(extra)) {
       headers.set(key, value);
+    }
+  }
+  if (!headers.has("X-Business-Id") && typeof window !== "undefined") {
+    const activeBusinessId = localStorage.getItem("ecometric.activeBusinessId");
+    if (activeBusinessId) {
+      headers.set("X-Business-Id", activeBusinessId);
     }
   }
   return headers;
@@ -141,11 +148,12 @@ async function rawRequest<T>(
 ): Promise<T> {
   const { method = "GET", body, auth = true, headers, signal } = options;
   const hasBody = body !== undefined && body !== null;
+  const isFormData = typeof FormData !== "undefined" && body instanceof FormData;
 
   const response = await fetch(`${API_BASE_URL}${path}`, {
     method,
-    headers: buildHeaders(auth, hasBody, headers),
-    body: hasBody ? JSON.stringify(body) : undefined,
+    headers: buildHeaders(auth, hasBody, isFormData, headers),
+    body: hasBody ? (isFormData ? (body as FormData) : JSON.stringify(body)) : undefined,
     signal,
   });
 
@@ -195,6 +203,40 @@ export async function apiRequest<T>(
   }
 }
 
+/** Hỗ trợ tải file nhị phân (PDF, XLSX) kèm tên file từ Content-Disposition */
+export async function downloadFile(
+  path: string,
+  options: RequestOptions = {},
+): Promise<{ blob: Blob; fileName: string }> {
+  const { auth = true, headers, signal } = options;
+  const response = await fetch(`${API_BASE_URL}${path}`, {
+    method: "GET",
+    headers: buildHeaders(auth, false, false, headers),
+    signal,
+  });
+
+  if (!response.ok) {
+    const payload = await parseResponse(response);
+    const errorBody = payload as BackendError | null;
+    throw new ApiError(
+      errorBody?.error?.message ?? `Download failed with status ${response.status}`,
+      response.status,
+      errorBody?.error?.code,
+      errorBody?.error?.details,
+    );
+  }
+
+  const contentDisposition = response.headers.get("content-disposition");
+  let fileName = "download";
+  if (contentDisposition) {
+    const match = /filename=["']?([^"']+)["']?/.exec(contentDisposition);
+    if (match?.[1]) fileName = match[1];
+  }
+
+  const blob = await response.blob();
+  return { blob, fileName };
+}
+
 export const apiClient = {
   get: <T>(path: string, options?: Omit<RequestOptions, "method" | "body">) =>
     apiRequest<T>(path, { ...options, method: "GET" }),
@@ -204,4 +246,7 @@ export const apiClient = {
     apiRequest<T>(path, { ...options, method: "PATCH", body }),
   delete: <T>(path: string, options?: Omit<RequestOptions, "method" | "body">) =>
     apiRequest<T>(path, { ...options, method: "DELETE" }),
+  download: (path: string, options?: Omit<RequestOptions, "method" | "body">) =>
+    downloadFile(path, options),
 };
+

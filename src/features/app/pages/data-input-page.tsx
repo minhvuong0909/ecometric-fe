@@ -5,6 +5,10 @@ import { Droplets, Fuel, Trash2, Truck, Zap, Calculator, Loader2, Sparkles, Uplo
 import { AppPageHeader } from "@/features/app/components/app-page-header";
 import { AppPanel } from "@/features/app/components/app-panel";
 import { DATA_INPUT_COPY, APP_SHARED_COPY } from "@/features/app/constants/app-copy";
+import { useCreateActivityData } from "@/features/app/hooks/use-activity-data";
+import { useBranches, useEmissionSources, useReportingPeriods } from "@/features/app/hooks/use-app-meta";
+import { createReportingPeriod } from "@/features/app/api/meta.api";
+import { useBusinessStore } from "@/shared/stores/business-store";
 import { Button } from "@/shared/components/ui/button";
 import { Input } from "@/shared/components/ui/input";
 import { Label } from "@/shared/components/ui/label";
@@ -14,6 +18,12 @@ export function DataInputPage() {
   const copy = DATA_INPUT_COPY;
   const navigate = useNavigate();
   const [isCalculating, setIsCalculating] = useState(false);
+  const { activeBusiness, activeBusinessId } = useBusinessStore();
+
+  const { data: branchesData } = useBranches(activeBusinessId);
+  const { data: periodsData } = useReportingPeriods(activeBusinessId);
+  const { data: sourcesData } = useEmissionSources();
+  const createActivityMutation = useCreateActivityData();
 
   // States cho các trường nhập liệu của Điện
   const [electricity, setElectricity] = useState("1500");
@@ -66,16 +76,81 @@ export function DataInputPage() {
 
   const completenessPercent = Math.round((filledFields / totalFields) * 100);
 
-  const handleCalculate = () => {
-    setIsCalculating(true);
-    toast.loading("Đang tính toán lượng phát thải carbon...", { id: "calc-toast" });
+  const handleCalculate = async () => {
+    if (!activeBusinessId) {
+      toast.error("Vui lòng chọn hoặc tạo doanh nghiệp trước khi nhập dữ liệu");
+      navigate(ROUTES.app.businesses);
+      return;
+    }
 
-    setTimeout(() => {
-      toast.success("Tính toán lượng phát thải thành công! Đang tải bảng chi tiết...", { id: "calc-toast" });
+    setIsCalculating(true);
+    toast.loading("Đang lưu dữ liệu và tính toán phát thải...", { id: "calc-toast" });
+
+    try {
+      // 1. Tìm hoặc tạo kỳ báo cáo cho business
+      let periodId = periodsData?.items?.[0]?.id;
+      if (!periodId) {
+        const newPeriod = await createReportingPeriod({
+          businessId: activeBusinessId,
+          name: "Năm 2026",
+          startDate: new Date("2026-01-01T00:00:00.000Z").toISOString(),
+          endDate: new Date("2026-12-31T23:59:59.000Z").toISOString(),
+        });
+        periodId = newPeriod.id;
+      }
+
+      // 2. Lấy branch id đầu tiên nếu có
+      const branchId = branchesData?.items?.[0]?.id;
+
+      // 3. Tìm nguồn phát thải điện lưới / nhiên liệu
+      const sources = sourcesData?.items ?? [];
+      const elecSource = sources.find((s) => s.code.toLowerCase().includes("elec") || s.name.toLowerCase().includes("điện"));
+      const fuelSource = sources.find((s) => s.code.toLowerCase().includes("diesel") || s.name.toLowerCase().includes("nhiên liệu"));
+
+      // 4. Tạo các bản ghi hoạt động
+      const now = new Date();
+      const periodStart = new Date(Date.UTC(now.getFullYear(), now.getMonth(), 1)).toISOString();
+      const periodEnd = new Date(Date.UTC(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59)).toISOString();
+
+      if (parseFloat(electricity) > 0) {
+        await createActivityMutation.mutateAsync({
+          businessId: activeBusinessId,
+          reportingPeriodId: periodId,
+          branchId,
+          emissionSourceId: elecSource?.id,
+          quantity: parseFloat(electricity),
+          unit: "kWh",
+          periodStart,
+          periodEnd,
+          inputMethod: "MANUAL",
+          metadata: { note: `Nhập tay từ giao diện - Chi nhánh ${branchElec}` },
+        });
+      }
+
+      if (parseFloat(fuel) > 0) {
+        await createActivityMutation.mutateAsync({
+          businessId: activeBusinessId,
+          reportingPeriodId: periodId,
+          branchId,
+          emissionSourceId: fuelSource?.id,
+          quantity: parseFloat(fuel),
+          unit: "L",
+          periodStart,
+          periodEnd,
+          inputMethod: "MANUAL",
+          metadata: { note: `Nhiên liệu ${fuelType} - ${branchFuel}` },
+        });
+      }
+
+      toast.success("Tính toán và ghi nhận phát thải vào sổ cái thành công!", { id: "calc-toast" });
       setTimeout(() => {
         navigate(ROUTES.app.emissionDetail);
-      }, 800);
-    }, 1200);
+      }, 500);
+    } catch (err: any) {
+      toast.error(err?.message || "Lỗi khi lưu dữ liệu phát thải", { id: "calc-toast" });
+    } finally {
+      setIsCalculating(false);
+    }
   };
 
   return (
@@ -91,7 +166,7 @@ export function DataInputPage() {
           <p className="text-[10px] font-bold tracking-widest text-muted-foreground uppercase">
             {APP_SHARED_COPY.topBar.companyLabel}
           </p>
-          <p className="text-lg font-semibold text-secondary-foreground">{APP_SHARED_COPY.topBar.companyName}</p>
+          <p className="text-lg font-semibold text-secondary-foreground">{activeBusiness?.name ?? APP_SHARED_COPY.topBar.companyName}</p>
         </div>
 
         <div className="min-w-[320px] rounded-xl border border-border bg-card p-5 shadow-sm">
@@ -107,6 +182,7 @@ export function DataInputPage() {
           </div>
         </div>
       </div>
+
 
       {/* Banner AI Upload hóa đơn thay vì nhập thủ công */}
       <div className="relative overflow-hidden rounded-2xl border border-primary/20 bg-gradient-to-r from-emerald-950 via-teal-900 to-secondary-foreground p-6 text-white shadow-lg">

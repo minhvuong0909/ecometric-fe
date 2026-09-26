@@ -75,11 +75,11 @@ function SidebarNav({ collapsed = false, onNavigate }: SidebarBodyProps) {
                 aria-label={collapsed ? item.title : undefined}
                 className={({ isActive }) =>
                   cn(
-                    "group relative flex items-center gap-3 rounded-lg py-2.5 text-sm font-medium transition-colors duration-150 focus-ring",
+                    "group relative flex items-center gap-3 rounded-lg py-2.5 text-sm font-medium transition-all duration-150 focus-ring active:scale-[0.98]",
                     collapsed ? "justify-center px-0" : "px-3",
                     isActive
-                      ? "bg-secondary text-primary"
-                      : "text-muted-foreground hover:bg-muted hover:text-foreground",
+                      ? "bg-primary/10 text-primary font-bold shadow-xs border border-primary/20"
+                      : "text-muted-foreground hover:bg-primary/10 hover:text-primary",
                   )
                 }
               >
@@ -98,7 +98,7 @@ function SidebarNav({ collapsed = false, onNavigate }: SidebarBodyProps) {
                           "size-4 shrink-0 transition-colors duration-150",
                           isActive
                             ? "text-primary"
-                            : "text-muted-foreground group-hover:text-foreground",
+                            : "text-muted-foreground group-hover:text-primary",
                         )}
                         aria-hidden
                       />
