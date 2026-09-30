@@ -8,6 +8,7 @@ import type {
   RefreshResponse,
   RegisterRequest,
   SuccessResponse,
+  UpdateProfileRequest,
 } from "@/features/auth/types/auth.types";
 
 /** POST /api/v1/auth/register */
@@ -38,6 +39,11 @@ export function logoutAll(): Promise<SuccessResponse> {
 /** GET /api/v1/auth/profile */
 export function getProfile(): Promise<ProfileResponse> {
   return apiClient.get<ProfileResponse>("/auth/profile");
+}
+
+/** PATCH /api/v1/auth/profile */
+export function updateProfile(body: UpdateProfileRequest): Promise<ProfileResponse> {
+  return apiClient.patch<ProfileResponse>("/auth/profile", body);
 }
 
 /** PATCH /api/v1/auth/change-password */

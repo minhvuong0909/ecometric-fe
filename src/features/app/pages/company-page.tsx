@@ -7,193 +7,179 @@ import {
   Plus,
   Building2,
   FileText,
-  Mail,
-  Phone,
   MapPin,
-  Users,
   Globe,
   CheckCircle2,
   ShieldCheck,
   Award,
   Factory,
-  Pencil,
   Trash2,
   Loader2,
 } from "lucide-react";
+import { Link } from "react-router";
 import { AppPageHeader } from "@/features/app/components/app-page-header";
 import { AppPanel } from "@/features/app/components/app-panel";
 import { COMPANY_COPY } from "@/features/app/constants/app-copy";
-import { useBranches } from "@/features/app/hooks/use-app-meta";
+import { useBranches, useCreateBranch, useDeleteBranch } from "@/features/app/hooks/use-app-meta";
 import { updateBusiness } from "@/features/businesses/api/businesses.api";
 import { useBusinessStore } from "@/shared/stores/business-store";
+import { Badge } from "@/shared/components/ui/badge";
 import { Button } from "@/shared/components/ui/button";
+import { ConfirmDialog } from "@/shared/components/ui/confirm-dialog";
+import { EmptyState } from "@/shared/components/ui/empty-state";
 import { Input } from "@/shared/components/ui/input";
 import { Label } from "@/shared/components/ui/label";
-import { cn } from "@/shared/lib/utils";
+import { ROUTES } from "@/shared/constants/routes";
+import { getApiErrorMessage } from "@/shared/lib/get-error-message";
 
-type FacilityItem = {
-  id: string;
-  name: string;
-  type: string;
-  location: string;
-  status: "Hoạt động" | "Bảo trì";
-  impact: "Cao" | "Trung bình" | "Thấp";
-  emissionShare: string;
-};
+const NOT_SET = "Chưa cập nhật";
 
-const INITIAL_FACILITIES: FacilityItem[] = [
-  {
-    id: "1",
-    name: "Nhà máy Chế biến Trung tâm",
-    type: "Sản xuất & Chế biến",
-    location: "Quận 1, TP. Hồ Chí Minh",
-    status: "Hoạt động",
-    impact: "Cao",
-    emissionShare: "62%",
-  },
-  {
-    id: "2",
-    name: "Trung tâm Phân phối Logistics",
-    type: "Kho vận & Phân phối",
-    location: "KCN Sóng Thần, Bình Dương",
-    status: "Hoạt động",
-    impact: "Trung bình",
-    emissionShare: "28%",
-  },
-  {
-    id: "3",
-    name: "Văn phòng Điều hành miền Bắc",
-    type: "Văn phòng",
-    location: "Quận Cầu Giấy, Hà Nội",
-    status: "Hoạt động",
-    impact: "Thấp",
-    emissionShare: "10%",
-  },
-];
+function formatDate(value?: string | null): string {
+  if (!value) return NOT_SET;
+  return new Date(value).toLocaleDateString("vi-VN");
+}
 
 export function CompanyPage() {
   const copy = COMPANY_COPY;
+  const activeBusiness = useBusinessStore((state) => state.activeBusiness);
+
+  if (!activeBusiness) {
+    return (
+      <div className="space-y-8">
+        <AppPageHeader breadcrumbs={copy.breadcrumbs} title="Hồ sơ doanh nghiệp & Cơ sở" />
+        <AppPanel>
+          <EmptyState
+            icon={Building2}
+            title={copy.noBusiness.title}
+            description={copy.noBusiness.description}
+            action={
+              <Button asChild className="bg-primary text-primary-foreground font-bold">
+                <Link to={ROUTES.app.onboarding}>{copy.noBusiness.cta}</Link>
+              </Button>
+            }
+          />
+        </AppPanel>
+      </div>
+    );
+  }
+
+  return <CompanyProfile />;
+}
+
+/** Tách riêng để TypeScript hẹp được `activeBusiness` thành non-null trong toàn bộ phần dưới. */
+function CompanyProfile() {
+  const copy = COMPANY_COPY;
   const { activeBusiness, setActiveBusiness } = useBusinessStore();
-  const { data: branchesData } = useBranches(activeBusiness?.id);
+  const business = activeBusiness!;
+
+  const { data: branchesData, isLoading: isLoadingBranches } = useBranches(business.id);
+  const createBranchMutation = useCreateBranch(business.id);
+  const deleteBranchMutation = useDeleteBranch(business.id);
+  const branches = branchesData?.items ?? [];
 
   const [isEditing, setIsEditing] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
-  const [facilities, setFacilities] = useState<FacilityItem[]>(INITIAL_FACILITIES);
 
-  // Form states cho thông tin chung
-  const [companyName, setCompanyName] = useState(activeBusiness?.name ?? "Northstar Foods Co., Ltd");
-  const [taxCode, setTaxCode] = useState(activeBusiness?.taxCode ?? "0123456789");
-  const [email, setEmail] = useState("contact@northstarfoods.com");
-  const [phone, setPhone] = useState("+84 28 1234 5678");
-  const [address, setAddress] = useState("Tầng 12, Tòa nhà Bitexco, Quận 1, TP. HCM");
-  const [website, setWebsite] = useState("https://northstarfoods.com");
+  const [companyName, setCompanyName] = useState(business.name);
+  const [taxCode, setTaxCode] = useState(business.taxCode ?? "");
+  const [industry, setIndustry] = useState(business.industry ?? "");
+  const [website, setWebsite] = useState(business.website ?? "");
+  const [country, setCountry] = useState(business.country);
+  const [timezone, setTimezone] = useState(business.timezone);
 
-  // Form states cho thông tin vận hành
-  const [industry, setIndustry] = useState("Vận tải & Chế biến Thực phẩm");
-  const [employees, setEmployees] = useState("145 nhân viên");
-  const [frameworks, setFrameworks] = useState("GHG Protocol, CSRD, ISO 14064");
-  const [reportingPeriod, setReportingPeriod] = useState("Hàng tháng (Tháng 1 - Tháng 12)");
-
-  // State tạm thời khi hủy sửa
   const [backupState, setBackupState] = useState<Record<string, string>>({});
 
-  useEffect(() => {
-    if (activeBusiness) {
-      setCompanyName(activeBusiness.name);
-      if (activeBusiness.taxCode) setTaxCode(activeBusiness.taxCode);
-    }
-  }, [activeBusiness]);
+  const [isAddingBranch, setIsAddingBranch] = useState(false);
+  const [newBranchName, setNewBranchName] = useState("");
+  const [newBranchAddress, setNewBranchAddress] = useState("");
+  const [deleteTarget, setDeleteTarget] = useState<{ id: string; name: string } | null>(null);
 
+  // Đồng bộ lại form khi người dùng đổi doanh nghiệp đang làm việc (top bar).
   useEffect(() => {
-    if (branchesData && branchesData.items.length > 0) {
-      setFacilities(
-        branchesData.items.map((b, idx) => ({
-          id: b.id,
-          name: b.name,
-          type: b.isHeadquarters ? "Trụ sở chính" : "Chi nhánh / Cơ sở",
-          location: b.address ?? "Việt Nam",
-          status: "Hoạt động",
-          impact: idx === 0 ? "Cao" : "Trung bình",
-          emissionShare: `${Math.round(100 / branchesData.items.length)}%`,
-        })),
-      );
-    }
-  }, [branchesData]);
+    setCompanyName(business.name);
+    setTaxCode(business.taxCode ?? "");
+    setIndustry(business.industry ?? "");
+    setWebsite(business.website ?? "");
+    setCountry(business.country);
+    setTimezone(business.timezone);
+  }, [business]);
 
   const handleStartEdit = () => {
-    setBackupState({
-      companyName,
-      taxCode,
-      email,
-      phone,
-      address,
-      website,
-      industry,
-      employees,
-      frameworks,
-      reportingPeriod,
-    });
+    setBackupState({ companyName, taxCode, industry, website, country, timezone });
     setIsEditing(true);
   };
 
   const handleCancelEdit = () => {
-    if (backupState.companyName) {
+    if (backupState.companyName !== undefined) {
       setCompanyName(backupState.companyName);
       setTaxCode(backupState.taxCode);
-      setEmail(backupState.email);
-      setPhone(backupState.phone);
-      setAddress(backupState.address);
-      setWebsite(backupState.website);
       setIndustry(backupState.industry);
-      setEmployees(backupState.employees);
-      setFrameworks(backupState.frameworks);
-      setReportingPeriod(backupState.reportingPeriod);
+      setWebsite(backupState.website);
+      setCountry(backupState.country);
+      setTimezone(backupState.timezone);
     }
     setIsEditing(false);
     toast.info("Đã hủy các thay đổi.");
   };
 
   const handleSave = async () => {
-    if (activeBusiness?.id) {
-      setIsSaving(true);
-      try {
-        const updated = await updateBusiness(activeBusiness.id, {
-          name: companyName,
-          taxCode: taxCode,
-        });
-        setActiveBusiness(updated);
-        toast.success("Cập nhật hồ sơ doanh nghiệp thành công!");
-      } catch (err: any) {
-        toast.error(err?.message || "Cập nhật hồ sơ thất bại");
-      } finally {
-        setIsSaving(false);
-        setIsEditing(false);
-      }
-    } else {
-      setIsEditing(false);
+    setIsSaving(true);
+    try {
+      const updated = await updateBusiness(business.id, {
+        name: companyName,
+        taxCode: taxCode || undefined,
+        industry: industry || undefined,
+        website: website || undefined,
+        country,
+        timezone,
+      });
+      setActiveBusiness(updated);
       toast.success("Cập nhật hồ sơ doanh nghiệp thành công!");
+      setIsEditing(false);
+    } catch (err) {
+      toast.error(getApiErrorMessage(err));
+    } finally {
+      setIsSaving(false);
     }
   };
 
-
-  const handleAddFacility = () => {
-    const newFacility: FacilityItem = {
-      id: Date.now().toString(),
-      name: "Chi nhánh Mới",
-      type: "Văn phòng / Kho",
-      location: "Đà Nẵng",
-      status: "Hoạt động",
-      impact: "Thấp",
-      emissionShare: "5%",
-    };
-    setFacilities((prev) => [...prev, newFacility]);
-    toast.success("Đã thêm cơ sở vận hành mới!");
+  const handleAddBranch = async () => {
+    if (!newBranchName.trim()) {
+      toast.error("Vui lòng nhập tên cơ sở.");
+      return;
+    }
+    try {
+      await createBranchMutation.mutateAsync({
+        name: newBranchName.trim(),
+        address: newBranchAddress.trim() || undefined,
+      });
+      toast.success("Đã thêm cơ sở vận hành mới!");
+      setNewBranchName("");
+      setNewBranchAddress("");
+      setIsAddingBranch(false);
+    } catch (err) {
+      toast.error(getApiErrorMessage(err));
+    }
   };
 
-  const handleDeleteFacility = (id: string, name: string) => {
-    setFacilities((prev) => prev.filter((f) => f.id !== id));
-    toast.success(`Đã xóa cơ sở ${name}`);
+  const handleDeleteBranch = async () => {
+    if (!deleteTarget) return;
+    try {
+      await deleteBranchMutation.mutateAsync(deleteTarget.id);
+      toast.success(`Đã xóa cơ sở ${deleteTarget.name}`);
+    } catch (err) {
+      toast.error(getApiErrorMessage(err));
+    } finally {
+      setDeleteTarget(null);
+    }
   };
+
+  const tierLabel = business.subscriptionTier
+    ? copy.subscription.tierLabels[business.subscriptionTier]
+    : NOT_SET;
+  const statusLabel = business.subscriptionStatus
+    ? copy.subscription.statusLabels[business.subscriptionStatus]
+    : NOT_SET;
 
   return (
     <div className="space-y-8">
@@ -204,12 +190,7 @@ export function CompanyPage() {
         actions={
           isEditing ? (
             <div className="flex items-center gap-2">
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={handleCancelEdit}
-                className="gap-1.5"
-              >
+              <Button variant="outline" size="sm" onClick={handleCancelEdit} className="gap-1.5">
                 <X className="size-4" />
                 Hủy bỏ
               </Button>
@@ -235,82 +216,66 @@ export function CompanyPage() {
         }
       />
 
-      {/* Header Banner: Thẻ danh tính Doanh nghiệp cao cấp */}
-      <div className="relative overflow-hidden rounded-2xl border border-border bg-gradient-to-r from-slate-950 via-slate-900 to-slate-950 dark:from-[#09120e] dark:via-[#0e1c16] dark:to-[#070d0a] p-6 text-white shadow-md">
+      {/* Header Banner: Thẻ danh tính Doanh nghiệp */}
+      <div className="rounded-xl border border-border bg-card p-6">
         <div className="flex flex-col gap-6 md:flex-row md:items-center md:justify-between">
           <div className="flex items-center gap-5">
-            <div className="flex size-20 shrink-0 items-center justify-center rounded-2xl bg-accent text-accent-foreground font-black text-2xl shadow-lg border-2 border-white/20">
-              NF
+            <div className="flex size-16 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary font-bold text-xl">
+              {companyName.slice(0, 2).toUpperCase()}
             </div>
             <div className="space-y-1">
               <div className="flex items-center gap-2 flex-wrap">
-                <h1 className="text-xl font-bold text-white">{companyName}</h1>
-                <span className="inline-flex items-center gap-1 rounded-full bg-emerald-500/20 px-3 py-0.5 text-xs font-bold text-emerald-400 border border-emerald-500/30">
+                <h1 className="text-xl font-bold text-foreground">{companyName}</h1>
+                <Badge variant="success" className="gap-1 py-0.5">
                   <ShieldCheck className="size-3.5" />
-                  Đã xác thực ESG
-                </span>
+                  Hồ sơ doanh nghiệp
+                </Badge>
               </div>
-              <p className="text-xs text-slate-300 flex items-center gap-3 flex-wrap">
+              <p className="text-xs text-muted-foreground flex items-center gap-3 flex-wrap">
                 <span className="flex items-center gap-1">
-                  <Building2 className="size-3.5 text-accent" />
-                  MST: {taxCode}
+                  <Building2 className="size-3.5 text-primary" />
+                  MST: {taxCode || NOT_SET}
                 </span>
-                <span>•</span>
-                <span className="flex items-center gap-1">
-                  <MapPin className="size-3.5 text-accent" />
-                  Quận 1, TP. HCM
-                </span>
-                <span>•</span>
-                <span className="flex items-center gap-1">
-                  <Globe className="size-3.5 text-accent" />
-                  {website}
-                </span>
+                {website ? (
+                  <>
+                    <span>•</span>
+                    <span className="flex items-center gap-1">
+                      <Globe className="size-3.5 text-primary" />
+                      {website}
+                    </span>
+                  </>
+                ) : null}
               </p>
             </div>
           </div>
 
-          <div className="flex items-center gap-3 border-t border-white/10 pt-4 md:border-t-0 md:pt-0">
-            <div className="rounded-xl bg-white/5 px-4 py-2.5 text-center border border-white/10 min-w-[100px]">
-              <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Chi nhánh</p>
-              <p className="text-lg font-bold text-accent">{facilities.length} cơ sở</p>
+          <div className="flex items-center gap-3 border-t border-border pt-4 md:border-t-0 md:pt-0">
+            <div className="rounded-lg bg-muted px-4 py-2.5 text-center min-w-[100px]">
+              <p className="text-[10px] font-medium uppercase tracking-wide text-muted-foreground">Chi nhánh</p>
+              <p className="text-lg font-bold text-foreground">{branches.length} cơ sở</p>
             </div>
-            <div className="rounded-xl bg-white/5 px-4 py-2.5 text-center border border-white/10 min-w-[100px]">
-              <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Xếp loại ESG</p>
-              <p className="text-lg font-bold text-emerald-400 flex items-center justify-center gap-1">
-                <Award className="size-4" />
-                Hạng A+
+            <div className="rounded-lg bg-muted px-4 py-2.5 text-center min-w-[100px]">
+              <p className="text-[10px] font-medium uppercase tracking-wide text-muted-foreground">Gói dịch vụ</p>
+              <p className="text-lg font-bold text-foreground flex items-center justify-center gap-1">
+                <Award className="size-4 text-primary" />
+                {tierLabel}
               </p>
             </div>
           </div>
         </div>
       </div>
 
-      {/* Grid 2 Cột: Thông tin Chung & Độ tin cậy Kiểm kê */}
+      {/* Grid 2 Cột: Thông tin Chung & Gói dịch vụ */}
       <div className="grid gap-6 lg:grid-cols-3">
-        {/* Cột Trái (2 phần): Thông tin pháp lý & Liên hệ */}
-        <AppPanel
-          title={copy.generalInfo.title}
-          className="lg:col-span-2 space-y-6"
-          badge={
-            <span className="inline-flex items-center gap-1 rounded-full bg-emerald-500/10 px-2.5 py-1 text-xs font-bold text-emerald-700 border border-emerald-500/20">
-              <CheckCircle2 className="size-3.5" />
-              Đồng bộ dữ liệu sổ cái
-            </span>
-          }
-        >
+        <AppPanel title={copy.generalInfo.title} className="lg:col-span-2 space-y-6">
           <div className="grid gap-4 sm:grid-cols-2">
-            {/* Tên công ty */}
             <div className="space-y-1.5">
-              <Label className="text-[10px] font-bold tracking-widest text-muted-foreground uppercase flex items-center gap-1">
+              <Label className="text-[11px] font-medium tracking-wide text-muted-foreground uppercase flex items-center gap-1">
                 <Building2 className="size-3.5 text-primary" />
                 Tên công ty đăng ký
               </Label>
               {isEditing ? (
-                <Input
-                  value={companyName}
-                  onChange={(e) => setCompanyName(e.target.value)}
-                  className="bg-background border-border"
-                />
+                <Input value={companyName} onChange={(e) => setCompanyName(e.target.value)} />
               ) : (
                 <div className="rounded-lg border border-border/40 bg-muted/20 px-3.5 py-2.5 font-semibold text-sm text-foreground">
                   {companyName}
@@ -318,291 +283,236 @@ export function CompanyPage() {
               )}
             </div>
 
-            {/* Mã số thuế */}
             <div className="space-y-1.5">
-              <Label className="text-[10px] font-bold tracking-widest text-muted-foreground uppercase flex items-center gap-1">
+              <Label className="text-[11px] font-medium tracking-wide text-muted-foreground uppercase flex items-center gap-1">
                 <FileText className="size-3.5 text-primary" />
                 Mã số thuế (TIN)
               </Label>
               {isEditing ? (
-                <Input
-                  value={taxCode}
-                  onChange={(e) => setTaxCode(e.target.value)}
-                  className="bg-background border-border"
-                />
+                <Input value={taxCode} onChange={(e) => setTaxCode(e.target.value)} />
               ) : (
                 <div className="rounded-lg border border-border/40 bg-muted/20 px-3.5 py-2.5 font-semibold text-sm text-foreground">
-                  {taxCode}
+                  {taxCode || NOT_SET}
                 </div>
               )}
             </div>
 
-            {/* Email */}
             <div className="space-y-1.5">
-              <Label className="text-[10px] font-bold tracking-widest text-muted-foreground uppercase flex items-center gap-1">
-                <Mail className="size-3.5 text-primary" />
-                Email liên hệ chính thức
+              <Label className="text-[11px] font-medium tracking-wide text-muted-foreground uppercase flex items-center gap-1">
+                <Globe className="size-3.5 text-primary" />
+                Website
               </Label>
               {isEditing ? (
-                <Input
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  className="bg-background border-border"
-                />
+                <Input value={website} onChange={(e) => setWebsite(e.target.value)} placeholder="https://…" />
               ) : (
                 <div className="rounded-lg border border-border/40 bg-muted/20 px-3.5 py-2.5 font-semibold text-sm text-foreground">
-                  {email}
+                  {website || NOT_SET}
                 </div>
               )}
             </div>
 
-            {/* Số điện thoại */}
             <div className="space-y-1.5">
-              <Label className="text-[10px] font-bold tracking-widest text-muted-foreground uppercase flex items-center gap-1">
-                <Phone className="size-3.5 text-primary" />
-                Số điện thoại
+              <Label className="text-[11px] font-medium tracking-wide text-muted-foreground uppercase flex items-center gap-1">
+                <Factory className="size-3.5 text-primary" />
+                Ngành kinh doanh chính
               </Label>
               {isEditing ? (
-                <Input
-                  value={phone}
-                  onChange={(e) => setPhone(e.target.value)}
-                  className="bg-background border-border"
-                />
+                <Input value={industry} onChange={(e) => setIndustry(e.target.value)} />
               ) : (
                 <div className="rounded-lg border border-border/40 bg-muted/20 px-3.5 py-2.5 font-semibold text-sm text-foreground">
-                  {phone}
+                  {industry || NOT_SET}
                 </div>
               )}
             </div>
 
-            {/* Địa chỉ trụ sở */}
-            <div className="space-y-1.5 sm:col-span-2">
-              <Label className="text-[10px] font-bold tracking-widest text-muted-foreground uppercase flex items-center gap-1">
+            <div className="space-y-1.5">
+              <Label className="text-[11px] font-medium tracking-wide text-muted-foreground uppercase flex items-center gap-1">
                 <MapPin className="size-3.5 text-primary" />
-                Địa chỉ trụ sở chính
+                Quốc gia (mã 2 ký tự)
               </Label>
               {isEditing ? (
-                <Input
-                  value={address}
-                  onChange={(e) => setAddress(e.target.value)}
-                  className="bg-background border-border"
-                />
+                <Input value={country} onChange={(e) => setCountry(e.target.value.toUpperCase())} maxLength={2} />
               ) : (
                 <div className="rounded-lg border border-border/40 bg-muted/20 px-3.5 py-2.5 font-semibold text-sm text-foreground">
-                  {address}
+                  {country}
+                </div>
+              )}
+            </div>
+
+            <div className="space-y-1.5">
+              <Label className="text-[11px] font-medium tracking-wide text-muted-foreground uppercase flex items-center gap-1">
+                Múi giờ
+              </Label>
+              {isEditing ? (
+                <Input value={timezone} onChange={(e) => setTimezone(e.target.value)} />
+              ) : (
+                <div className="rounded-lg border border-border/40 bg-muted/20 px-3.5 py-2.5 font-semibold text-sm text-foreground">
+                  {timezone}
                 </div>
               )}
             </div>
           </div>
         </AppPanel>
 
-        {/* Cột Phải: Thống kê Độ tin cậy & Tuân thủ ESG */}
-        <AppPanel title="Độ tin cậy & Tuân thủ ESG" className="space-y-4">
+        <AppPanel title={copy.subscription.title} className="space-y-4">
           <div className="rounded-xl bg-emerald-500/10 border border-emerald-500/20 p-4">
-            <p className="text-xs font-bold uppercase tracking-wider text-emerald-800">
-              Trạng thái kiểm kê
+            <p className="text-xs font-semibold uppercase tracking-wide text-emerald-800 dark:text-emerald-400">
+              Trạng thái
             </p>
-            <p className="mt-1 text-lg font-bold text-emerald-700">Đã xác minh đầy đủ</p>
-            <p className="mt-1 text-xs text-emerald-800/80 leading-relaxed">
-              Mọi ranh giới báo cáo tổ chức đã được thiết lập theo tiêu chuẩn GHG Protocol Corporate Standard.
-            </p>
+            <p className="mt-1 text-lg font-bold text-emerald-700 dark:text-emerald-400">{statusLabel}</p>
+            {business.subscriptionStatus === "TRIALING" && business.trialEndsAt ? (
+              <p className="mt-1 text-xs text-emerald-800/80 dark:text-emerald-400/70 leading-relaxed">
+                {copy.subscription.trialEndsAt(formatDate(business.trialEndsAt))}
+              </p>
+            ) : null}
           </div>
 
-          <div className="space-y-3 pt-2">
-            {copy.integrity.checks.map((check) => (
-              <div
-                key={check.title}
-                className="flex items-start gap-3 rounded-lg border border-border/60 bg-muted/10 p-3 hover:border-border transition-colors"
-              >
-                <CheckCircle2 className="size-4 shrink-0 text-emerald-600 mt-0.5" />
-                <div>
-                  <p className="text-xs font-bold text-secondary-foreground">{check.title}</p>
-                  <p className="mt-0.5 text-[11px] text-muted-foreground leading-relaxed">
-                    {check.note}
-                  </p>
-                </div>
-              </div>
-            ))}
+          <div className="flex items-start gap-3 rounded-lg border border-border/60 bg-muted/10 p-3">
+            <CheckCircle2 className="size-4 shrink-0 text-primary mt-0.5" />
+            <div>
+              <p className="text-xs font-bold text-secondary-foreground">Gói: {tierLabel}</p>
+              <p className="mt-0.5 text-[11px] text-muted-foreground leading-relaxed">
+                Trạng thái doanh nghiệp: {business.status}
+              </p>
+            </div>
           </div>
         </AppPanel>
       </div>
 
-      {/* Thông tin Vận hành & Tiêu chuẩn Báo cáo */}
-      <AppPanel title={copy.operational.title} className="space-y-4">
-        <div className="grid gap-4 sm:grid-cols-3">
-          <div className="space-y-1.5">
-            <Label className="text-[10px] font-bold tracking-widest text-muted-foreground uppercase flex items-center gap-1">
-              <Factory className="size-3.5 text-primary" />
-              Ngành kinh doanh chính
-            </Label>
-            {isEditing ? (
-              <Input
-                value={industry}
-                onChange={(e) => setIndustry(e.target.value)}
-                className="bg-background border-border"
-              />
-            ) : (
-              <div className="rounded-lg border border-border/40 bg-muted/20 px-3.5 py-2.5 font-semibold text-sm text-foreground">
-                {industry}
-              </div>
-            )}
-          </div>
-
-          <div className="space-y-1.5">
-            <Label className="text-[10px] font-bold tracking-widest text-muted-foreground uppercase flex items-center gap-1">
-              <Users className="size-3.5 text-primary" />
-              Quy mô nhân sự (FTE)
-            </Label>
-            {isEditing ? (
-              <Input
-                value={employees}
-                onChange={(e) => setEmployees(e.target.value)}
-                className="bg-background border-border"
-              />
-            ) : (
-              <div className="rounded-lg border border-border/40 bg-muted/20 px-3.5 py-2.5 font-semibold text-sm text-foreground">
-                {employees}
-              </div>
-            )}
-          </div>
-
-          <div className="space-y-1.5">
-            <Label className="text-[10px] font-bold tracking-widest text-muted-foreground uppercase flex items-center gap-1">
-              <Award className="size-3.5 text-primary" />
-              Khung báo cáo áp dụng
-            </Label>
-            {isEditing ? (
-              <Input
-                value={frameworks}
-                onChange={(e) => setFrameworks(e.target.value)}
-                className="bg-background border-border"
-              />
-            ) : (
-              <div className="rounded-lg border border-border/40 bg-muted/20 px-3.5 py-2.5 font-semibold text-sm text-foreground">
-                {frameworks}
-              </div>
-            )}
-          </div>
-        </div>
-      </AppPanel>
-
       {/* Bảng Danh sách Các Cơ sở Vận hành (Facilities / Branches) */}
       <AppPanel
         title={copy.facilities.title}
-        badge={
-          <span className="text-xs font-bold text-muted-foreground">
-            Tổng số: {facilities.length} cơ sở
-          </span>
-        }
+        badge={<span className="text-xs font-bold text-muted-foreground">Tổng số: {branches.length} cơ sở</span>}
         bodyClassName="overflow-x-auto p-0"
       >
-        <table className="w-full min-w-[700px] text-left text-sm">
-          <thead className="border-b border-border bg-muted/50">
-            <tr>
-              <th className="px-6 py-3.5 text-xs font-bold tracking-wide text-muted-foreground uppercase">
-                Tên cơ sở
-              </th>
-              <th className="px-6 py-3.5 text-xs font-bold tracking-wide text-muted-foreground uppercase">
-                Loại hình
-              </th>
-              <th className="px-6 py-3.5 text-xs font-bold tracking-wide text-muted-foreground uppercase">
-                Địa điểm
-              </th>
-              <th className="px-6 py-3.5 text-xs font-bold tracking-wide text-muted-foreground uppercase">
-                Tỷ trọng phát thải
-              </th>
-              <th className="px-6 py-3.5 text-xs font-bold tracking-wide text-muted-foreground uppercase">
-                Mức độ tác động
-              </th>
-              <th className="px-6 py-3.5 text-right text-xs font-bold tracking-wide text-muted-foreground uppercase">
-                Thao tác
-              </th>
-            </tr>
-          </thead>
-          <tbody>
-            {facilities.map((row) => (
-              <tr
-                key={row.id}
-                className="border-b border-border last:border-0 hover:bg-muted/20 transition-colors"
-              >
-                <td className="px-6 py-4">
-                  <div className="flex items-center gap-2">
-                    <Building2 className="size-4 text-primary shrink-0" />
-                    <span className="font-bold text-foreground">{row.name}</span>
-                  </div>
-                </td>
-
-                <td className="px-6 py-4 text-muted-foreground font-medium">
-                  {row.type}
-                </td>
-
-                <td className="px-6 py-4 text-muted-foreground">
-                  {row.location}
-                </td>
-
-                <td className="px-6 py-4 font-bold text-primary">
-                  {row.emissionShare}
-                </td>
-
-                <td className="px-6 py-4">
-                  <span
-                    className={cn(
-                      "inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-xs font-bold border",
-                      row.impact === "Cao"
-                        ? "bg-red-500/10 text-red-700 border-red-500/20"
-                        : row.impact === "Trung bình"
-                          ? "bg-amber-500/10 text-amber-700 border-amber-500/20"
-                          : "bg-emerald-500/10 text-emerald-700 border-emerald-500/20",
-                    )}
-                  >
-                    {row.impact}
-                  </span>
-                </td>
-
-                <td className="px-6 py-4 text-right">
-                  <div className="flex items-center justify-end gap-1">
-                    <Button
-                      variant="ghost"
-                      size="icon-sm"
-                      title="Sửa cơ sở"
-                      onClick={() => toast.info(`Chỉnh sửa cơ sở ${row.name}`)}
-                    >
-                      <Pencil className="size-3.5" />
-                    </Button>
+        {isLoadingBranches ? (
+          <div className="p-6 text-sm text-muted-foreground">Đang tải danh sách cơ sở…</div>
+        ) : branches.length === 0 && !isAddingBranch ? (
+          <div className="p-6">
+            <EmptyState icon={Building2} title={copy.facilities.empty} />
+          </div>
+        ) : (
+          <table className="w-full min-w-[640px] text-left text-sm">
+            <thead className="border-b border-border bg-muted/50">
+              <tr>
+                <th className="px-6 py-3.5 text-xs font-bold tracking-wide text-muted-foreground uppercase">
+                  Tên cơ sở
+                </th>
+                <th className="px-6 py-3.5 text-xs font-bold tracking-wide text-muted-foreground uppercase">
+                  Địa chỉ
+                </th>
+                <th className="px-6 py-3.5 text-xs font-bold tracking-wide text-muted-foreground uppercase">
+                  Trạng thái
+                </th>
+                <th className="px-6 py-3.5 text-right text-xs font-bold tracking-wide text-muted-foreground uppercase">
+                  Thao tác
+                </th>
+              </tr>
+            </thead>
+            <tbody>
+              {branches.map((branch) => (
+                <tr key={branch.id} className="border-b border-border last:border-0 hover:bg-muted/20 transition-colors">
+                  <td className="px-6 py-4">
+                    <div className="flex items-center gap-2">
+                      <Building2 className="size-4 text-primary shrink-0" />
+                      <span className="font-bold text-foreground">{branch.name}</span>
+                    </div>
+                  </td>
+                  <td className="px-6 py-4 text-muted-foreground">{branch.address || NOT_SET}</td>
+                  <td className="px-6 py-4">
+                    <Badge variant={branch.isActive ? "success" : "neutral"}>
+                      {branch.isActive ? "Hoạt động" : "Ngừng hoạt động"}
+                    </Badge>
+                  </td>
+                  <td className="px-6 py-4 text-right">
                     <Button
                       variant="ghost"
                       size="icon-sm"
                       className="text-muted-foreground hover:text-destructive"
                       title="Xóa cơ sở"
-                      onClick={() => handleDeleteFacility(row.id, row.name)}
+                      onClick={() => setDeleteTarget({ id: branch.id, name: branch.name })}
                     >
                       <Trash2 className="size-3.5" />
                     </Button>
-                  </div>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        )}
 
-        {/* Footer bảng cơ sở */}
-        <div className="border-t border-border p-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-          <Button
-            type="button"
-            onClick={handleAddFacility}
-            variant="outline"
-            size="sm"
-            className="gap-1.5 font-bold text-primary border-primary/30 hover:bg-primary/5"
-          >
-            <Plus className="size-4" />
-            Thêm cơ sở / chi nhánh mới
-          </Button>
-
-          <span className="text-xs text-muted-foreground">
-            Đang hiển thị {facilities.length} cơ sở vận hành thuộc ranh giới báo cáo
-          </span>
+        {/* Form thêm cơ sở mới */}
+        <div className="border-t border-border p-4 space-y-3">
+          {isAddingBranch ? (
+            <div className="grid gap-3 sm:grid-cols-[1fr_1fr_auto]">
+              <Input
+                value={newBranchName}
+                onChange={(e) => setNewBranchName(e.target.value)}
+                placeholder="Tên cơ sở *"
+                autoFocus
+              />
+              <Input
+                value={newBranchAddress}
+                onChange={(e) => setNewBranchAddress(e.target.value)}
+                placeholder="Địa chỉ (tuỳ chọn)"
+              />
+              <div className="flex gap-2">
+                <Button
+                  size="sm"
+                  onClick={handleAddBranch}
+                  disabled={createBranchMutation.isPending}
+                  className="font-bold"
+                >
+                  {createBranchMutation.isPending ? (
+                    <Loader2 className="size-4 animate-spin" />
+                  ) : (
+                    "Lưu"
+                  )}
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => {
+                    setIsAddingBranch(false);
+                    setNewBranchName("");
+                    setNewBranchAddress("");
+                  }}
+                >
+                  Hủy
+                </Button>
+              </div>
+            </div>
+          ) : (
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+              <Button
+                type="button"
+                onClick={() => setIsAddingBranch(true)}
+                variant="outline"
+                size="sm"
+                className="gap-1.5 font-bold text-primary border-primary/30 hover:bg-primary/5"
+              >
+                <Plus className="size-4" />
+                Thêm cơ sở / chi nhánh mới
+              </Button>
+              <span className="text-xs text-muted-foreground">
+                Đang hiển thị {branches.length} cơ sở vận hành thuộc ranh giới báo cáo
+              </span>
+            </div>
+          )}
         </div>
       </AppPanel>
+
+      <ConfirmDialog
+        open={Boolean(deleteTarget)}
+        onOpenChange={(open) => !open && setDeleteTarget(null)}
+        title="Xác nhận xóa cơ sở"
+        description={deleteTarget ? `Xóa cơ sở "${deleteTarget.name}"? Hành động này không thể hoàn tác.` : ""}
+        confirmText="Xóa cơ sở"
+        cancelText="Hủy"
+        variant="destructive"
+        isLoading={deleteBranchMutation.isPending}
+        onConfirm={handleDeleteBranch}
+      />
     </div>
   );
 }

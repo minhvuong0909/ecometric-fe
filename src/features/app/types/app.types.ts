@@ -73,12 +73,21 @@ export interface Branch {
   id: string;
   businessId: string;
   name: string;
-  code?: string | null;
-  address?: string | null;
-  isHeadquarters: boolean;
-  status: string;
+  code: string | null;
+  address: string | null;
+  country: string;
+  description: string | null;
+  isActive: boolean;
   createdAt: string;
   updatedAt: string;
+}
+
+export interface CreateBranchInput {
+  name: string;
+  code?: string;
+  address?: string;
+  country?: string;
+  description?: string;
 }
 
 // ==========================================

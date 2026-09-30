@@ -377,40 +377,35 @@ export const COMPANY_COPY = {
     { label: "Bối cảnh vận hành" },
     { label: "Cơ sở vận hành" },
   ],
+  noBusiness: {
+    title: "Chưa có doanh nghiệp hoạt động",
+    description:
+      "Bạn cần kích hoạt một gói dịch vụ để tạo hồ sơ doanh nghiệp trước khi xem hoặc chỉnh sửa thông tin ở đây.",
+    cta: "Chọn gói để bắt đầu",
+  },
   generalInfo: {
     title: "Thông tin chung",
-    syncBadge: "Đồng bộ lần cuối: 2 giờ trước",
-    fields: [
-      { label: "Tên công ty", value: "Northstar Foods" },
-      { label: "Mã số thuế (TIN)", value: "0123456789" },
-      { label: "Địa chỉ email chính thức", value: "contact@northstarfoods.com" },
-      { label: "Số điện thoại", value: "+84 28 1234 5678" },
-      { label: "Địa chỉ trụ sở chính", value: "Quận 1, TP. Hồ Chí Minh" },
-    ],
   },
   operational: {
     title: "Bối cảnh vận hành",
-    fields: [
-      { label: "Ngành kinh doanh chính", value: "Vận tải & Logistics" },
-      { label: "Số lượng nhân viên (FTE)", value: "145" },
-      { label: "Các khung báo cáo phát triển bền vững", value: "GHG Protocol, CSRD" },
-    ],
   },
   facilities: {
     title: "Cơ sở & Chi nhánh",
-    columns: ["Tên cơ sở", "Loại hình", "Địa điểm", "Mức độ ảnh hưởng carbon"],
-    rows: [
-      { name: "Trụ sở Quận 1", type: "Văn phòng", location: "TP. Hồ Chí Minh", impact: "Cao" },
-      { name: "Kho Bình Dương", type: "Kho hàng", location: "Bình Dương", impact: "Thấp" },
-    ],
+    empty: "Chưa có cơ sở / chi nhánh nào.",
   },
-  integrity: {
-    title: "Độ hoàn thiện hồ sơ",
-    status: "Hoàn thành",
-    checks: [
-      { title: "Thông tin doanh nghiệp đã xác thực", note: "Mã số thuế đã được xác minh thành công." },
-      { title: "Hồ sơ cơ sở chưa hoàn thiện", note: "Thiếu mã định danh công tơ điện tại 2 địa điểm." },
-    ],
+  subscription: {
+    title: "Gói dịch vụ",
+    tierLabels: {
+      STARTER: "Starter",
+      PROFESSIONAL: "Professional",
+      ENTERPRISE: "Enterprise",
+    },
+    statusLabels: {
+      TRIALING: "Đang dùng thử",
+      ACTIVE: "Đang hoạt động",
+      EXPIRED: "Đã hết hạn",
+    },
+    trialEndsAt: (date: string) => `Dùng thử đến ${date}`,
   },
 } as const;
 
@@ -420,12 +415,8 @@ export const SETTINGS_COPY = {
   description:
     "Quản lý hồ sơ cá nhân, cộng tác với các thành viên trong nhóm và cấu hình các tùy chọn cảnh báo trên nền tảng.",
   tabs: ["Tài khoản", "Thành viên nhóm", "Thông báo"],
-  profileFields: [
-    { label: "Họ và tên", value: "Alex Morgan" },
-    { label: "Email công việc", value: "alex@company.com" },
-    { label: "Chức vụ", value: "Trưởng phòng ESG" },
-  ],
-  workspaceProgress: "Đội ngũ của bạn đã hoàn thành 84% báo cáo GHG của quý này.",
-  supportPlan: "Gói hỗ trợ Doanh nghiệp Cao cấp đang hoạt động",
+  supportPlan: "Đội ngũ cố vấn EcoMetric",
   saveCta: "Lưu cài đặt",
+  noBusiness: "Bạn cần kích hoạt một doanh nghiệp để quản lý thành viên nhóm.",
+  notificationsSaved: "Đã lưu cấu hình thông báo trên trình duyệt này.",
 } as const;
