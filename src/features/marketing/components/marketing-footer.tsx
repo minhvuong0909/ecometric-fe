@@ -1,10 +1,11 @@
-import { Linkedin, Twitter } from "lucide-react";
+import { Facebook, Twitter } from "lucide-react";
 import { Link } from "react-router";
 import { Logo } from "@/shared/components/logo";
 import {
   FOOTER_COLUMNS,
   FOOTER_COPY,
 } from "@/features/marketing/constants/marketing-content";
+import { TiktokIcon } from "@/shared/components/tiktok-icon";
 import { cn } from "@/shared/lib/utils";
 
 const currentYear = new Date().getFullYear();
@@ -70,13 +71,22 @@ export function MarketingFooter() {
           </p>
           <div className="flex gap-4">
             <a
-              href="https://linkedin.com"
+              href="https://www.facebook.com/profile.php?id=61594411752983"
               target="_blank"
               rel="noopener noreferrer"
-              aria-label="LinkedIn"
+              aria-label="Facebook"
               className="text-white/70 transition-all duration-200 hover:bg-white/10 hover:text-emerald-400 p-2 rounded-lg focus-ring"
             >
-              <Linkedin className="size-5" aria-hidden />
+              <Facebook className="size-5" aria-hidden />
+            </a>
+            <a
+              href="https://www.tiktok.com/@ecometricvietnam"
+              target="_blank"
+              rel="noopener noreferrer"
+              aria-label="TikTok"
+              className="text-white/70 transition-all duration-200 hover:bg-white/10 hover:text-emerald-400 p-2 rounded-lg focus-ring"
+            >
+              <TiktokIcon className="size-5" />
             </a>
             <a
               href="https://twitter.com"
