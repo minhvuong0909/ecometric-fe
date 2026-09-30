@@ -239,21 +239,13 @@ export const UPLOAD_DOC_COPY = {
 export const AI_REVIEW_COPY = {
   breadcrumbs: [
     { label: "Nhập liệu", active: true },
-    { label: "Kiểm tra nhập liệu thủ công" },
+    { label: "Kiểm tra & xác nhận trích xuất" },
   ],
-  title: "Kiểm tra dữ liệu trích xuất",
   description:
-    "Vui lòng kiểm tra và xác nhận các chi tiết được trích xuất bên dưới. Một giá trị (Sản lượng tiêu thụ) đã bị cảnh báo cần xác minh thủ công do có sự biến động bất thường so với hóa đơn trước.",
-  warning: "+15.2% so với kỳ trước, cần xác minh sản lượng tiêu thụ điện",
-  fields: [
-    { label: "Loại tài liệu", value: "Hóa đơn tiện ích (Điện)" },
-    { label: "Kỳ hóa đơn", value: "Tháng 6/2024" },
-    { label: "Chi nhánh", value: "Quận 1" },
-    { label: "Sản lượng tiêu thụ điện (kWh)", value: "1,500", warn: true },
-    { label: "Độ tin cậy trích xuất", value: "Độ tin cậy cao (92%)" },
-  ],
-  actions: ["Xác nhận dữ liệu", "Chỉnh sửa", "Từ chối", "Tải lại tài liệu"],
-  calculateCta: "Tính toán CO₂e",
+    "Mô hình AI bóc tách hóa đơn đang trong quá trình hoàn thiện — trong lúc chờ, bạn có thể tự nhập hoặc dùng dữ liệu minh hoạ, rồi rà soát từng dòng hàng hóa/dịch vụ và phân loại Scope trước khi ghi nhận.",
+  noQueue: "Chưa có hóa đơn nào đang chờ xử lý.",
+  mockExtractCta: "Điền dữ liệu minh hoạ",
+  confirmCta: "Xác nhận & Ghi nhận",
 } as const;
 
 export const EMISSION_DETAIL_COPY = {

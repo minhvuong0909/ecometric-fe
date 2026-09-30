@@ -1,23 +1,23 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Link, useNavigate, useSearchParams } from "react-router";
 import { toast } from "sonner";
 import {
-  AlertTriangle,
-  CheckCircle2,
-  Sparkles,
+  AlertCircle,
   ArrowLeft,
-  ArrowRight,
-  ZoomIn,
-  ZoomOut,
-  RotateCw,
-  FileText,
-  Edit3,
-  RefreshCw,
-  XCircle,
   Building2,
-  Calendar,
-  Zap,
+  Check,
+  CheckCircle2,
+  Clock,
+  Copy,
+  Download,
+  FileText,
   Loader2,
+  Plus,
+  RefreshCw,
+  Sparkles,
+  Trash2,
+  Wand2,
+  XCircle,
 } from "lucide-react";
 import { AppPageHeader } from "@/features/app/components/app-page-header";
 import { AppPanel } from "@/features/app/components/app-panel";
@@ -25,492 +25,813 @@ import { AI_REVIEW_COPY } from "@/features/app/constants/app-copy";
 import {
   useConfirmInvoiceScan,
   useInvoiceScanDetail,
+  useInvoiceScans,
   useRejectInvoiceScan,
   useRetryInvoiceScan,
 } from "@/features/app/hooks/use-ai-scan";
-import { useBranches, useEmissionSources, useReportingPeriods } from "@/features/app/hooks/use-app-meta";
+import { useBranches, useReportingPeriods } from "@/features/app/hooks/use-app-meta";
 import { createReportingPeriod } from "@/features/app/api/meta.api";
+import type { AiScanDocument, ScanJobStatus } from "@/features/app/types/app.types";
 import { useBusinessStore } from "@/shared/stores/business-store";
-import { ROUTES } from "@/shared/constants/routes";
+import { Badge, type badgeVariants } from "@/shared/components/ui/badge";
 import { Button } from "@/shared/components/ui/button";
+import { EmptyState } from "@/shared/components/ui/empty-state";
 import { Input } from "@/shared/components/ui/input";
 import { Label } from "@/shared/components/ui/label";
+import { ROUTES } from "@/shared/constants/routes";
+import { getApiErrorMessage } from "@/shared/lib/get-error-message";
 import { cn } from "@/shared/lib/utils";
+import type { VariantProps } from "class-variance-authority";
+
+/**
+ * Trang này port lại logic từ vat-extractor-tool.html (công cụ HTML độc lập) thành React,
+ * dùng làm chỗ đứng tạm thời cho tới khi mô hình AI OCR thật hoàn thiện. Tài liệu/upload/
+ * reject/retry đều gọi API thật; riêng phần "trích xuất" (chia dòng hàng hoá + phân Scope)
+ * là nhập tay hoặc điền dữ liệu minh hoạ — chưa có OCR thật đứng sau.
+ */
+
+type ScopeLabel = "Scope 1" | "Scope 2" | "Scope Unassigned";
+
+type LineItem = {
+  id: number;
+  description: string;
+  unit: string;
+  quantity: number;
+  unitPrice: number;
+  amount: number;
+  vatRate: number;
+  scope: ScopeLabel;
+  confidence: number;
+  reasoning: string;
+};
+
+type InvoiceDraft = {
+  serial: string;
+  number: string;
+  date: string;
+  defaultVat: number;
+  seller: { name: string; taxCode: string; address: string };
+  buyer: { name: string; taxCode: string; address: string };
+  subtotal: number;
+  vatAmount: number;
+  totalAmount: number;
+  items: LineItem[];
+};
+
+const STATUS_CONFIG: Record<
+  ScanJobStatus,
+  { label: string; variant: VariantProps<typeof badgeVariants>["variant"]; icon: typeof CheckCircle2 }
+> = {
+  QUEUED: { label: "Trong hàng đợi", variant: "info", icon: Clock },
+  PROCESSING: { label: "Đang xử lý", variant: "info", icon: Loader2 },
+  NEED_REVIEW: { label: "Cần rà soát", variant: "warning", icon: AlertCircle },
+  CONFIRMED: { label: "Đã ghi nhận", variant: "success", icon: CheckCircle2 },
+  REJECTED: { label: "Đã từ chối", variant: "neutral", icon: XCircle },
+  FAILED: { label: "Lỗi trích xuất", variant: "danger", icon: XCircle },
+};
+
+const MOCK_SAMPLES: Array<{
+  serial: string;
+  number: string;
+  date: string;
+  seller: [string, string, string];
+  buyer: [string, string, string];
+  items: Array<[string, string, number, number, number]>;
+}> = [
+  {
+    serial: "1C25TAA",
+    number: "0002847",
+    date: new Date().toLocaleDateString("vi-VN"),
+    seller: ["CÔNG TY TNHH THIẾT BỊ VÀ DỊCH VỤ KỸ THUẬT HÀ NỘI", "0106789123", "Số 12, Lê Văn Lương, Thanh Xuân, Hà Nội"],
+    buyer: ["CÔNG TY CP ĐẦU TƯ XÂY DỰNG DELTA", "0102345678", "KCN Thăng Long, Đông Anh, Hà Nội"],
+    items: [
+      ["Thép hộp mạ kẽm 40×80×1.4mm", "cây", 285000, 10, 120],
+      ["Xi măng PCB40 Vicem", "tấn", 1850000, 10, 15],
+      ["Dịch vụ vận chuyển vật liệu đến công trường", "chuyến", 2500000, 8, 8],
+      ["Phần mềm quản lý kho — license 1 năm", "gói", 18000000, 10, 1],
+      ["Nhân công lắp đặt hệ khung thép", "ngày công", 650000, 8, 22],
+    ],
+  },
+  {
+    serial: "1C25TBB",
+    number: "0002848",
+    date: new Date().toLocaleDateString("vi-VN"),
+    seller: ["CÔNG TY TNHH VẬT LIỆU XÂY DỰNG HÒA PHÁT", "0101122334", "KCN Phố Nối, Hưng Yên"],
+    buyer: ["CÔNG TY CP ĐẦU TƯ XÂY DỰNG DELTA", "0102345678", "KCN Thăng Long, Đông Anh, Hà Nội"],
+    items: [
+      ["Gạch block 200×200×400mm", "viên", 4200, 10, 5000],
+      ["Cát vàng sông Lô", "m³", 380000, 10, 80],
+      ["Dịch vụ tư vấn giám sát thi công", "gói", 25000000, 10, 1],
+      ["Thiết kế bản vẽ hoàn công", "bộ", 12000000, 8, 1],
+    ],
+  },
+  {
+    serial: "1C25TCC",
+    number: "0002849",
+    date: new Date().toLocaleDateString("vi-VN"),
+    seller: ["CÔNG TY CP CÔNG NGHỆ PHẦN MỀM BRAVO", "0109988776", "Tòa Weekday, Cầu Giấy, Hà Nội"],
+    buyer: ["CÔNG TY CP ĐẦU TƯ XÂY DỰNG DELTA", "0102345678", "KCN Thăng Long, Đông Anh, Hà Nội"],
+    items: [
+      ["License ERP Bravo 8R2 — 10 user", "license", 45000000, 10, 1],
+      ["Dịch vụ đào tạo vận hành hệ thống", "buổi", 3500000, 8, 6],
+      ["Bảo hành mở rộng 12 tháng", "gói", 8000000, 8, 1],
+      ["Cáp mạng CAT6 305m", "cuộn", 1850000, 10, 10],
+    ],
+  },
+];
+
+const DEFAULT_KEYWORDS_1 =
+  "vật liệu, nguyên liệu, thiết bị, máy, phần cứng, linh kiện, sắt, thép, xi măng, gạch, cáp, ống, van, bơm, động cơ";
+const DEFAULT_KEYWORDS_2 =
+  "dịch vụ, tư vấn, vận chuyển, lắp đặt, bảo hành, phần mềm, license, subscription, nhân công, thiết kế, đào tạo, bảo trì";
+
+function classify(
+  description: string,
+  keywords1: string,
+  keywords2: string,
+): { scope: ScopeLabel; confidence: number; reasoning: string } {
+  const d = description.toLowerCase();
+  const k1 = keywords1.toLowerCase().split(",").map((s) => s.trim()).filter(Boolean);
+  const k2 = keywords2.toLowerCase().split(",").map((s) => s.trim()).filter(Boolean);
+  const hit1 = k1.some((k) => d.includes(k));
+  const hit2 = k2.some((k) => d.includes(k));
+  if (hit1 && !hit2) return { scope: "Scope 1", confidence: 0.92, reasoning: "Chứa từ khóa vật liệu/thiết bị" };
+  if (hit2 && !hit1) return { scope: "Scope 2", confidence: 0.9, reasoning: "Chứa từ khóa dịch vụ/phần mềm/nhân công" };
+  if (hit1 && hit2) return { scope: "Scope 1", confidence: 0.62, reasoning: "Khớp cả 2 nhóm — cần rà soát" };
+  return { scope: "Scope Unassigned", confidence: 0.55, reasoning: "Không khớp từ khóa — cần xác nhận thủ công" };
+}
+
+function emptyDraft(): InvoiceDraft {
+  return {
+    serial: "",
+    number: "",
+    date: "",
+    defaultVat: 10,
+    seller: { name: "", taxCode: "", address: "" },
+    buyer: { name: "", taxCode: "", address: "" },
+    subtotal: 0,
+    vatAmount: 0,
+    totalAmount: 0,
+    items: [],
+  };
+}
+
+function draftFromScanDoc(doc?: AiScanDocument): InvoiceDraft {
+  const draft = emptyDraft();
+  const extracted = doc?.extractedData as Partial<InvoiceDraft> | null | undefined;
+  if (extracted && typeof extracted === "object") {
+    return { ...draft, ...extracted, items: Array.isArray(extracted.items) ? extracted.items : [] };
+  }
+  return draft;
+}
+
+function fmtMoney(n: number) {
+  return (Number(n) || 0).toLocaleString("vi-VN");
+}
+
+async function copyToClipboard(text: string, message: string) {
+  try {
+    await navigator.clipboard.writeText(text);
+    toast.success(message);
+  } catch {
+    toast.error("Không thể sao chép. Vui lòng chọn và sao chép thủ công.");
+  }
+}
 
 export function AiReviewPage() {
   const copy = AI_REVIEW_COPY;
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
-  const docId = searchParams.get("id");
   const { activeBusinessId } = useBusinessStore();
 
-  const { data: scanDoc, isLoading: isLoadingDoc } = useInvoiceScanDetail(docId, !!docId);
+  const { data: scansData, isLoading: isLoadingList } = useInvoiceScans(
+    { businessId: activeBusinessId ?? undefined, limit: 50 },
+    Boolean(activeBusinessId),
+  );
+  const queue = useMemo(
+    () => (scansData?.items ?? []).filter((doc) => doc.status !== "CONFIRMED" && doc.status !== "REJECTED"),
+    [scansData],
+  );
+
+  const [activeId, setActiveId] = useState<string | null>(searchParams.get("id"));
+  useEffect(() => {
+    if (!activeId && queue.length > 0) setActiveId(queue[0].id);
+  }, [queue, activeId]);
+
+  const { data: scanDoc, isLoading: isLoadingDoc } = useInvoiceScanDetail(activeId, Boolean(activeId));
+
+  const [drafts, setDrafts] = useState<Record<string, InvoiceDraft>>({});
+  useEffect(() => {
+    if (activeId && scanDoc && !drafts[activeId]) {
+      setDrafts((prev) => ({ ...prev, [activeId]: draftFromScanDoc(scanDoc) }));
+    }
+  }, [activeId, scanDoc, drafts]);
+
+  const draft = activeId ? drafts[activeId] : undefined;
+  const setDraft = (updater: (prev: InvoiceDraft) => InvoiceDraft) => {
+    if (!activeId) return;
+    setDrafts((prev) => ({ ...prev, [activeId]: updater(prev[activeId] ?? emptyDraft()) }));
+  };
+
+  const [kw1, setKw1] = useState(DEFAULT_KEYWORDS_1);
+  const [kw2, setKw2] = useState(DEFAULT_KEYWORDS_2);
+  const [jsonTab, setJsonTab] = useState<"active" | "all">("active");
+
   const { data: branchesData } = useBranches(activeBusinessId);
+  const branches = branchesData?.items ?? [];
+  const [branchId, setBranchId] = useState<string>("");
+  useEffect(() => {
+    if (!branchId && branches[0]) setBranchId(branches[0].id);
+  }, [branches, branchId]);
   const { data: periodsData } = useReportingPeriods(activeBusinessId);
-  const { data: sourcesData } = useEmissionSources();
 
   const confirmMutation = useConfirmInvoiceScan();
   const rejectMutation = useRejectInvoiceScan();
   const retryMutation = useRetryInvoiceScan();
 
-  // State chỉnh sửa số liệu
-  const [docType, setDocType] = useState("Hóa đơn tiện ích (Điện)");
-  const [period, setPeriod] = useState("Tháng 6 2026");
-  const [branch, setBranch] = useState("Quận 1 - Trụ sở chính");
-  const [electricityKwh, setElectricityKwh] = useState("1500");
-  const [totalCost, setTotalCost] = useState("13,072,500 ₫");
-  const [zoomLevel, setZoomLevel] = useState(100);
-  const [isVerified, setIsVerified] = useState(false);
-  const [isEditing, setIsEditing] = useState(false);
-
-  // Pre-fill từ dữ liệu bóc tách của API nếu có
-  useEffect(() => {
-    if (scanDoc) {
-      if (scanDoc.fileName) setDocType(`Hóa đơn: ${scanDoc.fileName}`);
-      const extracted = scanDoc.extractedData as any;
-      if (extracted) {
-        if (extracted.quantity) setElectricityKwh(String(extracted.quantity));
-        if (extracted.totalAmount) {
-          setTotalCost(`${Number(extracted.totalAmount).toLocaleString("vi-VN")} ₫`);
-        }
-        if (extracted.periodStart && extracted.periodEnd) {
-          const d = new Date(extracted.periodStart);
-          setPeriod(`Tháng ${d.getMonth() + 1}/${d.getFullYear()}`);
-        }
-      }
-      if (scanDoc.status === "CONFIRMED") setIsVerified(true);
-    }
-  }, [scanDoc]);
-
-  const handleVerify = () => {
-    setIsVerified(true);
-    toast.success("Đã xác nhận dữ liệu trích xuất hợp lệ!");
+  const handleMockExtract = () => {
+    if (!activeId) return;
+    const queueIdx = queue.findIndex((d) => d.id === activeId);
+    const sample = MOCK_SAMPLES[(queueIdx >= 0 ? queueIdx : 0) % MOCK_SAMPLES.length];
+    const items: LineItem[] = sample.items.map(([description, unit, unitPrice, vatRate, quantity], idx) => {
+      const amount = unitPrice * quantity;
+      const c = classify(description, kw1, kw2);
+      return { id: idx + 1, description, unit, quantity, unitPrice, amount, vatRate, ...c };
+    });
+    const subtotal = items.reduce((s, it) => s + it.amount, 0);
+    const vatAmount = Math.round(items.reduce((s, it) => s + (it.amount * it.vatRate) / 100, 0));
+    setDraft(() => ({
+      serial: sample.serial,
+      number: sample.number,
+      date: sample.date,
+      defaultVat: 10,
+      seller: { name: sample.seller[0], taxCode: sample.seller[1], address: sample.seller[2] },
+      buyer: { name: sample.buyer[0], taxCode: sample.buyer[1], address: sample.buyer[2] },
+      subtotal,
+      vatAmount,
+      totalAmount: subtotal + vatAmount,
+      items,
+    }));
+    toast.success("Đã điền dữ liệu minh hoạ — chỉnh sửa lại cho khớp hóa đơn thật trước khi ghi nhận.");
   };
+
+  const updateItem = (idx: number, patch: Partial<LineItem>) => {
+    setDraft((prev) => {
+      const items = prev.items.map((it, i) => (i === idx ? { ...it, ...patch } : it));
+      return { ...prev, items };
+    });
+  };
+
+  const handleDescriptionChange = (idx: number, description: string) => {
+    const c = classify(description, kw1, kw2);
+    updateItem(idx, { description, ...c });
+  };
+
+  const handleQtyOrPrice = (idx: number, patch: Partial<Pick<LineItem, "quantity" | "unitPrice">>) => {
+    setDraft((prev) => {
+      const items = prev.items.map((it, i) => {
+        if (i !== idx) return it;
+        const next = { ...it, ...patch };
+        next.amount = (Number(next.quantity) || 0) * (Number(next.unitPrice) || 0);
+        return next;
+      });
+      return { ...prev, items };
+    });
+  };
+
+  const addRow = () => {
+    setDraft((prev) => {
+      const c = classify("", kw1, kw2);
+      const nextId = (prev.items.at(-1)?.id ?? 0) + 1;
+      return {
+        ...prev,
+        items: [
+          ...prev.items,
+          { id: nextId, description: "", unit: "", quantity: 1, unitPrice: 0, amount: 0, vatRate: prev.defaultVat, ...c },
+        ],
+      };
+    });
+  };
+
+  const removeRow = (idx: number) => {
+    setDraft((prev) => ({ ...prev, items: prev.items.filter((_, i) => i !== idx).map((it, i) => ({ ...it, id: i + 1 })) }));
+  };
+
+  const reclassifyAll = () => {
+    setDraft((prev) => ({ ...prev, items: prev.items.map((it) => ({ ...it, ...classify(it.description, kw1, kw2) })) }));
+  };
+
+  const recalcTotals = () => {
+    setDraft((prev) => {
+      const subtotal = prev.items.reduce((s, it) => s + (Number(it.amount) || 0), 0);
+      const vatAmount = Math.round(prev.items.reduce((s, it) => s + ((Number(it.amount) || 0) * (Number(it.vatRate) || 0)) / 100, 0));
+      return { ...prev, subtotal, vatAmount, totalAmount: subtotal + vatAmount };
+    });
+  };
+
+  const scopeSummary = useMemo(() => {
+    const sums: Record<ScopeLabel, { amount: number; count: number }> = {
+      "Scope 1": { amount: 0, count: 0 },
+      "Scope 2": { amount: 0, count: 0 },
+      "Scope Unassigned": { amount: 0, count: 0 },
+    };
+    (draft?.items ?? []).forEach((it) => {
+      sums[it.scope].amount += Number(it.amount) || 0;
+      sums[it.scope].count += 1;
+    });
+    return sums;
+  }, [draft]);
+
+  const jsonOutput = useMemo(() => {
+    if (jsonTab === "all") {
+      return queue.map((doc) => ({ fileName: doc.fileName, ...(drafts[doc.id] ?? emptyDraft()) }));
+    }
+    return draft ? { fileName: scanDoc?.fileName, ...draft } : { message: "Chưa chọn hóa đơn" };
+  }, [jsonTab, queue, drafts, draft, scanDoc]);
 
   const handleReject = async () => {
-    if (!docId) {
-      toast.info("Đã từ chối chứng từ.");
-      return;
-    }
+    if (!activeId) return;
     try {
-      await rejectMutation.mutateAsync({ id: docId, reason: "Người dùng từ chối trích xuất" });
-      toast.success("Đã từ chối tài liệu trích xuất.");
-      navigate(ROUTES.app.uploadDoc);
-    } catch (err: any) {
-      toast.error(err?.message || "Không thể từ chối tài liệu");
+      await rejectMutation.mutateAsync({ id: activeId, reason: "Người dùng từ chối trích xuất" });
+      toast.success("Đã từ chối tài liệu.");
+    } catch (err) {
+      toast.error(getApiErrorMessage(err));
     }
   };
 
-  const handleReExtract = async () => {
-    if (!docId) {
-      toast.info("Chưa có ID tài liệu để gửi lại");
-      return;
-    }
+  const handleRetry = async () => {
+    if (!activeId) return;
     try {
-      await retryMutation.mutateAsync(docId);
-      toast.success("Đã gửi yêu cầu bóc tách lại tới mô hình AI!");
-    } catch (err: any) {
-      toast.error(err?.message || "Không thể gửi yêu cầu trích xuất lại");
+      await retryMutation.mutateAsync(activeId);
+      toast.success("Đã gửi yêu cầu trích xuất lại tới mô hình AI.");
+    } catch (err) {
+      toast.error(getApiErrorMessage(err));
     }
   };
 
-  const handleProceedToCalculation = async () => {
-    if (!docId) {
-      toast.success("Đã ghi nhận dữ liệu vào sổ cái carbon! Đang tải bảng tính toán...");
-      setTimeout(() => navigate(ROUTES.app.emissionDetail), 500);
+  const handleConfirm = async () => {
+    if (!activeId || !draft) return;
+    if (draft.items.length === 0) {
+      toast.error("Chưa có dòng hàng hóa/dịch vụ nào để ghi nhận.");
       return;
     }
 
-    toast.loading("Đang xác nhận hóa đơn và ghi nhận phát thải...", { id: "confirm-toast" });
-
     try {
-      // 1. Tìm hoặc tạo kỳ báo cáo
       let periodId = periodsData?.items?.[0]?.id;
       if (!periodId && activeBusinessId) {
-        const newPeriod = await createReportingPeriod({
+        const now = new Date();
+        const period = await createReportingPeriod({
           businessId: activeBusinessId,
-          name: "Năm 2026",
-          startDate: new Date("2026-01-01T00:00:00.000Z").toISOString(),
-          endDate: new Date("2026-12-31T23:59:59.000Z").toISOString(),
+          name: `Năm ${now.getFullYear()}`,
+          startDate: new Date(Date.UTC(now.getFullYear(), 0, 1)).toISOString(),
+          endDate: new Date(Date.UTC(now.getFullYear(), 11, 31, 23, 59, 59)).toISOString(),
         });
-        periodId = newPeriod.id;
+        periodId = period.id;
+      }
+      if (!periodId) {
+        toast.error("Không xác định được kỳ báo cáo.");
+        return;
       }
 
-      const branchId = branchesData?.items?.[0]?.id;
-      const sources = sourcesData?.items ?? [];
-      const elecSource = sources.find((s) => s.code.toLowerCase().includes("elec") || s.name.toLowerCase().includes("điện"));
-
       const now = new Date();
-      const periodStart = new Date(Date.UTC(now.getFullYear(), now.getMonth(), 1)).toISOString();
-      const periodEnd = new Date(Date.UTC(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59)).toISOString();
-
       await confirmMutation.mutateAsync({
-        id: docId,
+        id: activeId,
         body: {
-          reportingPeriodId: periodId!,
-          branchId,
-          emissionSourceId: elecSource?.id,
-          quantity: parseFloat(electricityKwh) || 1500,
-          unit: "kWh",
-          periodStart,
-          periodEnd,
-          reviewNotes: "Đã duyệt và xác nhận từ màn hình AI Review",
+          reportingPeriodId: periodId,
+          branchId: branchId || undefined,
+          // Chưa có ánh xạ hệ số phát thải theo từng dòng hàng — ghi nhận tổng tiền hàng
+          // (đơn vị "VND") để lưu hồ sơ, chờ xử lý CO2e thật khi có OCR + hệ số phát thải.
+          quantity: draft.subtotal,
+          unit: "VND",
+          periodStart: new Date(Date.UTC(now.getFullYear(), now.getMonth(), 1)).toISOString(),
+          periodEnd: new Date(Date.UTC(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59)).toISOString(),
+          metadata: { ...draft, scopeSummary },
+          reviewNotes: "Xác nhận thủ công từ trang rà soát hóa đơn (chưa có OCR thật).",
         },
       });
-
-      toast.success("Xác nhận hóa đơn và ghi nhận phát thải thành công!", { id: "confirm-toast" });
-      setTimeout(() => navigate(ROUTES.app.emissionDetail), 500);
-    } catch (err: any) {
-      toast.error(err?.message || "Không thể xác nhận hóa đơn", { id: "confirm-toast" });
+      toast.success("Đã ghi nhận hóa đơn vào sổ cái!");
+      navigate(ROUTES.app.emissionDetail);
+    } catch (err) {
+      toast.error(getApiErrorMessage(err));
     }
   };
-
 
   return (
     <div className="space-y-8">
-      <AppPageHeader
-        breadcrumbs={copy.breadcrumbs}
-        title="Kiểm tra & Xác nhận Trích xuất AI"
-        description={copy.description}
-      />
+      <AppPageHeader breadcrumbs={copy.breadcrumbs} title="Kiểm tra & Xác nhận Trích xuất" description={copy.description} />
 
-      {/* Thanh tiến trình luồng xử lý */}
-      <div className="rounded-2xl border border-border bg-card p-4 shadow-sm">
-        <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-          <div className="flex items-center gap-3">
-            <span className="flex size-9 items-center justify-center rounded-xl bg-emerald-500 text-white font-bold text-sm shadow-md">
-              <CheckCircle2 className="size-5" />
-            </span>
-            <div>
-              <p className="text-xs font-bold uppercase tracking-wider text-emerald-600">Bước 1: Hoàn thành</p>
-              <h2 className="text-sm font-bold text-secondary-foreground">Tải lên chứng từ hoa-don-dien-t6.pdf</h2>
-            </div>
-          </div>
-
-          <div className="hidden h-px flex-1 bg-border md:block mx-4" />
-
-          <div className="flex items-center gap-3">
-            <span className="flex size-9 items-center justify-center rounded-xl bg-primary text-primary-foreground font-bold text-sm shadow-md">
-              2
-            </span>
-            <div>
-              <p className="text-xs font-bold uppercase tracking-wider text-primary">Bước 2 / 3</p>
-              <h2 className="text-sm font-bold text-secondary-foreground">AI Trích xuất & Xác nhận</h2>
-            </div>
-          </div>
-
-          <div className="hidden h-px flex-1 bg-border md:block mx-4" />
-
-          <div className="flex items-center gap-3 opacity-60">
-            <span className="flex size-9 items-center justify-center rounded-xl bg-muted text-muted-foreground font-bold text-sm">
-              3
-            </span>
-            <div>
-              <p className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Bước 3</p>
-              <h2 className="text-sm font-bold text-muted-foreground">Tính toán lượng CO₂e</h2>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <div className="grid gap-6 lg:grid-cols-2">
-        {/* Cột trái: Trình xem Hóa đơn Scan & OCR Highlighting */}
-        <AppPanel bodyClassName="space-y-4" className="flex flex-col justify-between">
-          <div className="flex items-center justify-between border-b border-border pb-3">
-            <div className="flex items-center gap-2">
-              <FileText className="size-5 text-primary" />
-              <div>
-                <h3 className="text-sm font-bold text-secondary-foreground flex items-center gap-2">
-                  Tài liệu scan: {scanDoc?.fileName ?? "hoa-don-dien-t6.pdf"}
-                  {isLoadingDoc && <Loader2 className="size-3.5 animate-spin text-primary" />}
-                </h3>
-                <p className="text-[11px] text-muted-foreground">Tải lên 14/06/2026 • 2.4 MB</p>
+      <div className="grid gap-6 lg:grid-cols-3">
+        {/* Cột trái: hàng đợi + xem trước + từ khoá Scope */}
+        <div className="space-y-6">
+          <AppPanel title="Hàng đợi chờ rà soát" bodyClassName="p-0">
+            {isLoadingList ? (
+              <div className="p-6 text-sm text-muted-foreground">Đang tải…</div>
+            ) : queue.length === 0 ? (
+              <div className="p-6">
+                <EmptyState icon={FileText} title={copy.noQueue} />
               </div>
-            </div>
-
-            <div className="flex items-center gap-1 rounded-lg border border-border bg-muted/40 p-1">
-              <Button
-                variant="ghost"
-                size="icon-sm"
-                onClick={() => setZoomLevel((z) => Math.max(z - 10, 80))}
-                title="Thu nhỏ"
-              >
-                <ZoomOut className="size-3.5" />
-              </Button>
-              <span className="px-2 text-xs font-bold text-muted-foreground">{zoomLevel}%</span>
-              <Button
-                variant="ghost"
-                size="icon-sm"
-                onClick={() => setZoomLevel((z) => Math.min(z + 10, 150))}
-                title="Phóng to"
-              >
-                <ZoomIn className="size-3.5" />
-              </Button>
-              <Button variant="ghost" size="icon-sm" title="Xoay">
-                <RotateCw className="size-3.5" />
-              </Button>
-            </div>
-          </div>
-
-          {/* Bản xem trước Hóa đơn điện mô phỏng */}
-          <div className="overflow-hidden rounded-xl border border-border bg-slate-900/5 p-4 transition-all">
-            <div
-              className="mx-auto rounded-lg border border-border bg-card p-6 shadow-md transition-transform duration-200"
-              style={{ transform: `scale(${zoomLevel / 100})`, transformOrigin: "top center" }}
-            >
-              {/* Header Hóa đơn EVN */}
-              <div className="flex items-start justify-between border-b border-border pb-4">
-                <div>
-                  <span className="rounded bg-primary/10 px-2 py-0.5 text-[10px] font-bold text-primary uppercase">
-                    Hóa đơn giá trị gia tăng (GTGT)
-                  </span>
-                  <h4 className="mt-2 text-base font-bold text-secondary-foreground">TỔNG CÔNG TY ĐIỆN LỰC TP.HCM</h4>
-                  <p className="text-xs text-muted-foreground">Công ty Điện lực Quận 1 • Mã ĐL: EVN-HCM-Q1</p>
-                </div>
-                <div className="text-right">
-                  <p className="text-xs font-bold text-muted-foreground">Kỳ: 06/2026</p>
-                  <p className="text-xs text-muted-foreground">Mẫu số: 01GTKT0/001</p>
-                </div>
+            ) : (
+              <div className="max-h-[360px] space-y-1.5 overflow-y-auto p-3">
+                {queue.map((doc) => {
+                  const status = STATUS_CONFIG[doc.status];
+                  const StatusIcon = status.icon;
+                  const isActive = doc.id === activeId;
+                  return (
+                    <button
+                      key={doc.id}
+                      type="button"
+                      onClick={() => setActiveId(doc.id)}
+                      className={cn(
+                        "flex w-full items-center gap-3 rounded-lg border p-2.5 text-left transition-all",
+                        isActive ? "border-primary bg-primary/5 ring-1 ring-primary" : "border-border hover:border-primary/40",
+                      )}
+                    >
+                      <div className="flex size-9 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary">
+                        <FileText className="size-4" />
+                      </div>
+                      <div className="min-w-0 flex-1">
+                        <p className="truncate text-xs font-semibold text-foreground">{doc.fileName ?? "Tài liệu"}</p>
+                        <p className="text-[11px] text-muted-foreground">
+                          {(drafts[doc.id]?.items.length ?? 0)} dòng
+                        </p>
+                      </div>
+                      <Badge variant={status.variant} className="gap-1 text-[10px]">
+                        <StatusIcon className="size-3" />
+                        {status.label}
+                      </Badge>
+                    </button>
+                  );
+                })}
               </div>
+            )}
+          </AppPanel>
 
-              {/* Thông tin khách hàng */}
-              <div className="mt-4 grid gap-2 text-xs text-muted-foreground">
-                <div className="flex justify-between">
-                  <span>Tên khách hàng:</span>
-                  <span className="font-semibold text-foreground">Northstar Foods - Trụ sở chính</span>
-                </div>
-                <div className="flex justify-between">
-                  <span>Mã số đồng hồ:</span>
-                  <span className="font-semibold text-foreground">PE0100029381</span>
-                </div>
-                <div className="flex justify-between">
-                  <span>Địa chỉ sử dụng:</span>
-                  <span className="font-semibold text-foreground">Đường Nguyễn Thị Minh Khai, Quận 1</span>
-                </div>
-              </div>
-
-              {/* Bảng số liệu - Highlighted AI Bounding Box */}
-              <div className="mt-6 space-y-3">
-                <p className="text-[10px] font-bold tracking-widest text-muted-foreground uppercase">
-                  Chi tiết điện năng tiêu thụ
-                </p>
-
-                <div className="relative rounded-lg border-2 border-amber-500 bg-amber-500/10 p-3">
-                  <div className="absolute -top-3 right-3 rounded-full bg-amber-500 px-2 py-0.5 text-[10px] font-bold text-white shadow-sm flex items-center gap-1">
-                    <Sparkles className="size-3" />
-                    AI Bóc tách - Cần xác minh
-                  </div>
-                  <div className="flex items-center justify-between text-sm">
-                    <span className="font-bold text-secondary-foreground flex items-center gap-1.5">
-                      <Zap className="size-4 text-amber-600" />
-                      Sản lượng điện tiêu thụ:
-                    </span>
-                    <span className="text-lg font-black text-amber-700">1,500 kWh</span>
-                  </div>
-                  <p className="mt-1 text-[11px] text-amber-800">
-                    Chỉ số cũ: 42,300 • Chỉ số mới: 43,800
-                  </p>
-                </div>
-              </div>
-
-              {/* Tổng tiền */}
-              <div className="mt-6 space-y-1.5 border-t border-border pt-4 text-xs">
-                <div className="flex justify-between text-muted-foreground">
-                  <span>Tiền điện chưa thuế:</span>
-                  <span>12,450,000 ₫</span>
-                </div>
-                <div className="flex justify-between text-muted-foreground">
-                  <span>Thuế GTGT (5%):</span>
-                  <span>622,500 ₫</span>
-                </div>
-                <div className="flex justify-between text-sm font-bold text-foreground pt-1 border-t border-border/50">
-                  <span>Tổng tiền thanh toán:</span>
-                  <span className="text-emerald-600">13,072,500 ₫</span>
-                </div>
-              </div>
-            </div>
-          </div>
-        </AppPanel>
-
-        {/* Cột phải: Bảng Kiểm tra & Chỉnh sửa Dữ liệu Trích xuất */}
-        <AppPanel bodyClassName="space-y-6">
-          <div className="flex items-start justify-between gap-4">
-            <div>
-              <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-500/10 px-3 py-1 text-xs font-bold text-emerald-700 border border-emerald-500/20">
-                <Sparkles className="size-3.5" />
-                Độ tin cậy trích xuất AI: 92% (Rất cao)
-              </span>
-              <h3 className="mt-2 text-base font-bold text-secondary-foreground">
-                Kết quả bóc tách tự động
-              </h3>
-            </div>
-
-            {isVerified ? (
-              <span className="inline-flex items-center gap-1 rounded-full bg-emerald-600 px-3 py-1 text-xs font-bold text-white shadow-sm">
-                <CheckCircle2 className="size-3.5" />
-                Đã xác nhận
-              </span>
-            ) : null}
-          </div>
-
-          {/* Cảnh báo biến động bất thường */}
-          <div className="flex items-start gap-3 rounded-xl border border-amber-300 bg-amber-500/10 p-4 text-xs text-amber-900 leading-relaxed">
-            <AlertTriangle className="mt-0.5 size-5 shrink-0 text-amber-600" />
-            <div>
-              <p className="font-bold text-amber-950 flex items-center gap-1.5">
-                Cảnh báo kiểm tra thủ công (Anomaly Detection)
-              </p>
-              <p className="mt-0.5 text-amber-900">
-                {copy.warning}. Vui lòng đối chiếu với hóa đơn bên trái và xác nhận số liệu.
-              </p>
-            </div>
-          </div>
-
-          {/* Form Các Trường Dữ Liệu */}
-          <div className="space-y-4">
-            <div className="space-y-1.5">
-              <Label className="text-[10px] font-bold tracking-widest text-muted-foreground uppercase flex items-center gap-1">
-                <FileText className="size-3" />
-                Loại tài liệu
-              </Label>
-              <Input
-                value={docType}
-                onChange={(e) => setDocType(e.target.value)}
-                className="bg-muted/50 font-medium"
-              />
-            </div>
-
-            <div className="grid gap-4 sm:grid-cols-2">
-              <div className="space-y-1.5">
-                <Label className="text-[10px] font-bold tracking-widest text-muted-foreground uppercase flex items-center gap-1">
-                  <Calendar className="size-3" />
-                  Kỳ hóa đơn
-                </Label>
-                <Input
-                  value={period}
-                  onChange={(e) => setPeriod(e.target.value)}
-                  className="bg-muted/50 font-medium"
-                />
-              </div>
-
-              <div className="space-y-1.5">
-                <Label className="text-[10px] font-bold tracking-widest text-muted-foreground uppercase flex items-center gap-1">
-                  <Building2 className="size-3" />
-                  Chi nhánh áp dụng
-                </Label>
-                <Input
-                  value={branch}
-                  onChange={(e) => setBranch(e.target.value)}
-                  className="bg-muted/50 font-medium"
-                />
-              </div>
-            </div>
-
-            {/* Trường Cảnh Báo Sản Lượng */}
-            <div className="space-y-1.5 rounded-xl border border-amber-400 bg-amber-50/50 p-3">
-              <div className="flex items-center justify-between">
-                <Label className="text-[10px] font-bold tracking-widest text-amber-900 uppercase flex items-center gap-1">
-                  <Zap className="size-3 text-amber-600" />
-                  Sản lượng tiêu thụ điện (kWh) *
-                </Label>
-                <span className="text-[10px] font-semibold text-amber-700">Giá trị trung bình: 1,320 kWh</span>
-              </div>
-              <Input
-                type="number"
-                value={electricityKwh}
-                onChange={(e) => setElectricityKwh(e.target.value)}
-                className="border-amber-400 bg-white text-base font-bold text-amber-950 focus:border-amber-600"
-              />
-            </div>
-
-            <div className="space-y-1.5">
-              <Label className="text-[10px] font-bold tracking-widest text-muted-foreground uppercase">
-                Tổng tiền thanh toán (VNĐ)
-              </Label>
-              <Input
-                value={totalCost}
-                onChange={(e) => setTotalCost(e.target.value)}
-                className="bg-muted/50 font-medium"
-              />
-            </div>
-          </div>
-
-          {/* Các nút thao tác trích xuất */}
-          <div className="flex flex-wrap gap-2 pt-2 border-t border-border">
-            <Button
-              type="button"
-              onClick={handleVerify}
-              className={cn(
-                "font-bold shadow-sm transition-all",
-                isVerified
-                  ? "bg-emerald-600 text-white hover:bg-emerald-700"
-                  : "bg-primary text-primary-foreground hover:bg-primary/95",
+          {scanDoc?.fileUrl ? (
+            <AppPanel title="Tài liệu gốc">
+              {scanDoc.mimeType?.startsWith("image/") ? (
+                <img src={scanDoc.fileUrl} alt={scanDoc.fileName ?? ""} className="w-full rounded-lg border border-border" />
+              ) : (
+                <a
+                  href={scanDoc.fileUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex items-center gap-2 rounded-lg border border-border bg-muted/30 p-4 text-sm font-semibold text-primary hover:underline"
+                >
+                  <FileText className="size-4" />
+                  Mở tệp gốc trong tab mới
+                </a>
               )}
-            >
-              <CheckCircle2 className="size-4" />
-              {isVerified ? "Đã xác nhận dữ liệu" : "Xác nhận dữ liệu này"}
-            </Button>
+            </AppPanel>
+          ) : null}
 
-            <Button
-              type="button"
-              variant="outline"
-              onClick={() => setIsEditing(!isEditing)}
-              className="gap-1.5"
-            >
-              <Edit3 className="size-4" />
-              Chỉnh sửa
-            </Button>
+          <AppPanel title="Từ khóa phân Scope">
+            <div className="space-y-3">
+              <div className="space-y-1.5">
+                <Label className="text-[11px] text-muted-foreground">Từ khóa Scope 1</Label>
+                <Input value={kw1} onChange={(e) => setKw1(e.target.value)} className="text-xs" />
+              </div>
+              <div className="space-y-1.5">
+                <Label className="text-[11px] text-muted-foreground">Từ khóa Scope 2</Label>
+                <Input value={kw2} onChange={(e) => setKw2(e.target.value)} className="text-xs" />
+              </div>
+              <Button variant="outline" size="sm" onClick={reclassifyAll} className="w-full" disabled={!draft}>
+                Áp dụng lại cho hóa đơn này
+              </Button>
+            </div>
+          </AppPanel>
+        </div>
 
-            <Button
-              type="button"
-              variant="outline"
-              onClick={handleReExtract}
-              className="gap-1.5"
-            >
-              <RefreshCw className="size-4" />
-              Trích xuất lại AI
-            </Button>
-
-            <Button
-              type="button"
-              variant="ghost"
-              onClick={handleReject}
-              disabled={rejectMutation.isPending}
-              className="text-destructive hover:bg-destructive/10"
-            >
-              {rejectMutation.isPending ? <Loader2 className="size-4 animate-spin" /> : <XCircle className="size-4" />}
-              Từ chối
-            </Button>
-          </div>
-        </AppPanel>
-      </div>
-
-      {/* Điều hướng cuối trang */}
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between pt-4 border-t border-border">
-        <Button asChild variant="outline">
-          <Link to={ROUTES.app.uploadDoc} className="flex items-center gap-2">
-            <ArrowLeft className="size-4" />
-            Tải tài liệu khác
-          </Link>
-        </Button>
-
-        <Button
-          onClick={handleProceedToCalculation}
-          disabled={confirmMutation.isPending}
-          className="bg-accent text-accent-foreground font-bold hover:bg-accent/90 shadow-md px-6 py-5 text-base flex items-center gap-2"
-        >
-          {confirmMutation.isPending ? (
-            <>
-              <Loader2 className="size-5 animate-spin" />
-              Đang xác nhận & chuyển đổi...
-            </>
+        {/* Cột phải: editor */}
+        <div className="space-y-6 lg:col-span-2">
+          {!activeId || !draft ? (
+            <AppPanel>
+              <EmptyState icon={Sparkles} title="Chưa chọn hóa đơn" description="Chọn 1 hóa đơn ở hàng đợi bên trái để bắt đầu rà soát." />
+            </AppPanel>
           ) : (
             <>
-              {copy.calculateCta}
-              <ArrowRight className="size-5" />
+              <AppPanel
+                title="Thông tin chung"
+                badge={
+                  <Button size="sm" variant="outline" onClick={handleMockExtract} className="gap-1.5 text-xs">
+                    <Wand2 className="size-3.5" />
+                    {copy.mockExtractCta}
+                  </Button>
+                }
+              >
+                <div className="space-y-4">
+                  <div className="grid gap-3 sm:grid-cols-2">
+                    <div className="space-y-1.5">
+                      <Label className="text-[11px] text-muted-foreground">Ký hiệu</Label>
+                      <Input value={draft.serial} onChange={(e) => setDraft((p) => ({ ...p, serial: e.target.value }))} />
+                    </div>
+                    <div className="space-y-1.5">
+                      <Label className="text-[11px] text-muted-foreground">Số hóa đơn</Label>
+                      <Input value={draft.number} onChange={(e) => setDraft((p) => ({ ...p, number: e.target.value }))} />
+                    </div>
+                    <div className="space-y-1.5">
+                      <Label className="text-[11px] text-muted-foreground">Ngày lập</Label>
+                      <Input value={draft.date} onChange={(e) => setDraft((p) => ({ ...p, date: e.target.value }))} placeholder="DD/MM/YYYY" />
+                    </div>
+                    <div className="space-y-1.5">
+                      <Label className="text-[11px] text-muted-foreground flex items-center gap-1">
+                        <Building2 className="size-3.5" />
+                        Chi nhánh áp dụng
+                      </Label>
+                      <select
+                        value={branchId}
+                        onChange={(e) => setBranchId(e.target.value)}
+                        className="h-9 w-full rounded-md border border-input bg-transparent px-3 text-sm outline-none focus-visible:border-ring focus-visible:ring-2 focus-visible:ring-ring"
+                      >
+                        <option value="">— Chọn chi nhánh —</option>
+                        {branches.map((b) => (
+                          <option key={b.id} value={b.id}>
+                            {b.name}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                  </div>
+
+                  <div className="grid gap-4 sm:grid-cols-2">
+                    <div className="rounded-lg border border-border bg-muted/10 p-3 space-y-2">
+                      <h4 className="text-[11px] font-bold uppercase tracking-wide text-primary">Bên bán</h4>
+                      <Input
+                        value={draft.seller.name}
+                        onChange={(e) => setDraft((p) => ({ ...p, seller: { ...p.seller, name: e.target.value } }))}
+                        placeholder="Tên công ty"
+                      />
+                      <div className="grid grid-cols-2 gap-2">
+                        <Input
+                          value={draft.seller.taxCode}
+                          onChange={(e) => setDraft((p) => ({ ...p, seller: { ...p.seller, taxCode: e.target.value } }))}
+                          placeholder="MST"
+                        />
+                        <Input
+                          value={draft.seller.address}
+                          onChange={(e) => setDraft((p) => ({ ...p, seller: { ...p.seller, address: e.target.value } }))}
+                          placeholder="Địa chỉ"
+                        />
+                      </div>
+                    </div>
+                    <div className="rounded-lg border border-border bg-muted/10 p-3 space-y-2">
+                      <h4 className="text-[11px] font-bold uppercase tracking-wide text-primary">Bên mua</h4>
+                      <Input
+                        value={draft.buyer.name}
+                        onChange={(e) => setDraft((p) => ({ ...p, buyer: { ...p.buyer, name: e.target.value } }))}
+                        placeholder="Tên công ty"
+                      />
+                      <div className="grid grid-cols-2 gap-2">
+                        <Input
+                          value={draft.buyer.taxCode}
+                          onChange={(e) => setDraft((p) => ({ ...p, buyer: { ...p.buyer, taxCode: e.target.value } }))}
+                          placeholder="MST"
+                        />
+                        <Input
+                          value={draft.buyer.address}
+                          onChange={(e) => setDraft((p) => ({ ...p, buyer: { ...p.buyer, address: e.target.value } }))}
+                          placeholder="Địa chỉ"
+                        />
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-3 gap-3">
+                    <div className="space-y-1.5">
+                      <Label className="text-[11px] text-muted-foreground">Tổng tiền hàng</Label>
+                      <Input value={fmtMoney(draft.subtotal)} disabled />
+                    </div>
+                    <div className="space-y-1.5">
+                      <Label className="text-[11px] text-muted-foreground">Tiền thuế GTGT</Label>
+                      <Input value={fmtMoney(draft.vatAmount)} disabled />
+                    </div>
+                    <div className="space-y-1.5">
+                      <Label className="text-[11px] text-muted-foreground">Tổng thanh toán</Label>
+                      <Input value={fmtMoney(draft.totalAmount)} disabled className="font-bold" />
+                    </div>
+                  </div>
+                </div>
+              </AppPanel>
+
+              <AppPanel
+                title="Hàng hóa / dịch vụ"
+                badge={
+                  <div className="flex gap-2">
+                    <Button size="sm" variant="outline" onClick={addRow} className="gap-1 text-xs">
+                      <Plus className="size-3.5" />
+                      Thêm dòng
+                    </Button>
+                    <Button size="sm" variant="outline" onClick={recalcTotals} className="gap-1 text-xs">
+                      Tính lại tổng
+                    </Button>
+                  </div>
+                }
+                bodyClassName="p-0"
+              >
+                {draft.items.length === 0 ? (
+                  <div className="p-6">
+                    <EmptyState title="Chưa có dòng nào" description={`Bấm "${copy.mockExtractCta}" hoặc "Thêm dòng".`} />
+                  </div>
+                ) : (
+                  <div className="overflow-x-auto">
+                    <table className="w-full min-w-[860px] text-left text-xs">
+                      <thead className="border-b border-border bg-muted/50">
+                        <tr>
+                          <th className="px-3 py-2.5 font-bold uppercase tracking-wide text-muted-foreground">#</th>
+                          <th className="px-3 py-2.5 font-bold uppercase tracking-wide text-muted-foreground">Tên hàng / dịch vụ</th>
+                          <th className="px-3 py-2.5 font-bold uppercase tracking-wide text-muted-foreground">ĐVT</th>
+                          <th className="px-3 py-2.5 font-bold uppercase tracking-wide text-muted-foreground">SL</th>
+                          <th className="px-3 py-2.5 font-bold uppercase tracking-wide text-muted-foreground">Đơn giá</th>
+                          <th className="px-3 py-2.5 font-bold uppercase tracking-wide text-muted-foreground">VAT%</th>
+                          <th className="px-3 py-2.5 font-bold uppercase tracking-wide text-muted-foreground">Scope</th>
+                          <th className="px-3 py-2.5" />
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {draft.items.map((it, idx) => (
+                          <tr key={it.id} className="border-b border-border last:border-0">
+                            <td className="px-3 py-2 text-center font-semibold text-muted-foreground">{it.id}</td>
+                            <td className="px-3 py-2 min-w-[220px]">
+                              <Input
+                                value={it.description}
+                                onChange={(e) => handleDescriptionChange(idx, e.target.value)}
+                                placeholder="Tên hàng / dịch vụ"
+                                className="h-8 text-xs"
+                              />
+                              <p className="mt-1 text-[10px] text-muted-foreground">
+                                {it.reasoning} · tin cậy {it.confidence.toFixed(2)}
+                              </p>
+                            </td>
+                            <td className="px-3 py-2">
+                              <Input
+                                value={it.unit}
+                                onChange={(e) => updateItem(idx, { unit: e.target.value })}
+                                className="h-8 w-20 text-xs"
+                              />
+                            </td>
+                            <td className="px-3 py-2">
+                              <Input
+                                type="number"
+                                value={it.quantity}
+                                onChange={(e) => handleQtyOrPrice(idx, { quantity: Number(e.target.value) || 0 })}
+                                className="h-8 w-20 text-xs"
+                              />
+                            </td>
+                            <td className="px-3 py-2">
+                              <Input
+                                type="number"
+                                value={it.unitPrice}
+                                onChange={(e) => handleQtyOrPrice(idx, { unitPrice: Number(e.target.value) || 0 })}
+                                className="h-8 w-28 text-xs"
+                              />
+                            </td>
+                            <td className="px-3 py-2">
+                              <Input
+                                type="number"
+                                value={it.vatRate}
+                                onChange={(e) => updateItem(idx, { vatRate: Number(e.target.value) || 0 })}
+                                className="h-8 w-16 text-xs"
+                              />
+                            </td>
+                            <td className="px-3 py-2">
+                              <select
+                                value={it.scope}
+                                onChange={(e) =>
+                                  updateItem(idx, {
+                                    scope: e.target.value as ScopeLabel,
+                                    confidence: 1,
+                                    reasoning: "Điều chỉnh thủ công",
+                                  })
+                                }
+                                className="h-8 w-full rounded-md border border-input bg-transparent px-2 text-xs outline-none"
+                              >
+                                <option>Scope 1</option>
+                                <option>Scope 2</option>
+                                <option>Scope Unassigned</option>
+                              </select>
+                            </td>
+                            <td className="px-3 py-2 text-right">
+                              <Button variant="ghost" size="icon-sm" onClick={() => removeRow(idx)}>
+                                <Trash2 className="size-3.5 text-muted-foreground" />
+                              </Button>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                )}
+              </AppPanel>
+
+              <div className="grid gap-3 sm:grid-cols-3">
+                {(["Scope 1", "Scope 2", "Scope Unassigned"] as const).map((scope) => (
+                  <div key={scope} className="rounded-xl border border-border bg-card p-3">
+                    <h4 className="text-[11px] font-bold uppercase tracking-wide text-muted-foreground">{scope}</h4>
+                    <p className="mt-1 text-lg font-bold text-foreground">{fmtMoney(scopeSummary[scope].amount)} ₫</p>
+                    <p className="text-[11px] text-muted-foreground">{scopeSummary[scope].count} mục</p>
+                  </div>
+                ))}
+              </div>
+
+              <AppPanel
+                title="JSON xuất ra"
+                badge={
+                  <div className="flex gap-1">
+                    <button
+                      type="button"
+                      onClick={() => setJsonTab("active")}
+                      className={cn(
+                        "rounded-full px-2.5 py-1 text-[11px] font-bold",
+                        jsonTab === "active" ? "bg-primary text-primary-foreground" : "text-muted-foreground",
+                      )}
+                    >
+                      Hóa đơn này
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setJsonTab("all")}
+                      className={cn(
+                        "rounded-full px-2.5 py-1 text-[11px] font-bold",
+                        jsonTab === "all" ? "bg-primary text-primary-foreground" : "text-muted-foreground",
+                      )}
+                    >
+                      Cả hàng đợi
+                    </button>
+                  </div>
+                }
+              >
+                <div className="space-y-3">
+                  <pre className="max-h-64 overflow-auto rounded-lg bg-[#0F1F3C] p-4 text-[11px] leading-relaxed text-[#C8D6F0]">
+                    {JSON.stringify(jsonOutput, null, 2)}
+                  </pre>
+                  <div className="flex gap-2">
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => copyToClipboard(JSON.stringify(jsonOutput, null, 2), "Đã sao chép JSON")}
+                      className="gap-1.5"
+                    >
+                      <Copy className="size-3.5" />
+                      Copy JSON
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => {
+                        const blob = new Blob([JSON.stringify(jsonOutput, null, 2)], { type: "application/json" });
+                        const a = document.createElement("a");
+                        a.href = URL.createObjectURL(blob);
+                        a.download = `hoa-don_${draft.number || "export"}.json`;
+                        a.click();
+                        URL.revokeObjectURL(a.href);
+                      }}
+                      className="gap-1.5"
+                    >
+                      <Download className="size-3.5" />
+                      Tải .json
+                    </Button>
+                  </div>
+                </div>
+              </AppPanel>
+
+              <div className="flex flex-wrap items-center justify-between gap-3 border-t border-border pt-4">
+                <div className="flex gap-2">
+                  <Button asChild variant="outline" className="gap-1.5">
+                    <Link to={ROUTES.app.uploadDoc}>
+                      <ArrowLeft className="size-4" />
+                      Tải tài liệu khác
+                    </Link>
+                  </Button>
+                  <Button variant="outline" onClick={handleRetry} disabled={retryMutation.isPending} className="gap-1.5">
+                    {retryMutation.isPending ? <Loader2 className="size-4 animate-spin" /> : <RefreshCw className="size-4" />}
+                    Trích xuất lại AI
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    onClick={handleReject}
+                    disabled={rejectMutation.isPending}
+                    className="gap-1.5 text-destructive hover:bg-destructive/10"
+                  >
+                    {rejectMutation.isPending ? <Loader2 className="size-4 animate-spin" /> : <XCircle className="size-4" />}
+                    Từ chối
+                  </Button>
+                </div>
+
+                <Button
+                  onClick={handleConfirm}
+                  disabled={confirmMutation.isPending || isLoadingDoc}
+                  className="gap-1.5 bg-accent text-accent-foreground font-bold hover:bg-accent/90 shadow-md px-6"
+                >
+                  {confirmMutation.isPending ? (
+                    <Loader2 className="size-4 animate-spin" />
+                  ) : (
+                    <Check className="size-4" />
+                  )}
+                  {copy.confirmCta}
+                </Button>
+              </div>
             </>
           )}
-        </Button>
+        </div>
       </div>
     </div>
   );
