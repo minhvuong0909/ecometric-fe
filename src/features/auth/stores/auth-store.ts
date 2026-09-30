@@ -1,5 +1,5 @@
 import { create } from "zustand";
-import type { AuthUser } from "@/features/auth/types/auth.types";
+import type { AuthUser, ProfileMembership } from "@/features/auth/types/auth.types";
 import { AUTH_EXPIRED_EVENT } from "@/shared/lib/api-client";
 import {
   clearSession as clearPersistedSession,
@@ -13,8 +13,13 @@ import {
 type AuthState = {
   user: AuthUser | null;
   isAuthenticated: boolean;
+  /** Vai trò của user hiện tại theo từng doanh nghiệp (từ GET /auth/profile). */
+  memberships: ProfileMembership[];
+  /** true khi đã fetch xong /auth/profile ít nhất 1 lần trong phiên này. */
+  membershipsLoaded: boolean;
   setSession: (session: StoredSession) => void;
   setUser: (user: AuthUser | null) => void;
+  setMemberships: (memberships: ProfileMembership[]) => void;
   clear: () => void;
 };
 
@@ -25,6 +30,8 @@ type AuthState = {
 export const useAuthStore = create<AuthState>((set) => ({
   user: getStoredUser(),
   isAuthenticated: hasStoredToken(),
+  memberships: [],
+  membershipsLoaded: false,
   setSession: (session) => {
     persistSession(session);
     set({
@@ -36,15 +43,23 @@ export const useAuthStore = create<AuthState>((set) => ({
     setStoredUser(user);
     set({ user });
   },
+  setMemberships: (memberships) => {
+    set({ memberships, membershipsLoaded: true });
+  },
   clear: () => {
     clearPersistedSession();
-    set({ user: null, isAuthenticated: false });
+    set({ user: null, isAuthenticated: false, memberships: [], membershipsLoaded: false });
   },
 }));
 
 // Phiên hết hạn từ tầng API (refresh thất bại) -> đồng bộ trạng thái đăng nhập.
 if (typeof window !== "undefined") {
   window.addEventListener(AUTH_EXPIRED_EVENT, () => {
-    useAuthStore.setState({ user: null, isAuthenticated: false });
+    useAuthStore.setState({
+      user: null,
+      isAuthenticated: false,
+      memberships: [],
+      membershipsLoaded: false,
+    });
   });
 }

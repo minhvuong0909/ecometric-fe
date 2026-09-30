@@ -9,13 +9,12 @@ export const NAV_LINKS = [
 ] as const;
 
 export const HERO_COPY = {
-  badge: "Mới ra mắt: Phân hệ Quản lý Chuỗi giá trị Phạm vi 3",
+  badge: "Kiểm kê khí nhà kính theo chuẩn GHG Protocol — Phạm vi 1, 2 & 3",
   titleLead: "Tự động hóa Kiểm kê Carbon.",
   titleHighlight: "Bứt tốc Đạt chuẩn ESG.",
   description:
-    "Dễ dàng theo dõi và báo cáo toàn diện phát thải Phạm vi 1, 2 và 3 với nền tảng phân tích dữ liệu siêu chính xác. Giải pháp chuyên biệt nâng tầm vị thế cho các đội ngũ phát triển bền vững hiện đại.",
+    "Theo dõi và báo cáo phát thải Phạm vi 1, 2 và 3 dựa trên phương pháp luận GHG Protocol đã được kiểm chứng. Giải pháp dành riêng cho đội ngũ phát triển bền vững của doanh nghiệp SME Việt Nam.",
   ctaPrimary: "Dùng thử miễn phí",
-  ctaSecondary: "Xem video giới thiệu",
 } as const;
 
 export const FEATURES_SECTION = {
@@ -63,7 +62,7 @@ export const PRICING_TIERS = [
     id: "starter",
     name: "Starter (Gói Khởi đầu)",
     description: "Dành cho các đội ngũ mới bắt đầu hành trình ESG.",
-    monthlyPrice: 49,
+    monthlyPrice: 990_000,
     features: [
       "Theo dõi Phạm vi 1 & 2",
       "Báo cáo ESG cơ bản",
@@ -77,7 +76,7 @@ export const PRICING_TIERS = [
     name: "Professional (Gói Chuyên nghiệp)",
     description:
       "Công cụ toàn diện cho các đội ngũ phát triển bền vững đang trên đà tăng trưởng.",
-    monthlyPrice: 199,
+    monthlyPrice: 3_990_000,
     features: [
       "Toàn diện Phạm vi 1, 2 & Core 3",
       "Tích hợp API & ERP",

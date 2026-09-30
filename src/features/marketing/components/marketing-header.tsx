@@ -62,10 +62,7 @@ export function MarketingHeader() {
           >
             {HEADER_COPY.login}
           </Link>
-          <Button
-            asChild
-            className="h-10 bg-gradient-to-r from-emerald-600 to-teal-600 px-6 font-bold tracking-wide text-white shadow-md shadow-emerald-600/20 hover:from-emerald-700 hover:to-teal-700"
-          >
+          <Button asChild className="px-6">
             <Link to={ROUTES.register}>{HEADER_COPY.startTrial}</Link>
           </Button>
         </div>
@@ -110,10 +107,7 @@ export function MarketingHeader() {
                   {HEADER_COPY.login}
                 </Link>
               </Button>
-              <Button
-                asChild
-                className="w-full bg-gradient-to-r from-emerald-600 to-teal-600 font-bold tracking-wide text-white hover:from-emerald-700 hover:to-teal-700"
-              >
+              <Button asChild className="w-full">
                 <Link to={ROUTES.register} onClick={() => setMobileOpen(false)}>
                   {HEADER_COPY.startTrial}
                 </Link>

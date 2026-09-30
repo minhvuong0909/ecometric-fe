@@ -6,31 +6,23 @@ import { Reveal } from "@/shared/components/reveal";
 
 export function MarketingCta() {
   return (
-    <section id="contact" className="relative scroll-mt-16 overflow-hidden bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 dark:from-[#09120e] dark:via-[#0c1813] dark:to-[#070d0a] border-t border-border/80 py-24">
-      <div
-        className="pointer-events-none absolute -right-36 top-0 size-[600px] rounded-full bg-emerald-500/10 blur-3xl"
-        aria-hidden
-      />
-      <Reveal className="relative mx-auto max-w-4xl px-6 text-center lg:px-8">
-        <h2 className="text-3xl font-bold tracking-tight text-white sm:text-5xl sm:leading-tight">
+    <section id="contact" className="scroll-mt-16 border-t border-border bg-foreground py-20">
+      <Reveal className="mx-auto max-w-4xl px-6 text-center lg:px-8">
+        <h2 className="text-3xl font-bold tracking-tight text-background sm:text-4xl">
           {CTA_SECTION.title}
         </h2>
-        <p className="mx-auto mt-6 max-w-xl text-lg leading-relaxed text-secondary">
+        <p className="mx-auto mt-6 max-w-xl text-lg leading-relaxed text-background/70">
           {CTA_SECTION.description}
         </p>
         <div className="mt-10 flex flex-col items-center justify-center gap-4 sm:flex-row">
-          <Button
-            asChild
-            size="lg"
-            className="h-14 bg-accent px-10 text-sm font-bold tracking-wide text-accent-foreground shadow-lg hover:bg-accent/90 active:bg-accent/80"
-          >
+          <Button asChild size="lg" className="px-10">
             <Link to={ROUTES.register}>{CTA_SECTION.primary}</Link>
           </Button>
           <Button
             asChild
             variant="outline"
             size="lg"
-            className="h-14 border-white/20 bg-transparent px-10 text-sm font-bold tracking-wide text-white hover:bg-white/10 active:bg-white/15"
+            className="border-background/20 bg-transparent px-10 text-background hover:bg-background/10"
           >
             <Link to={ROUTES.register}>{CTA_SECTION.secondary}</Link>
           </Button>

@@ -1,5 +1,6 @@
 import {
   Building2,
+  CheckCircle2,
   ChevronLeft,
   ChevronRight,
   Loader2,
@@ -11,6 +12,8 @@ import {
 import type { ReactNode } from "react";
 import { useMemo, useState } from "react";
 import { Link, useNavigate } from "react-router";
+import { toast } from "sonner";
+import { useBusinessStore } from "@/shared/stores/business-store";
 import { AppPageHeader } from "@/features/app/components/app-page-header";
 import { AppPanel } from "@/features/app/components/app-panel";
 import { useAuthStore } from "@/features/auth/stores/auth-store";
@@ -40,6 +43,7 @@ export function BusinessesPage() {
   const isAdmin = useAuthStore(
     (state) => state.user?.platformRole === "SYSTEM_ADMIN",
   );
+  const { activeBusinessId, setActiveBusiness } = useBusinessStore();
 
   const [searchInput, setSearchInput] = useState("");
   const [status, setStatus] = useState<BusinessStatus | undefined>();
@@ -217,7 +221,25 @@ export function BusinessesPage() {
                       <BusinessStatusBadge status={business.status} />
                     </td>
                     <td className="px-6 py-4">
-                      <div className="flex items-center justify-end gap-1">
+                      <div className="flex items-center justify-end gap-2">
+                        {business.id === activeBusinessId ? (
+                          <span className="inline-flex items-center gap-1 rounded-full bg-primary/10 px-2.5 py-1 text-xs font-bold text-primary border border-primary/20">
+                            <CheckCircle2 className="size-3" />
+                            Đang làm việc
+                          </span>
+                        ) : (
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            className="text-xs h-7 px-2.5 hover:bg-primary/10 hover:text-primary"
+                            onClick={() => {
+                              setActiveBusiness(business);
+                              toast.success(`Đã kích hoạt làm việc với: ${business.name}`);
+                            }}
+                          >
+                            Chọn làm việc
+                          </Button>
+                        )}
                         <Button
                           variant="ghost"
                           size="icon-sm"

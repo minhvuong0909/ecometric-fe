@@ -63,7 +63,7 @@ function SetupLayout({
           <span />
         )}
         {nextTo ? (
-          <Button asChild className="font-bold">
+          <Button asChild>
             <Link to={nextTo}>{nextLabel}</Link>
           </Button>
         ) : null}

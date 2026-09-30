@@ -17,7 +17,7 @@ export function MarketingWorkflow() {
       title: "AI Bóc tách & Tính toán",
       desc: "Trí tuệ nhân tạo nhận diện số kWh, lít xăng, khối nước và tự động tra cứu hệ số phát thải (EF) Việt Nam theo chuẩn GHG Protocol Scope 1, 2, 3.",
       icon: Bot,
-      tag: "Chuẩn xác 99.4%",
+      tag: "Chuẩn GHG Protocol",
     },
     {
       step: "03",
@@ -36,7 +36,7 @@ export function MarketingWorkflow() {
             <Sparkles className="size-3.5" />
             Đơn giản hóa cho doanh nghiệp SME
           </div>
-          <h2 className="mt-4 text-3xl font-extrabold tracking-tight text-foreground sm:text-4xl">
+          <h2 className="mt-4 text-3xl font-bold tracking-tight text-foreground sm:text-4xl">
             Kiểm Kê Khí Nhà Kính Chỉ Trong 3 Bước
           </h2>
           <p className="mt-4 text-base leading-relaxed text-muted-foreground">
@@ -50,11 +50,11 @@ export function MarketingWorkflow() {
             return (
               <div
                 key={item.step}
-                className="group relative flex flex-col justify-between rounded-2xl border border-border/80 bg-background p-8 shadow-sm transition-all duration-300 hover:-translate-y-1.5 hover:border-primary/40 hover:shadow-xl"
+                className="group relative flex flex-col justify-between rounded-xl border border-border bg-background p-8 shadow-sm transition-colors duration-200 hover:border-primary/40"
               >
                 {/* Step badge */}
                 <div className="flex items-center justify-between">
-                  <span className="text-3xl font-black text-primary/25 group-hover:text-primary transition-colors">
+                  <span className="text-3xl font-bold text-primary/25 group-hover:text-primary transition-colors">
                     {item.step}
                   </span>
                   <span className="rounded-full bg-primary/10 px-2.5 py-1 text-[11px] font-bold text-primary">
@@ -87,11 +87,7 @@ export function MarketingWorkflow() {
         </div>
 
         <div className="mt-12 text-center">
-          <Button
-            asChild
-            size="lg"
-            className="gap-2 bg-gradient-to-r from-emerald-600 to-teal-600 font-bold text-white shadow-lg shadow-emerald-600/20 hover:from-emerald-700 hover:to-teal-700"
-          >
+          <Button asChild size="lg" className="gap-2">
             <Link to={ROUTES.register}>
               Trải nghiệm thử quy trình ngay
               <ArrowRight className="size-4" />

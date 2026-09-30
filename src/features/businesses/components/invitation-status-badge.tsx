@@ -1,12 +1,13 @@
 import { INVITATION_STATUS_LABELS } from "@/features/businesses/constants/businesses-copy";
 import type { InvitationStatus } from "@/features/businesses/types/businesses.types";
-import { cn } from "@/shared/lib/utils";
+import { Badge, type badgeVariants } from "@/shared/components/ui/badge";
+import type { VariantProps } from "class-variance-authority";
 
-const STATUS_STYLES: Record<InvitationStatus, string> = {
-  PENDING: "bg-amber-100 text-amber-800",
-  ACCEPTED: "bg-secondary text-primary",
-  EXPIRED: "bg-muted text-muted-foreground",
-  REVOKED: "bg-red-100 text-red-800",
+const STATUS_VARIANTS: Record<InvitationStatus, VariantProps<typeof badgeVariants>["variant"]> = {
+  PENDING: "warning",
+  ACCEPTED: "success",
+  EXPIRED: "neutral",
+  REVOKED: "danger",
 };
 
 type InvitationStatusBadgeProps = {
@@ -14,19 +15,10 @@ type InvitationStatusBadgeProps = {
   className?: string;
 };
 
-export function InvitationStatusBadge({
-  status,
-  className,
-}: InvitationStatusBadgeProps) {
+export function InvitationStatusBadge({ status, className }: InvitationStatusBadgeProps) {
   return (
-    <span
-      className={cn(
-        "inline-flex items-center rounded-full px-2.5 py-1 text-xs font-semibold",
-        STATUS_STYLES[status],
-        className,
-      )}
-    >
+    <Badge variant={STATUS_VARIANTS[status]} className={className}>
       {INVITATION_STATUS_LABELS[status]}
-    </span>
+    </Badge>
   );
 }

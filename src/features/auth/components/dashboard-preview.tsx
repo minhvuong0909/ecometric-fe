@@ -27,10 +27,7 @@ export function DashboardPreview({ className }: DashboardPreviewProps) {
 
   return (
     <div
-      className={cn(
-        "w-full rounded-xl border border-white/10 bg-card/95 p-6 shadow-2xl backdrop-blur-md",
-        className,
-      )}
+      className={cn("w-full rounded-xl border border-border bg-card p-6 shadow-md", className)}
     >
       <div className="mb-8 flex items-start justify-between gap-4">
         <div className="space-y-1">

@@ -1,4 +1,4 @@
-import { useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Link, useNavigate } from "react-router";
 import { toast } from "sonner";
 import {
@@ -18,17 +18,21 @@ import {
   ShieldCheck,
   Zap,
   Loader2,
+  Building2,
 } from "lucide-react";
 import { AppPageHeader } from "@/features/app/components/app-page-header";
 import { AppPanel } from "@/features/app/components/app-panel";
 import { MetricCard } from "@/features/app/components/metric-card";
 import { UPLOAD_DOC_COPY } from "@/features/app/constants/app-copy";
 import { useInvoiceScans, useUploadInvoiceScan } from "@/features/app/hooks/use-ai-scan";
+import { useBusinesses } from "@/features/businesses/hooks/use-businesses";
 import { useBusinessStore } from "@/shared/stores/business-store";
 import { ROUTES } from "@/shared/constants/routes";
+import { Badge, type badgeVariants } from "@/shared/components/ui/badge";
 import { Button } from "@/shared/components/ui/button";
 import { Input } from "@/shared/components/ui/input";
 import { cn } from "@/shared/lib/utils";
+import type { VariantProps } from "class-variance-authority";
 
 type FileItem = {
   id: string;
@@ -80,26 +84,26 @@ const INITIAL_FILES: FileItem[] = [
 
 const STATUS_CONFIG: Record<
   FileItem["status"],
-  { label: string; className: string; icon: typeof CheckCircle2 }
+  { label: string; variant: VariantProps<typeof badgeVariants>["variant"]; icon: typeof CheckCircle2 }
 > = {
   "Đã trích xuất": {
     label: "Đã trích xuất",
-    className: "bg-emerald-500/10 text-emerald-700 border-emerald-500/20",
+    variant: "success",
     icon: CheckCircle2,
   },
   "Cần xác nhận": {
     label: "Cần xác nhận",
-    className: "bg-amber-500/10 text-amber-700 border-amber-500/20",
+    variant: "warning",
     icon: AlertTriangle,
   },
   "Chờ kiểm tra": {
     label: "Chờ kiểm tra",
-    className: "bg-blue-500/10 text-blue-700 border-blue-500/20",
+    variant: "info",
     icon: Clock,
   },
   Lỗi: {
     label: "Lỗi trích xuất",
-    className: "bg-red-500/10 text-red-700 border-red-500/20",
+    variant: "danger",
     icon: AlertTriangle,
   },
 };
@@ -108,11 +112,27 @@ export function UploadDocPage() {
   const copy = UPLOAD_DOC_COPY;
   const navigate = useNavigate();
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const { activeBusinessId } = useBusinessStore();
+  const { activeBusinessId, activeBusiness, setActiveBusiness } = useBusinessStore();
+  const { data: businessesData } = useBusinesses({ limit: 100 });
+  const businesses = businessesData?.items ?? [];
+
+  // Tự động kích hoạt doanh nghiệp đầu tiên nếu chưa có doanh nghiệp nào được chọn
+  useEffect(() => {
+    if (businesses.length > 0) {
+      const found = businesses.find((b) => b.id === activeBusinessId);
+      if (found) {
+        if (!activeBusiness || activeBusiness.id !== found.id) {
+          setActiveBusiness(found);
+        }
+      } else {
+        setActiveBusiness(businesses[0]);
+      }
+    }
+  }, [businesses, activeBusinessId, activeBusiness, setActiveBusiness]);
 
   const { data: scansData, refetch: refetchScans } = useInvoiceScans(
-    { businessId: activeBusinessId ?? undefined, limit: 50 },
-    !!activeBusinessId,
+    { businessId: activeBusinessId ?? businesses[0]?.id, limit: 50 },
+    !!(activeBusinessId || businesses[0]?.id),
   );
   const uploadScanMutation = useUploadInvoiceScan();
 
@@ -159,10 +179,16 @@ export function UploadDocPage() {
   });
 
   const handleFileUpload = async (file: File) => {
-    if (!activeBusinessId) {
-      toast.error("Vui lòng chọn doanh nghiệp trước khi tải tài liệu");
+    const targetBusinessId = activeBusinessId || businesses[0]?.id;
+
+    if (!targetBusinessId) {
+      toast.error("Bạn chưa có hồ sơ doanh nghiệp. Vui lòng tạo doanh nghiệp trước khi tải tài liệu!");
       navigate(ROUTES.app.businesses);
       return;
+    }
+
+    if (!activeBusinessId && businesses[0]) {
+      setActiveBusiness(businesses[0]);
     }
 
     toast.loading(`Đang tải tệp ${file.name} và gửi sang AI trích xuất...`, { id: "upload-toast" });
@@ -170,7 +196,7 @@ export function UploadDocPage() {
     try {
       await uploadScanMutation.mutateAsync({
         file,
-        businessId: activeBusinessId,
+        businessId: targetBusinessId,
       });
       toast.success("Tải tệp thành công! Đang xử lý bóc tách qua AI...", { id: "upload-toast" });
       await refetchScans();
@@ -195,6 +221,27 @@ export function UploadDocPage() {
         title="Tải lên Tài liệu & Hóa đơn"
         description={copy.description}
       />
+
+      {/* Thông tin doanh nghiệp đang áp dụng */}
+      <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-primary/20 bg-primary/5 px-4 py-3 text-sm">
+        <div className="flex items-center gap-2.5">
+          <div className="flex size-7 items-center justify-center rounded-lg bg-primary/10 text-primary">
+            <Building2 className="size-4" />
+          </div>
+          <div>
+            <span className="text-xs text-muted-foreground">Tài liệu sẽ được tính toán cho doanh nghiệp: </span>
+            <span className="font-bold text-foreground">
+              {activeBusiness?.name || businesses[0]?.name || "Chưa có doanh nghiệp"}
+            </span>
+          </div>
+        </div>
+        <Link
+          to={ROUTES.app.businesses}
+          className="text-xs font-semibold text-primary hover:underline"
+        >
+          {businesses.length > 1 ? "Đổi doanh nghiệp →" : "Quản lý doanh nghiệp →"}
+        </Link>
+      </div>
 
       {/* Thanh tiến trình luồng xử lý */}
       <div className="rounded-2xl border border-border bg-card p-4 shadow-sm">
@@ -259,9 +306,9 @@ export function UploadDocPage() {
         />
         <MetricCard
           icon={Sparkles}
-          label="Độ chính xác AI trung bình"
-          value="95.4%"
-          hint="Mô hình EcoMetric OCR v2.4"
+          label="Công nghệ trích xuất"
+          value="AI OCR"
+          hint="Tự động nhận diện hóa đơn"
           hintClassName="text-primary font-semibold"
         />
       </div>
@@ -378,43 +425,33 @@ export function UploadDocPage() {
 
         {/* Panel AI Engine & Action */}
         <div className="space-y-6">
-          <AppPanel className="bg-gradient-to-br from-secondary-foreground to-slate-900 text-white space-y-5">
+          <AppPanel className="space-y-5">
             <div className="flex items-center justify-between">
-              <span className="flex items-center gap-2 rounded-full bg-accent/20 px-3 py-1 text-xs font-bold text-accent border border-accent/30">
+              <span className="flex items-center gap-2 rounded-full bg-primary/10 px-3 py-1 text-xs font-semibold text-primary">
                 <Sparkles className="size-3.5" />
                 Mô hình AI bóc tách
               </span>
-              <span className="text-[11px] font-medium text-slate-300">v2.4 Pro</span>
             </div>
 
             <div>
-              <h3 className="text-lg font-bold text-white">AI Engine đã sẵn sàng</h3>
-              <p className="mt-1 text-xs text-slate-300 leading-relaxed">
+              <h3 className="text-lg font-bold text-foreground">AI Engine đã sẵn sàng</h3>
+              <p className="mt-1 text-xs text-muted-foreground leading-relaxed">
                 Tự động nhận diện thông tin hóa đơn tiền điện (EVN), hóa đơn xăng dầu, dịch vụ vận tải và lập sổ cái carbon.
               </p>
             </div>
 
-            <div className="space-y-3 border-t border-white/10 pt-4">
-              <div className="flex items-center justify-between text-xs">
-                <span className="text-slate-300 flex items-center gap-1.5">
-                  <ShieldCheck className="size-4 text-emerald-400" />
-                  Độ chính xác nhận diện:
-                </span>
-                <span className="font-bold text-emerald-400">99.2%</span>
+            <div className="space-y-3 border-t border-border pt-4">
+              <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                <ShieldCheck className="size-4 text-emerald-600 dark:text-emerald-400" />
+                Kiểm tra thủ công trước khi ghi nhận dữ liệu
               </div>
-              <div className="flex items-center justify-between text-xs">
-                <span className="text-slate-300 flex items-center gap-1.5">
-                  <Zap className="size-4 text-amber-400" />
-                  Thời gian xử lý trung bình:
-                </span>
-                <span className="font-bold text-white">1.2 giây/file</span>
+              <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                <Zap className="size-4 text-amber-600 dark:text-amber-400" />
+                Xử lý theo hàng đợi nền, không chặn thao tác khác
               </div>
             </div>
 
-            <Button
-              asChild
-              className="w-full bg-accent text-accent-foreground font-bold hover:bg-accent/90 shadow-lg py-5"
-            >
+            <Button asChild className="w-full py-5">
               <Link to={ROUTES.app.aiReview} className="flex items-center justify-center gap-2">
                 Trích xuất & Kiểm tra bằng AI
                 <ArrowRight className="size-4" />
@@ -535,15 +572,10 @@ export function UploadDocPage() {
 
                       <td className="px-6 py-4">
                         <div className="flex items-center gap-2">
-                          <span
-                            className={cn(
-                              "inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-xs font-semibold",
-                              statusInfo.className,
-                            )}
-                          >
+                          <Badge variant={statusInfo.variant} className="gap-1.5 py-1">
                             <StatusIcon className="size-3.5" />
                             {statusInfo.label}
-                          </span>
+                          </Badge>
                           {file.confidence ? (
                             <span className="text-[11px] font-semibold text-muted-foreground">
                               ({file.confidence})

@@ -177,7 +177,7 @@ export function LoginForm({ className }: LoginFormProps) {
 
         <Button
           type="submit"
-          className="eco-tactile h-12 w-full bg-gradient-to-r from-emerald-600 to-teal-600 text-sm font-bold tracking-wide text-white shadow-lg shadow-emerald-600/25 transition-all hover:from-emerald-700 hover:to-teal-700"
+          className="h-11 w-full"
           disabled={isSubmitting}
           aria-busy={isSubmitting}
           data-loading={isSubmitting}

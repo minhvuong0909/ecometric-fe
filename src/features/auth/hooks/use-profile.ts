@@ -7,6 +7,7 @@ import { isAuthenticated } from "@/shared/lib/auth-storage";
 
 export function useProfile(enabled = true) {
   const setUser = useAuthStore((state) => state.setUser);
+  const setMemberships = useAuthStore((state) => state.setMemberships);
 
   const query = useQuery({
     queryKey: AUTH_QUERY_KEYS.profile,
@@ -17,8 +18,9 @@ export function useProfile(enabled = true) {
   useEffect(() => {
     if (query.data?.user) {
       setUser(query.data.user);
+      setMemberships(query.data.memberships ?? []);
     }
-  }, [query.data, setUser]);
+  }, [query.data, setUser, setMemberships]);
 
   return query;
 }

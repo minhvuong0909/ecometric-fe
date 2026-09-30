@@ -41,12 +41,10 @@ export function MarketingFeatures() {
                 )}
               >
                 <SpotlightCard
-                  enableTilt={isFeatured}
-                  maxTilt={3}
                   className={cn(
                     "group flex w-full flex-col p-6 eco-card-hover",
                     isFeatured
-                      ? "border-primary/30 bg-[radial-gradient(ellipse_at_top_left,rgba(0,166,62,0.12),transparent_60%)] lg:p-10 shadow-lg shadow-emerald-500/5"
+                      ? "border-primary/30 bg-primary/5 lg:p-10"
                       : index === 1
                         ? "border-border bg-secondary/60"
                         : "border-border bg-background",

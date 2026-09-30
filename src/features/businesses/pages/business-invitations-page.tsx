@@ -29,6 +29,7 @@ import {
 } from "@/features/businesses/constants/businesses-copy";
 import { useBusiness } from "@/features/businesses/hooks/use-business";
 import { useBusinessInvitations } from "@/features/businesses/hooks/use-business-invitations";
+import { useBusinessRole } from "@/features/businesses/hooks/use-business-role";
 import { useCreateInvitation } from "@/features/businesses/hooks/use-create-invitation";
 import { useResendInvitation } from "@/features/businesses/hooks/use-resend-invitation";
 import { useRevokeInvitation } from "@/features/businesses/hooks/use-revoke-invitation";
@@ -91,9 +92,14 @@ export function BusinessInvitationsPage() {
     [email, status, page],
   );
 
+  const { role: membershipRole, isLoading: roleLoading } =
+    useBusinessRole(businessId);
+  const canManageInvitations =
+    membershipRole === "COMPANY_ADMIN" || membershipRole === "SYSTEM_ADMIN";
+
   const { data: business } = useBusiness(businessId);
   const { data, isLoading, isError, error, isFetching } =
-    useBusinessInvitations(businessId, params);
+    useBusinessInvitations(businessId, params, canManageInvitations);
 
   const createMutation = useCreateInvitation(businessId);
   const resendMutation = useResendInvitation(businessId);
@@ -170,6 +176,18 @@ export function BusinessInvitationsPage() {
         </Link>
       </Button>
 
+      {roleLoading ? (
+        <AppPanel bodyClassName="p-0">
+          <TableSkeleton columns={5} rows={4} />
+        </AppPanel>
+      ) : !canManageInvitations ? (
+        <AppPanel>
+          <p className="text-sm text-destructive" role="alert">
+            {copy.noPermission}
+          </p>
+        </AppPanel>
+      ) : (
+      <>
       <AppPanel title={copy.inviteTitle} description={copy.inviteDescription}>
         <form
           onSubmit={handleSubmit(onInvite)}
@@ -433,6 +451,8 @@ export function BusinessInvitationsPage() {
           </div>
         ) : null}
       </AppPanel>
+      </>
+      )}
 
       <ConfirmDialog
         open={Boolean(revokeTarget)}

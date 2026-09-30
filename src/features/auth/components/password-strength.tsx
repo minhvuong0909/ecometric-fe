@@ -96,7 +96,7 @@ export function PasswordStrength({ password = "" }: PasswordStrengthProps) {
   const { colorClass, text, textColor } = getStrengthConfig(score);
 
   return (
-    <div className="space-y-3 rounded-xl border border-border bg-card/40 p-4 shadow-sm backdrop-blur-sm animate-fade-up">
+    <div className="space-y-3 rounded-xl border border-border bg-muted/30 p-4">
       <div className="flex items-center justify-between">
         <span className="text-xs font-semibold text-muted-foreground">Độ mạnh mật khẩu:</span>
         <span className={cn("text-xs font-bold transition-all duration-300", textColor)}>

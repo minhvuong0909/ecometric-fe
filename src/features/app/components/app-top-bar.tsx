@@ -52,34 +52,47 @@ export function AppTopBar({ className }: AppTopBarProps) {
           <p className="text-[10px] font-bold tracking-widest text-muted-foreground uppercase">
             {copy.companyLabel}
           </p>
-          {businesses.length > 1 ? (
-            <div className="relative inline-block">
-              <select
-                aria-label="Chọn doanh nghiệp đang hoạt động"
-                value={activeBusiness?.id ?? ""}
-                onChange={(e) => {
-                  const target = businesses.find((b) => b.id === e.target.value);
-                  if (target) setActiveBusiness(target);
-                }}
-                className="cursor-pointer appearance-none bg-transparent pr-6 text-sm font-bold text-foreground focus:outline-none hover:text-primary transition-colors"
+          <div className="flex items-center gap-2">
+            {businesses.length > 1 ? (
+              <div className="relative inline-block">
+                <select
+                  aria-label="Chọn doanh nghiệp đang hoạt động"
+                  value={activeBusiness?.id ?? ""}
+                  onChange={(e) => {
+                    const target = businesses.find((b) => b.id === e.target.value);
+                    if (target) setActiveBusiness(target);
+                  }}
+                  className="cursor-pointer appearance-none bg-transparent pr-6 text-sm font-bold text-foreground focus:outline-none hover:text-primary transition-colors"
+                >
+                  {businesses.map((b) => (
+                    <option key={b.id} value={b.id} className="bg-popover text-popover-foreground">
+                      {b.name}
+                    </option>
+                  ))}
+                </select>
+                <ChevronDown className="pointer-events-none absolute right-0 top-1/2 -translate-y-1/2 size-3.5 text-muted-foreground" />
+              </div>
+            ) : (
+              <Link
+                to={ROUTES.app.businesses}
+                className="text-sm font-bold text-foreground hover:text-primary transition-colors"
+                title="Quản lý doanh nghiệp"
               >
-                {businesses.map((b) => (
-                  <option key={b.id} value={b.id} className="bg-popover text-popover-foreground">
-                    {b.name}
-                  </option>
-                ))}
-              </select>
-              <ChevronDown className="pointer-events-none absolute right-0 top-1/2 -translate-y-1/2 size-3.5 text-muted-foreground" />
-            </div>
-          ) : (
-            <Link
-              to={ROUTES.app.businesses}
-              className="text-sm font-bold text-foreground hover:text-primary transition-colors"
-              title="Quản lý doanh nghiệp"
-            >
-              {activeBusiness?.name ?? (businesses.length === 0 ? "Chưa chọn doanh nghiệp" : copy.companyName)}
-            </Link>
-          )}
+                {activeBusiness?.name ?? (businesses.length === 0 ? "Chưa kích hoạt doanh nghiệp" : copy.companyName)}
+              </Link>
+            )}
+
+            {activeBusiness?.subscriptionTier ? (
+              <span className="hidden sm:inline-flex items-center gap-1 rounded-full bg-primary/10 px-2 py-0.5 text-[10px] font-bold text-primary border border-primary/20">
+                {activeBusiness.subscriptionTier === "PROFESSIONAL"
+                  ? "Gói Pro"
+                  : activeBusiness.subscriptionTier === "ENTERPRISE"
+                    ? "Gói Enterprise"
+                    : "Gói Starter"}{" "}
+                • Dùng thử 14 ngày
+              </span>
+            ) : null}
+          </div>
         </div>
       </div>
 

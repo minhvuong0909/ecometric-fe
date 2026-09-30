@@ -32,9 +32,11 @@ import { useReportingPeriods } from "@/features/app/hooks/use-app-meta";
 import { createReportingPeriod } from "@/features/app/api/meta.api";
 import { useBusinessStore } from "@/shared/stores/business-store";
 import type { ReportType } from "@/features/app/types/app.types";
+import { Badge, badgeVariants } from "@/shared/components/ui/badge";
 import { Button } from "@/shared/components/ui/button";
 import { Input } from "@/shared/components/ui/input";
 import { cn } from "@/shared/lib/utils";
+import type { VariantProps } from "class-variance-authority";
 
 type ReportItem = {
   id: string;
@@ -95,12 +97,20 @@ const INITIAL_REPORTS: ReportItem[] = [
   },
 ];
 
-const REPORT_TEMPLATES = [
+const REPORT_TEMPLATES: Array<{
+  id: string;
+  title: string;
+  tag: string;
+  badgeVariant: VariantProps<typeof badgeVariants>["variant"];
+  desc: string;
+  icon: typeof ShieldCheck;
+  framework: string;
+}> = [
   {
     id: "ghg",
     title: "Báo cáo GHG Protocol",
     tag: "Khuyên dùng",
-    badgeColor: "bg-emerald-500/10 text-emerald-700 border-emerald-500/20",
+    badgeVariant: "success",
     desc: "Báo cáo tiêu chuẩn quốc tế cho Phạm vi 1, 2, 3 sẵn sàng cho bên thứ ba thẩm định và kiểm toán.",
     icon: ShieldCheck,
     framework: "GHG Corporate Standard",
@@ -109,7 +119,7 @@ const REPORT_TEMPLATES = [
     id: "csrd",
     title: "Báo cáo CSRD (ESRS E1)",
     tag: "Bắt buộc EU",
-    badgeColor: "bg-blue-500/10 text-blue-700 border-blue-500/20",
+    badgeVariant: "info",
     desc: "Đáp ứng chỉ thị báo cáo bền vững doanh nghiệp Châu Âu cho các doanh nghiệp có chuỗi cung ứng toàn cầu.",
     icon: Globe,
     framework: "EU ESRS E1 Climate Change",
@@ -118,7 +128,7 @@ const REPORT_TEMPLATES = [
     id: "tcfd",
     title: "Công bố Rủi ro TCFD",
     tag: "Tài chính & ĐT",
-    badgeColor: "bg-purple-500/10 text-purple-700 border-purple-500/20",
+    badgeVariant: "accent",
     desc: "Đánh giá rủi ro tài chính và cơ hội chuyển đổi carbon thấp dành cho hội đồng quản trị và nhà đầu tư.",
     icon: Award,
     framework: "TCFD Recommendations",
@@ -127,33 +137,18 @@ const REPORT_TEMPLATES = [
     id: "iso",
     title: "Tiêu chuẩn ISO 14064",
     tag: "Kiểm toán độc lập",
-    badgeColor: "bg-amber-500/10 text-amber-700 border-amber-500/20",
+    badgeVariant: "warning",
     desc: "Cấu trúc định lượng và báo cáo phát thải khí nhà kính đáp ứng tiêu chuẩn chứng nhận ISO.",
     icon: FileCheck,
     framework: "ISO 14064-1:2018",
   },
 ];
 
-const STATUS_CONFIG: Record<
-  ReportItem["status"],
-  { label: string; className: string }
-> = {
-  "Sẵn sàng": {
-    label: "Sẵn sàng",
-    className: "bg-emerald-500/10 text-emerald-700 border-emerald-500/20",
-  },
-  "Đã xuất": {
-    label: "Đã xuất",
-    className: "bg-blue-500/10 text-blue-700 border-blue-500/20",
-  },
-  "Bản nháp": {
-    label: "Bản nháp",
-    className: "bg-muted text-muted-foreground border-border",
-  },
-  "Đang khởi tạo": {
-    label: "Đang khởi tạo",
-    className: "bg-amber-500/10 text-amber-700 border-amber-500/20",
-  },
+const STATUS_VARIANTS: Record<ReportItem["status"], VariantProps<typeof badgeVariants>["variant"]> = {
+  "Sẵn sàng": "success",
+  "Đã xuất": "info",
+  "Bản nháp": "neutral",
+  "Đang khởi tạo": "warning",
 };
 
 export function ReportsPage() {
@@ -312,41 +307,41 @@ export function ReportsPage() {
           label="Tiêu chuẩn báo cáo hỗ trợ"
           value="4 khung chuẩn"
           hint="GHG Protocol, CSRD, TCFD, ISO"
-          hintClassName="text-emerald-600 font-semibold"
+          hintClassName="text-emerald-600 dark:text-emerald-400 font-semibold"
         />
 
         <MetricCard
           icon={Zap}
-          label="Thời gian xuất trung bình"
-          value="3.2 giây"
-          hint="Tự động kết xuất đồ họa PDF"
+          label="Định dạng xuất"
+          value="PDF, XLSX"
+          hint="Tự động kết xuất báo cáo"
           hintClassName="text-primary font-semibold"
         />
 
         <MetricCard
           icon={Award}
           label="Trạng thái tuân thủ"
-          value="Audit Ready 100%"
-          hint="Sẵn sàng thẩm định quốc tế"
-          hintClassName="text-blue-600 font-semibold"
+          value="Sẵn sàng kiểm toán"
+          hint="Theo chuẩn GHG Protocol, ISO 14064"
+          hintClassName="text-blue-600 dark:text-blue-400 font-semibold"
         />
       </div>
 
       {/* Header Banner: Các Khung Tiêu chuẩn Báo cáo */}
-      <div className="relative overflow-hidden rounded-2xl border border-border bg-gradient-to-r from-secondary-foreground via-slate-900 to-slate-950 p-6 text-white shadow-md">
+      <div className="rounded-xl border border-border bg-card p-6">
         <div className="flex flex-col gap-6 lg:flex-row lg:items-center lg:justify-between">
           <div className="flex items-start gap-4">
-            <div className="flex size-12 shrink-0 items-center justify-center rounded-xl bg-accent/20 text-accent border border-accent/30 shadow-inner">
-              <Sparkles className="size-6 text-accent" />
+            <div className="flex size-12 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary">
+              <Sparkles className="size-6" />
             </div>
             <div className="space-y-1">
               <div className="flex items-center gap-2">
-                <span className="rounded-full bg-accent px-2.5 py-0.5 text-[10px] font-bold text-accent-foreground uppercase tracking-wider">
+                <span className="rounded-full bg-primary/10 px-2.5 py-0.5 text-[10px] font-semibold text-primary uppercase tracking-wide">
                   Kết xuất tự động
                 </span>
-                <h3 className="text-base font-bold text-white">Xuất báo cáo đa định dạng chuẩn kiểm toán</h3>
+                <h3 className="text-base font-bold text-foreground">Xuất báo cáo đa định dạng chuẩn kiểm toán</h3>
               </div>
-              <p className="text-sm text-slate-300 leading-relaxed max-w-2xl">
+              <p className="text-sm text-muted-foreground leading-relaxed max-w-2xl">
                 EcoMetric hỗ trợ tự động bóc tách và tổng hợp dữ liệu carbon thành các file PDF đồ họa sắc nét hoặc bản tính toán Excel hỗ trợ kiểm toán viên.
               </p>
             </div>
@@ -356,7 +351,7 @@ export function ReportsPage() {
             {["GHG Protocol", "CSRD ESRS", "TCFD", "ISO 14064"].map((std) => (
               <span
                 key={std}
-                className="rounded-lg bg-white/10 px-3 py-1 text-xs font-bold text-slate-200 border border-white/10"
+                className="rounded-md bg-muted px-3 py-1 text-xs font-medium text-muted-foreground border border-border"
               >
                 {std}
               </span>
@@ -387,14 +382,9 @@ export function ReportsPage() {
                     <div className="flex size-10 items-center justify-center rounded-xl bg-primary/10 text-primary border border-primary/15 transition-transform duration-300 group-hover:scale-110 group-hover:bg-primary group-hover:text-white">
                       <Icon className="size-5" />
                     </div>
-                    <span
-                      className={cn(
-                        "rounded-full border px-2.5 py-0.5 text-[10px] font-bold uppercase",
-                        tmpl.badgeColor,
-                      )}
-                    >
+                    <Badge variant={tmpl.badgeVariant} className="uppercase">
                       {tmpl.tag}
-                    </span>
+                    </Badge>
                   </div>
 
                   <div>
@@ -502,8 +492,6 @@ export function ReportsPage() {
                 </thead>
                 <tbody>
                   {filteredReports.map((report) => {
-                    const statusInfo = STATUS_CONFIG[report.status];
-
                     return (
                       <tr
                         key={report.id}
@@ -536,14 +524,9 @@ export function ReportsPage() {
                         </td>
 
                         <td className="px-6 py-4">
-                          <span
-                            className={cn(
-                              "inline-flex items-center rounded-full border px-2.5 py-0.5 text-xs font-bold",
-                              statusInfo.className,
-                            )}
-                          >
-                            {statusInfo.label}
-                          </span>
+                          <Badge variant={STATUS_VARIANTS[report.status]} className="font-bold">
+                            {report.status}
+                          </Badge>
                         </td>
 
                         <td className="px-6 py-4 text-right">
@@ -611,11 +594,11 @@ export function ReportsPage() {
           </div>
 
           <div className="rounded-xl bg-emerald-500/10 border border-emerald-500/20 p-4 space-y-2">
-            <p className="text-xs font-bold text-emerald-800 flex items-center gap-1.5">
-              <CheckCircle2 className="size-4 text-emerald-600" />
+            <p className="text-xs font-bold text-emerald-800 dark:text-emerald-400 flex items-center gap-1.5">
+              <CheckCircle2 className="size-4 text-emerald-600 dark:text-emerald-400" />
               Chữ ký số & Xác thực Hash
             </p>
-            <p className="text-[11px] text-emerald-900/80 leading-relaxed">
+            <p className="text-[11px] text-emerald-900/80 dark:text-emerald-400/70 leading-relaxed">
               Mỗi báo cáo được cấp mã Hash SHA-256 duy nhất trên Sổ cái EcoMetric nhằm tránh giả mạo dữ liệu.
             </p>
           </div>

@@ -1,11 +1,12 @@
 import { BUSINESS_STATUS_LABELS } from "@/features/businesses/constants/businesses-copy";
 import type { BusinessStatus } from "@/features/businesses/types/businesses.types";
-import { cn } from "@/shared/lib/utils";
+import { Badge, type badgeVariants } from "@/shared/components/ui/badge";
+import type { VariantProps } from "class-variance-authority";
 
-const STATUS_STYLES: Record<BusinessStatus, string> = {
-  ACTIVE: "bg-secondary text-primary",
-  SUSPENDED: "bg-amber-100 text-amber-800",
-  ARCHIVED: "bg-muted text-muted-foreground",
+const STATUS_VARIANTS: Record<BusinessStatus, VariantProps<typeof badgeVariants>["variant"]> = {
+  ACTIVE: "success",
+  SUSPENDED: "warning",
+  ARCHIVED: "neutral",
 };
 
 type BusinessStatusBadgeProps = {
@@ -13,19 +14,10 @@ type BusinessStatusBadgeProps = {
   className?: string;
 };
 
-export function BusinessStatusBadge({
-  status,
-  className,
-}: BusinessStatusBadgeProps) {
+export function BusinessStatusBadge({ status, className }: BusinessStatusBadgeProps) {
   return (
-    <span
-      className={cn(
-        "inline-flex items-center rounded-full px-2.5 py-1 text-xs font-semibold",
-        STATUS_STYLES[status],
-        className,
-      )}
-    >
+    <Badge variant={STATUS_VARIANTS[status]} className={className}>
       {BUSINESS_STATUS_LABELS[status]}
-    </span>
+    </Badge>
   );
 }

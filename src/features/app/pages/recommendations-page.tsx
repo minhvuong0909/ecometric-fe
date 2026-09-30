@@ -13,6 +13,7 @@ import {
   ArrowRight,
   Search,
 } from "lucide-react";
+import type { VariantProps } from "class-variance-authority";
 import { AppPageHeader } from "@/features/app/components/app-page-header";
 import { AppPanel } from "@/features/app/components/app-panel";
 import { MetricCard } from "@/features/app/components/metric-card";
@@ -24,6 +25,7 @@ import {
 } from "@/features/app/hooks/use-recommendations";
 import { useBusinessStore } from "@/shared/stores/business-store";
 import { ROUTES } from "@/shared/constants/routes";
+import { Badge, badgeVariants } from "@/shared/components/ui/badge";
 import { Button } from "@/shared/components/ui/button";
 import { Input } from "@/shared/components/ui/input";
 import { cn } from "@/shared/lib/utils";
@@ -92,10 +94,10 @@ const INITIAL_RECOMMENDATIONS: RecommendationCard[] = [
   },
 ];
 
-const PRIORITY_STYLES: Record<RecommendationCard["priority"], string> = {
-  "Ưu tiên cao": "bg-red-500/10 text-red-700 border-red-500/20",
-  "Ưu tiên trung bình": "bg-amber-500/10 text-amber-700 border-amber-500/20",
-  "Ưu tiên thấp": "bg-emerald-500/10 text-emerald-700 border-emerald-500/20",
+const PRIORITY_VARIANTS: Record<RecommendationCard["priority"], VariantProps<typeof badgeVariants>["variant"]> = {
+  "Ưu tiên cao": "danger",
+  "Ưu tiên trung bình": "warning",
+  "Ưu tiên thấp": "success",
 };
 
 export function RecommendationsPage() {
@@ -145,6 +147,33 @@ export function RecommendationsPage() {
     }
     return INITIAL_RECOMMENDATIONS;
   }, [recData]);
+
+  // Tổng hợp số liệu KPI thực tế từ danh sách khuyến nghị (không dùng số cố định)
+  const aggregateStats = useMemo(() => {
+    const totalReductionTons = cards.reduce((sum, card) => {
+      const match = card.reductionPotential.match(/([\d.]+)/);
+      return sum + (match ? parseFloat(match[1]) : 0);
+    }, 0);
+
+    const totalCostSaving = cards.reduce((sum, card) => {
+      const match = card.costSaving.replace(/[.,]/g, "").match(/(\d+)/);
+      return sum + (match ? parseInt(match[1], 10) : 0);
+    }, 0);
+
+    const paybackValues = cards
+      .map((card) => parseFloat(card.payback.match(/([\d.]+)/)?.[1] ?? ""))
+      .filter((n) => !isNaN(n));
+    const avgPayback =
+      paybackValues.length > 0
+        ? paybackValues.reduce((a, b) => a + b, 0) / paybackValues.length
+        : 0;
+
+    return {
+      totalReductionTons,
+      totalCostSavingMillion: Math.round(totalCostSaving / 1_000_000),
+      avgPayback: avgPayback.toFixed(1),
+    };
+  }, [cards]);
 
   const filteredCards = cards.filter((card) => {
     const matchesSearch =
@@ -207,15 +236,15 @@ export function RecommendationsPage() {
         <MetricCard
           icon={TrendingDown}
           label="Tiềm năng giảm phát thải"
-          value="4.8 tCO₂e/năm"
-          hint="Tương đương giảm 22% tổng dấu chân carbon"
+          value={`${aggregateStats.totalReductionTons.toFixed(1)} tCO₂e/năm`}
+          hint={`Tổng hợp từ ${cards.length} khuyến nghị hiện có`}
           hintClassName="text-emerald-600 font-bold"
         />
 
         <MetricCard
           icon={DollarSign}
           label="Tiết kiệm chi phí ước tính"
-          value="119 triệu ₫/năm"
+          value={`${aggregateStats.totalCostSavingMillion} triệu ₫/năm`}
           hint="Cắt giảm chi phí điện năng & nhiên liệu"
           hintClassName="text-primary font-bold"
         />
@@ -223,8 +252,8 @@ export function RecommendationsPage() {
         <MetricCard
           icon={Clock}
           label="Thời gian hoàn vốn TB"
-          value="8.3 tháng"
-          hint="ROI cao cho giải pháp tiết kiệm năng lượng"
+          value={`${aggregateStats.avgPayback} tháng`}
+          hint="Trung bình các đề xuất hiện có"
         />
 
         <MetricCard
@@ -237,28 +266,28 @@ export function RecommendationsPage() {
       </div>
 
       {/* Banner Khuyến nghị Nổi bật */}
-      <div className="relative overflow-hidden rounded-2xl border border-border bg-gradient-to-r from-secondary-foreground via-slate-900 to-slate-950 p-6 text-white shadow-md">
+      <div className="rounded-xl border border-border bg-card p-6">
         <div className="flex flex-col gap-6 lg:flex-row lg:items-center lg:justify-between">
           <div className="flex items-start gap-4">
-            <div className="flex size-12 shrink-0 items-center justify-center rounded-xl bg-accent/20 text-accent border border-accent/30 shadow-inner">
-              <Lightbulb className="size-6 text-accent" />
+            <div className="flex size-12 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary">
+              <Lightbulb className="size-6" />
             </div>
             <div className="space-y-1">
               <div className="flex items-center gap-2">
-                <span className="rounded-full bg-accent px-2.5 py-0.5 text-[10px] font-bold text-accent-foreground uppercase tracking-wider">
+                <span className="rounded-full bg-primary/10 px-2.5 py-0.5 text-[10px] font-semibold text-primary uppercase tracking-wide">
                   Trọng tâm tối ưu
                 </span>
-                <h3 className="text-base font-bold text-white">{copy.hero.title}</h3>
+                <h3 className="text-base font-bold text-foreground">{copy.hero.title}</h3>
               </div>
-              <p className="text-sm text-slate-300 leading-relaxed max-w-2xl">
+              <p className="text-sm text-muted-foreground leading-relaxed max-w-2xl">
                 {copy.hero.body}
               </p>
             </div>
           </div>
 
-          <div className="rounded-xl bg-white/5 p-4 text-center border border-white/10 shrink-0">
-            <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Nguồn tiêu thụ chính</p>
-            <p className="text-sm font-bold text-accent mt-0.5">{copy.hero.focus}</p>
+          <div className="rounded-lg bg-muted p-4 text-center shrink-0">
+            <p className="text-[10px] font-medium uppercase tracking-wide text-muted-foreground">Nguồn tiêu thụ chính</p>
+            <p className="text-sm font-bold text-foreground mt-0.5">{copy.hero.focus}</p>
           </div>
         </div>
       </div>
@@ -300,7 +329,6 @@ export function RecommendationsPage() {
       {/* Lưới các Thẻ Khuyến nghị */}
       <div className="grid gap-6 lg:grid-cols-3">
         {filteredCards.map((card) => {
-          const priorityStyle = PRIORITY_STYLES[card.priority];
           const isDone = card.status === "Đang triển khai";
 
           return (
@@ -311,14 +339,9 @@ export function RecommendationsPage() {
             >
               <div className="space-y-4">
                 <div className="flex items-center justify-between">
-                  <span
-                    className={cn(
-                      "inline-flex rounded-full border px-2.5 py-0.5 text-xs font-bold",
-                      priorityStyle,
-                    )}
-                  >
+                  <Badge variant={PRIORITY_VARIANTS[card.priority]} className="font-bold">
                     {card.priority}
-                  </span>
+                  </Badge>
                   <span className="text-[11px] font-semibold text-muted-foreground">
                     {card.scopeCategory}
                   </span>
@@ -337,7 +360,7 @@ export function RecommendationsPage() {
                 <div className="rounded-xl bg-emerald-500/10 border border-emerald-500/20 p-3 space-y-1.5">
                   <div className="flex justify-between text-xs">
                     <span className="text-muted-foreground">Tiềm năng giảm phát thải:</span>
-                    <span className="font-bold text-emerald-700">{card.reductionPotential}</span>
+                    <span className="font-bold text-emerald-700 dark:text-emerald-400">{card.reductionPotential}</span>
                   </div>
                   <div className="flex justify-between text-xs">
                     <span className="text-muted-foreground">Tiết kiệm chi phí:</span>

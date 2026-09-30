@@ -1,12 +1,13 @@
 import { MEMBER_STATUS_LABELS } from "@/features/businesses/constants/businesses-copy";
 import type { MemberStatus } from "@/features/businesses/types/businesses.types";
-import { cn } from "@/shared/lib/utils";
+import { Badge, type badgeVariants } from "@/shared/components/ui/badge";
+import type { VariantProps } from "class-variance-authority";
 
-const STATUS_STYLES: Record<MemberStatus, string> = {
-  INVITED: "bg-sky-100 text-sky-800",
-  ACTIVE: "bg-secondary text-primary",
-  DISABLED: "bg-amber-100 text-amber-800",
-  REMOVED: "bg-muted text-muted-foreground",
+const STATUS_VARIANTS: Record<MemberStatus, VariantProps<typeof badgeVariants>["variant"]> = {
+  INVITED: "info",
+  ACTIVE: "success",
+  DISABLED: "warning",
+  REMOVED: "neutral",
 };
 
 type MemberStatusBadgeProps = {
@@ -16,14 +17,8 @@ type MemberStatusBadgeProps = {
 
 export function MemberStatusBadge({ status, className }: MemberStatusBadgeProps) {
   return (
-    <span
-      className={cn(
-        "inline-flex items-center rounded-full px-2.5 py-1 text-xs font-semibold",
-        STATUS_STYLES[status],
-        className,
-      )}
-    >
+    <Badge variant={STATUS_VARIANTS[status]} className={className}>
       {MEMBER_STATUS_LABELS[status]}
-    </span>
+    </Badge>
   );
 }

@@ -12,10 +12,8 @@ import { Reveal } from "@/shared/components/reveal";
 import { cn } from "@/shared/lib/utils";
 
 function formatPrice(monthlyPrice: number, interval: PricingInterval) {
-  if (interval === "annually") {
-    return Math.round(monthlyPrice * 0.8);
-  }
-  return monthlyPrice;
+  const price = interval === "annually" ? Math.round(monthlyPrice * 0.8) : monthlyPrice;
+  return price.toLocaleString("vi-VN");
 }
 
 export function MarketingPricing() {
@@ -78,10 +76,10 @@ export function MarketingPricing() {
               <Reveal key={tier.id} delay={index * 90} className="flex">
               <article
                 className={cn(
-                  "relative flex w-full flex-col rounded-2xl border p-8 transition-all duration-300",
+                  "relative flex w-full flex-col rounded-xl border p-8",
                   isHighlighted
-                    ? "border-2 border-primary bg-gradient-to-b from-primary/10 via-card to-card shadow-2xl shadow-primary/10 lg:-mt-3 lg:pb-10 lg:pt-10"
-                    : "border-border/80 bg-card hover:border-primary/40",
+                    ? "border-2 border-primary bg-card shadow-md lg:-mt-3 lg:pb-10 lg:pt-10"
+                    : "border-border bg-card",
                 )}
               >
                 {isHighlighted && "badge" in tier ? (
@@ -104,13 +102,13 @@ export function MarketingPricing() {
 
                 <div className="mt-6 flex items-baseline gap-1">
                   {"priceLabel" in tier && tier.priceLabel ? (
-                    <span className="text-4xl font-extrabold tracking-tight text-foreground">
+                    <span className="text-4xl font-bold tracking-tight text-foreground">
                       {tier.priceLabel}
                     </span>
                   ) : (
                     <>
-                      <span className="text-4xl font-extrabold tracking-tight text-foreground">
-                        ${price}
+                      <span className="text-4xl font-bold tracking-tight text-foreground">
+                        {price} ₫
                       </span>
                       <span className="text-base text-muted-foreground">
                         {PRICING_SECTION.perMonth}
@@ -131,18 +129,9 @@ export function MarketingPricing() {
                 <Button
                   asChild
                   variant={isHighlighted ? "default" : "outline"}
-                  className={cn(
-                    "eco-tactile mt-8 h-12 w-full text-sm font-bold tracking-wide",
-                    isHighlighted
-                      ? "bg-gradient-to-r from-emerald-600 to-teal-600 text-white shadow-lg shadow-emerald-600/25 hover:from-emerald-700 hover:to-teal-700"
-                      : "border border-border/80 text-foreground hover:bg-muted",
-                  )}
+                  className="mt-8 h-11 w-full"
                 >
-                  {tier.id === "enterprise" ? (
-                    <a href="#contact">{tier.cta}</a>
-                  ) : (
-                    <Link to={ROUTES.register}>{tier.cta}</Link>
-                  )}
+                  <Link to={`${ROUTES.register}?plan=${tier.id}`}>{tier.cta}</Link>
                 </Button>
               </article>
               </Reveal>

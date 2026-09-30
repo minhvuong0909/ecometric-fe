@@ -22,9 +22,11 @@ import { useActivityDataList } from "@/features/app/hooks/use-activity-data";
 import { useDashboardSummary } from "@/features/app/hooks/use-dashboard";
 import { useBusinessStore } from "@/shared/stores/business-store";
 import { ROUTES } from "@/shared/constants/routes";
+import { Badge, badgeVariants } from "@/shared/components/ui/badge";
 import { Button } from "@/shared/components/ui/button";
 import { Input } from "@/shared/components/ui/input";
 import { cn } from "@/shared/lib/utils";
+import type { VariantProps } from "class-variance-authority";
 
 type EmissionRow = {
   id: string;
@@ -95,10 +97,10 @@ const INITIAL_ROWS: EmissionRow[] = [
   },
 ];
 
-const SCOPE_STYLES: Record<EmissionRow["scope"], string> = {
-  "Phạm vi 1": "bg-blue-500/10 text-blue-700 border-blue-500/20",
-  "Phạm vi 2": "bg-emerald-500/10 text-emerald-700 border-emerald-500/20",
-  "Phạm vi 3": "bg-purple-500/10 text-purple-700 border-purple-500/20",
+const SCOPE_VARIANTS: Record<EmissionRow["scope"], VariantProps<typeof badgeVariants>["variant"]> = {
+  "Phạm vi 1": "info",
+  "Phạm vi 2": "success",
+  "Phạm vi 3": "accent",
 };
 
 export function EmissionDetailPage() {
@@ -189,7 +191,7 @@ export function EmissionDetailPage() {
     await refetch();
     setTimeout(() => {
       setIsRecalculating(false);
-      toast.success("Đã hoàn tất tính toán lại! Kết quả đối chiếu chính xác 100%.", {
+      toast.success("Đã hoàn tất tính toán lại với hệ số phát thải cập nhật.", {
         id: "recalc-toast",
       });
     }, 600);
@@ -215,20 +217,12 @@ export function EmissionDetailPage() {
         description={copy.description}
         actions={
           <div className="flex flex-wrap gap-2">
-            <Button
-              variant="outline"
-              onClick={handleExportReport}
-              className="gap-1.5 font-bold"
-            >
+            <Button variant="outline" onClick={handleExportReport} className="gap-1.5">
               <Download className="size-4" />
               {copy.exportCta}
             </Button>
 
-            <Button
-              onClick={handleRecalculate}
-              disabled={isRecalculating || isFetching}
-              className="bg-primary text-primary-foreground hover:bg-primary/95 font-bold gap-1.5 shadow-md"
-            >
+            <Button onClick={handleRecalculate} disabled={isRecalculating || isFetching} className="gap-1.5">
               <RefreshCw className={cn("size-4", (isRecalculating || isFetching) && "animate-spin")} />
               {copy.recalculateCta}
             </Button>
@@ -237,39 +231,39 @@ export function EmissionDetailPage() {
       />
 
       {/* Thanh tiến trình luồng xử lý */}
-      <div className="rounded-2xl border border-border bg-card p-4 shadow-sm">
+      <div className="rounded-xl border border-border bg-card p-4">
         <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
           <div className="flex items-center gap-3">
-            <span className="flex size-9 items-center justify-center rounded-xl bg-emerald-500 text-white font-bold text-sm shadow-md">
+            <span className="flex size-9 items-center justify-center rounded-lg bg-emerald-500 text-white text-sm">
               <CheckCircle2 className="size-5" />
             </span>
             <div>
-              <p className="text-xs font-bold uppercase tracking-wider text-emerald-600">Bước 1: Hoàn thành</p>
-              <h2 className="text-sm font-bold text-secondary-foreground">Tải chứng từ / Nhập dữ liệu</h2>
+              <p className="text-xs font-medium tracking-wide text-emerald-600 dark:text-emerald-400">Bước 1: Hoàn thành</p>
+              <h2 className="text-sm font-semibold text-secondary-foreground">Tải chứng từ / Nhập dữ liệu</h2>
             </div>
           </div>
 
           <div className="hidden h-px flex-1 bg-border md:block mx-4" />
 
           <div className="flex items-center gap-3">
-            <span className="flex size-9 items-center justify-center rounded-xl bg-emerald-500 text-white font-bold text-sm shadow-md">
+            <span className="flex size-9 items-center justify-center rounded-lg bg-emerald-500 text-white text-sm">
               <CheckCircle2 className="size-5" />
             </span>
             <div>
-              <p className="text-xs font-bold uppercase tracking-wider text-emerald-600">Bước 2: Hoàn thành</p>
-              <h2 className="text-sm font-bold text-secondary-foreground">AI Trích xuất & Xác nhận</h2>
+              <p className="text-xs font-medium tracking-wide text-emerald-600 dark:text-emerald-400">Bước 2: Hoàn thành</p>
+              <h2 className="text-sm font-semibold text-secondary-foreground">AI Trích xuất & Xác nhận</h2>
             </div>
           </div>
 
           <div className="hidden h-px flex-1 bg-border md:block mx-4" />
 
           <div className="flex items-center gap-3">
-            <span className="flex size-9 items-center justify-center rounded-xl bg-primary text-primary-foreground font-bold text-sm shadow-md">
+            <span className="flex size-9 items-center justify-center rounded-lg bg-primary text-primary-foreground text-sm font-semibold">
               3
             </span>
             <div>
-              <p className="text-xs font-bold uppercase tracking-wider text-primary">Bước 3 / 3</p>
-              <h2 className="text-sm font-bold text-secondary-foreground">Tính toán lượng CO₂e</h2>
+              <p className="text-xs font-medium tracking-wide text-primary">Bước 3 / 3</p>
+              <h2 className="text-sm font-semibold text-secondary-foreground">Tính toán lượng CO₂e</h2>
             </div>
           </div>
         </div>
@@ -290,7 +284,7 @@ export function EmissionDetailPage() {
           label="Phạm vi 1 (Phát thải trực tiếp)"
           value={`${scope1Total} tCO₂e`}
           hint="Nhiên liệu đốt cháy cố định & Đội xe"
-          hintClassName="text-blue-600 font-semibold"
+          hintClassName="text-blue-600 dark:text-blue-400 font-semibold"
         />
 
         <MetricCard
@@ -298,7 +292,7 @@ export function EmissionDetailPage() {
           label="Phạm vi 2 (Điện mua ngoài)"
           value={`${scope2Total} tCO₂e`}
           hint="Điện tiêu thụ tại các chi nhánh"
-          hintClassName="text-emerald-600 font-semibold"
+          hintClassName="text-emerald-600 dark:text-emerald-400 font-semibold"
         />
 
         <MetricCard
@@ -306,26 +300,26 @@ export function EmissionDetailPage() {
           label="Phạm vi 3 (Gián tiếp & Chuỗi v.chuyển)"
           value={`${scope3Total} tCO₂e`}
           hint="Vận tải logistics & Xử lý chất thải"
-          hintClassName="text-purple-600 font-semibold"
+          hintClassName="text-purple-600 dark:text-purple-400 font-semibold"
         />
       </div>
 
       {/* Banner Công thức & Tiêu chuẩn Kiểm toán */}
-      <div className="relative overflow-hidden rounded-2xl border border-border bg-gradient-to-r from-secondary-foreground via-slate-900 to-slate-950 p-6 text-white shadow-md">
+      <div className="rounded-xl border border-border bg-card p-6">
         <div className="flex flex-col gap-6 lg:flex-row lg:items-center lg:justify-between">
           <div className="flex items-start gap-4">
-            <div className="flex size-12 shrink-0 items-center justify-center rounded-xl bg-accent/20 text-accent border border-accent/30 shadow-inner">
-              <Calculator className="size-6 text-accent" />
+            <div className="flex size-12 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary">
+              <Calculator className="size-6" />
             </div>
             <div className="space-y-1">
               <div className="flex items-center gap-2">
-                <span className="rounded-full bg-emerald-500/20 px-2.5 py-0.5 text-[10px] font-bold text-emerald-400 border border-emerald-500/30 uppercase tracking-wider">
+                <span className="rounded-full bg-emerald-500/10 px-2.5 py-0.5 text-[11px] font-medium text-emerald-700 dark:text-emerald-400 border border-emerald-500/20">
                   GHG Protocol Standard
                 </span>
-                <h3 className="text-base font-bold text-white">Công thức tính toán phát thải chính thức</h3>
+                <h3 className="text-base font-semibold text-foreground">Công thức tính toán phát thải chính thức</h3>
               </div>
-              <p className="text-sm text-slate-300 leading-relaxed max-w-2xl">
-                <code className="rounded bg-white/10 px-2 py-0.5 font-mono text-accent">
+              <p className="text-sm text-muted-foreground leading-relaxed max-w-2xl">
+                <code className="rounded bg-muted px-2 py-0.5 font-mono text-primary">
                   Lượng CO₂e (tấn) = Dữ liệu hoạt động × Hệ số phát thải (EF)
                 </code>
                 . Dữ liệu được xác thực theo các cơ sở dữ liệu quốc tế IPCC, DEFRA và Bộ TN&MT Việt Nam.
@@ -334,9 +328,9 @@ export function EmissionDetailPage() {
           </div>
 
           <div className="flex items-center gap-3 shrink-0">
-            <div className="rounded-xl bg-white/5 p-3 text-center border border-white/10">
-              <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Trạng thái Kiểm toán</p>
-              <p className="text-sm font-bold text-emerald-400 flex items-center gap-1 mt-0.5">
+            <div className="rounded-lg bg-muted p-3 text-center border border-border">
+              <p className="text-[11px] font-medium text-muted-foreground">Trạng thái Kiểm toán</p>
+              <p className="text-sm font-semibold text-emerald-600 dark:text-emerald-400 flex items-center gap-1 mt-0.5">
                 <ShieldCheck className="size-4" />
                 Audit Ready (Sẵn sàng)
               </p>
@@ -350,7 +344,7 @@ export function EmissionDetailPage() {
         title={copy.tableTitle}
         description={copy.tableSubtitle}
         badge={
-          <span className="rounded-full bg-emerald-500/10 px-3 py-1 text-xs font-bold text-emerald-700 border border-emerald-500/20">
+          <span className="rounded-full bg-emerald-500/10 px-3 py-1 text-xs font-medium text-emerald-700 dark:text-emerald-400 border border-emerald-500/20">
             4 Nguồn phát thải đã đối chiếu
           </span>
         }
@@ -395,30 +389,28 @@ export function EmissionDetailPage() {
           <table className="w-full min-w-[840px] text-left text-sm">
             <thead className="border-b border-border bg-muted/50">
               <tr>
-                <th className="px-6 py-3.5 text-xs font-bold tracking-wide text-muted-foreground uppercase">
+                <th className="px-6 py-3.5 text-xs font-medium text-muted-foreground">
                   Nguồn phát thải & Danh mục
                 </th>
-                <th className="px-6 py-3.5 text-xs font-bold tracking-wide text-muted-foreground uppercase">
+                <th className="px-6 py-3.5 text-xs font-medium text-muted-foreground">
                   Phạm vi (Scope)
                 </th>
-                <th className="px-6 py-3.5 text-xs font-bold tracking-wide text-muted-foreground uppercase">
+                <th className="px-6 py-3.5 text-xs font-medium text-muted-foreground">
                   Dữ liệu hoạt động
                 </th>
-                <th className="px-6 py-3.5 text-xs font-bold tracking-wide text-muted-foreground uppercase">
+                <th className="px-6 py-3.5 text-xs font-medium text-muted-foreground">
                   Hệ số phát thải (EF)
                 </th>
-                <th className="px-6 py-3.5 text-xs font-bold tracking-wide text-muted-foreground uppercase">
+                <th className="px-6 py-3.5 text-xs font-medium text-muted-foreground">
                   Cơ sở dữ liệu
                 </th>
-                <th className="px-6 py-3.5 text-right text-xs font-bold tracking-wide text-muted-foreground uppercase">
+                <th className="px-6 py-3.5 text-right text-xs font-medium text-muted-foreground">
                   Kết quả CO₂e
                 </th>
               </tr>
             </thead>
             <tbody>
               {filteredRows.map((row) => {
-                const scopeBadgeStyle = SCOPE_STYLES[row.scope];
-
                 return (
                   <tr
                     key={row.id}
@@ -432,14 +424,9 @@ export function EmissionDetailPage() {
                     </td>
 
                     <td className="px-6 py-4">
-                      <span
-                        className={cn(
-                          "inline-flex items-center rounded-full border px-2.5 py-0.5 text-xs font-bold",
-                          scopeBadgeStyle,
-                        )}
-                      >
+                      <Badge variant={SCOPE_VARIANTS[row.scope]} className="font-bold">
                         {row.scope}
-                      </span>
+                      </Badge>
                     </td>
 
                     <td className="px-6 py-4 font-semibold text-foreground">
@@ -460,7 +447,7 @@ export function EmissionDetailPage() {
                     </td>
 
                     <td className="px-6 py-4 text-right">
-                      <span className="text-base font-black text-emerald-700">
+                      <span className="text-base font-bold text-emerald-700 dark:text-emerald-400">
                         {row.result}
                       </span>
                     </td>
@@ -470,10 +457,10 @@ export function EmissionDetailPage() {
             </tbody>
             <tfoot className="bg-muted/40 border-t border-border">
               <tr>
-                <td colSpan={5} className="px-6 py-4 text-right font-bold text-secondary-foreground">
-                  TỔNG CỘNG LƯỢNG PHÁT THẢI ĐỢT NÀY:
+                <td colSpan={5} className="px-6 py-4 text-right font-semibold text-secondary-foreground">
+                  Tổng cộng lượng phát thải đợt này:
                 </td>
-                <td className="px-6 py-4 text-right text-xl font-black text-primary">
+                <td className="px-6 py-4 text-right text-xl font-bold text-primary">
                   {totalEmissions} tCO₂e
                 </td>
               </tr>
@@ -490,10 +477,7 @@ export function EmissionDetailPage() {
           </Link>
         </Button>
 
-        <Button
-          asChild
-          className="bg-accent text-accent-foreground font-bold hover:bg-accent/90 shadow-md px-6 py-5 text-base flex items-center gap-2"
-        >
+        <Button asChild size="lg" className="gap-2">
           <Link to={ROUTES.app.ecoScore}>
             Xem Điểm số Eco & Khuyến nghị Giảm thải
             <ArrowRight className="size-5" />

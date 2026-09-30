@@ -65,10 +65,10 @@ export function EcoScorePage() {
 
   // Cấu hình icons cho mục Thay đổi
   const changesWithIcons = [
-    { text: copy.changes[0], icon: TrendingUp, color: "text-red-500 border-red-100 bg-red-50/50" },
-    { text: copy.changes[1], icon: CheckCircle2, color: "text-emerald-500 border-emerald-100 bg-emerald-50/50" },
-    { text: copy.changes[2], icon: AlertCircle, color: "text-amber-500 border-amber-100 bg-amber-50/50" },
-    { text: copy.changes[3], icon: Sparkles, color: "text-indigo-500 border-indigo-100 bg-indigo-50/50" },
+    { text: copy.changes[0], icon: TrendingUp, color: "text-red-600 dark:text-red-400 border-red-500/20 bg-red-500/10" },
+    { text: copy.changes[1], icon: CheckCircle2, color: "text-emerald-600 dark:text-emerald-400 border-emerald-500/20 bg-emerald-500/10" },
+    { text: copy.changes[2], icon: AlertCircle, color: "text-amber-600 dark:text-amber-400 border-amber-500/20 bg-amber-500/10" },
+    { text: copy.changes[3], icon: Sparkles, color: "text-indigo-600 dark:text-indigo-400 border-indigo-500/20 bg-indigo-500/10" },
   ];
 
   // 4 chỉ số phụ từ API nếu có
@@ -84,13 +84,8 @@ export function EcoScorePage() {
     return copy.subMetrics;
   }, [latestScore, copy.subMetrics]);
 
-  // Dải màu cho 4 chỉ số phụ
-  const gradientStyles = [
-    "bg-gradient-to-r from-emerald-400 to-teal-500 shadow-sm shadow-emerald-400/20",
-    "bg-gradient-to-r from-blue-400 to-indigo-500 shadow-sm shadow-blue-400/20",
-    "bg-gradient-to-r from-amber-400 to-orange-500 shadow-sm shadow-amber-400/20",
-    "bg-gradient-to-r from-purple-400 to-pink-500 shadow-sm shadow-purple-400/20",
-  ];
+  // Màu cho 4 chỉ số phụ
+  const progressBarColors = ["bg-emerald-500", "bg-blue-500", "bg-amber-500", "bg-purple-500"];
 
 
   return (
@@ -105,12 +100,12 @@ export function EcoScorePage() {
               onClick={handleRecalculate}
               disabled={calculateMutation.isPending || isFetching}
               variant="outline"
-              className="font-bold gap-2"
+              className="gap-2"
             >
               <RefreshCw className={cn("size-4", (calculateMutation.isPending || isFetching) && "animate-spin")} />
               Tính toán lại
             </Button>
-            <Button asChild className="bg-accent font-bold text-accent-foreground hover:bg-accent/90 shadow-md">
+            <Button asChild>
               <Link to={ROUTES.app.recommendations}>{copy.improveCta}</Link>
             </Button>
           </div>
@@ -120,7 +115,7 @@ export function EcoScorePage() {
       <div className="grid gap-6 lg:grid-cols-3">
         {/* Vòng đo điểm số tròn SVG động */}
         <AppPanel className="flex flex-col items-center justify-center text-center py-8 lg:col-span-1" interactive>
-          <p className="text-xs font-bold tracking-widest text-muted-foreground uppercase flex items-center gap-1.5">
+          <p className="text-xs font-medium tracking-wide text-muted-foreground flex items-center gap-1.5">
             <Award className="size-4 text-emerald-500" />
             Điểm Eco chung
           </p>
@@ -153,13 +148,13 @@ export function EcoScorePage() {
               <p className="text-5xl font-bold tracking-tight text-secondary-foreground">
                 {scoreNum}
               </p>
-              <p className="text-xs font-bold text-muted-foreground/80 uppercase mt-0.5">
+              <p className="text-xs font-medium text-muted-foreground mt-0.5">
                 {copy.scoreMax}
               </p>
             </div>
           </div>
-          <p className="mt-5 text-sm font-bold text-primary flex items-center gap-1">
-            <Sparkles className="size-3.5 animate-pulse" />
+          <p className="mt-5 text-sm font-semibold text-primary flex items-center gap-1">
+            <Sparkles className="size-3.5" />
             {levelText}
           </p>
         </AppPanel>
@@ -171,9 +166,9 @@ export function EcoScorePage() {
                 <span className="font-semibold text-secondary-foreground">{metric.progress}%</span>
                 <span className="text-xs text-muted-foreground/80">{metric.target}</span>
               </div>
-              <div className="h-2.5 overflow-hidden rounded-full bg-muted/60 border border-border/10">
+              <div className="h-2 overflow-hidden rounded-full bg-muted">
                 <div
-                  className={cn("h-full rounded-full transition-all duration-1000 ease-out", gradientStyles[idx])}
+                  className={cn("h-full rounded-full transition-all duration-700 ease-out", progressBarColors[idx])}
                   style={{ width: `${metric.progress}%` }}
                 />
               </div>
@@ -186,7 +181,7 @@ export function EcoScorePage() {
       <AppPanel
         title={copy.changesTitle}
         badge={
-          <span className="rounded-full bg-secondary border border-primary/10 px-3 py-1 text-xs font-bold text-primary">
+          <span className="rounded-full bg-secondary border border-primary/10 px-3 py-1 text-xs font-medium text-primary">
             {copy.changesBadge}
           </span>
         }
@@ -217,10 +212,10 @@ export function EcoScorePage() {
       </AppPanel>
 
       <div className="flex justify-end gap-3">
-        <Button asChild variant="outline" className="font-semibold shadow-sm">
+        <Button asChild variant="outline">
           <Link to={ROUTES.app.dashboard}>Quay lại Tổng quan</Link>
         </Button>
-        <Button asChild className="bg-primary text-primary-foreground hover:bg-primary/95 font-semibold shadow-sm">
+        <Button asChild>
           <Link to={ROUTES.app.recommendations}>Xem khuyến nghị giảm thiểu</Link>
         </Button>
       </div>

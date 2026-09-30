@@ -17,7 +17,7 @@ type LiveClockProps = {
   className?: string;
 };
 
-/** Đồng hồ thời gian thực: chấm "live" nhấp nháy, giờ:phút đậm, giây mờ nhỏ. */
+/** Đồng hồ thời gian thực: chấm trạng thái tĩnh, giờ:phút đậm, giây mờ nhỏ. */
 export function LiveClock({ className }: LiveClockProps) {
   const [now, setNow] = useState(() => new Date());
 
@@ -35,10 +35,7 @@ export function LiveClock({ className }: LiveClockProps) {
         className,
       )}
     >
-      <span className="relative flex size-2" aria-hidden>
-        <span className="absolute inline-flex size-full animate-ping rounded-full bg-primary opacity-70 motion-reduce:animate-none" />
-        <span className="relative inline-flex size-2 rounded-full bg-primary" />
-      </span>
+      <span className="size-2 rounded-full bg-primary" aria-hidden />
 
       <span className="text-xs font-medium text-muted-foreground tabular-nums">
         {DATE_FORMAT.format(now)}

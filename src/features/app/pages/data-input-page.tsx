@@ -9,6 +9,7 @@ import { useCreateActivityData } from "@/features/app/hooks/use-activity-data";
 import { useBranches, useEmissionSources, useReportingPeriods } from "@/features/app/hooks/use-app-meta";
 import { createReportingPeriod } from "@/features/app/api/meta.api";
 import { useBusinessStore } from "@/shared/stores/business-store";
+import { Badge } from "@/shared/components/ui/badge";
 import { Button } from "@/shared/components/ui/button";
 import { Input } from "@/shared/components/ui/input";
 import { Label } from "@/shared/components/ui/label";
@@ -162,52 +163,48 @@ export function DataInputPage() {
       />
 
       <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
-        <div className="rounded-xl border border-border bg-card px-6 py-4 shadow-sm">
-          <p className="text-[10px] font-bold tracking-widest text-muted-foreground uppercase">
+        <div className="rounded-xl border border-border bg-card px-6 py-4">
+          <p className="text-xs font-medium tracking-wide text-muted-foreground">
             {APP_SHARED_COPY.topBar.companyLabel}
           </p>
           <p className="text-lg font-semibold text-secondary-foreground">{activeBusiness?.name ?? APP_SHARED_COPY.topBar.companyName}</p>
         </div>
 
-        <div className="min-w-[320px] rounded-xl border border-border bg-card p-5 shadow-sm">
-          <div className="mb-2 flex items-center justify-between text-sm font-bold">
+        <div className="min-w-[320px] rounded-xl border border-border bg-card p-5">
+          <div className="mb-2 flex items-center justify-between text-sm font-medium">
             <span className="text-secondary-foreground">Độ đầy đủ của dữ liệu</span>
-            <span className="text-primary font-semibold transition-all duration-300">{completenessPercent}%</span>
+            <span className="text-primary font-semibold">{completenessPercent}%</span>
           </div>
-          <div className="h-2.5 overflow-hidden rounded-full bg-muted border border-border/10">
+          <div className="h-2 overflow-hidden rounded-full bg-muted">
             <div
-              className="h-full rounded-full bg-gradient-to-r from-emerald-400 to-teal-500 transition-all duration-500 ease-out shadow-sm shadow-emerald-400/20"
+              className="h-full rounded-full bg-primary transition-all duration-500 ease-out"
               style={{ width: `${completenessPercent}%` }}
             />
           </div>
         </div>
       </div>
 
-
       {/* Banner AI Upload hóa đơn thay vì nhập thủ công */}
-      <div className="relative overflow-hidden rounded-2xl border border-primary/20 bg-gradient-to-r from-emerald-950 via-teal-900 to-secondary-foreground p-6 text-white shadow-lg">
+      <div className="rounded-xl border border-primary/20 bg-primary/5 p-6">
         <div className="flex flex-col gap-6 lg:flex-row lg:items-center lg:justify-between">
           <div className="flex items-start gap-4">
-            <div className="flex size-12 shrink-0 items-center justify-center rounded-xl bg-accent/20 text-accent border border-accent/30 shadow-inner">
-              <Sparkles className="size-6 text-accent" />
+            <div className="flex size-12 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary">
+              <Sparkles className="size-6" />
             </div>
             <div className="space-y-1">
               <div className="flex items-center gap-2">
-                <span className="rounded-full bg-accent px-2.5 py-0.5 text-[10px] font-bold text-accent-foreground uppercase tracking-wider">
+                <span className="rounded-full bg-primary/15 px-2.5 py-0.5 text-[11px] font-medium text-primary">
                   Nhanh & Tự động
                 </span>
-                <h3 className="text-base font-bold text-white">Bạn không muốn nhập số liệu thủ công?</h3>
+                <h3 className="text-base font-semibold text-foreground">Bạn không muốn nhập số liệu thủ công?</h3>
               </div>
-              <p className="text-sm text-emerald-100/80 leading-relaxed max-w-2xl">
+              <p className="text-sm text-muted-foreground leading-relaxed max-w-2xl">
                 Tải lên ngay hóa đơn EVN, chứng từ nhiên liệu hoặc phiếu thu phí. Công nghệ AI của EcoMetric sẽ tự động trích xuất và kiểm tra số liệu cho bạn.
               </p>
             </div>
           </div>
-          <Button
-            asChild
-            className="shrink-0 bg-accent text-accent-foreground font-bold hover:bg-accent/90 shadow-md transition-all duration-200 hover:scale-[1.02] px-5 py-5"
-          >
-            <Link to={ROUTES.app.uploadDoc} className="flex items-center gap-2">
+          <Button asChild className="shrink-0 gap-2">
+            <Link to={ROUTES.app.uploadDoc}>
               <UploadCloud className="size-5" />
               Tải hóa đơn đính kèm (AI Scan)
               <ArrowRight className="size-4" />
@@ -221,24 +218,20 @@ export function DataInputPage() {
         <AppPanel bodyClassName="space-y-6" interactive className="group">
           <div className="flex items-start justify-between gap-4">
             <div className="flex items-center gap-4">
-              <div className="flex size-12 items-center justify-center rounded-xl bg-primary/10 text-primary border border-primary/15 transition-all duration-300 group-hover:scale-105 group-hover:bg-primary group-hover:text-white group-hover:border-primary">
-                <Zap className="size-5 transition-colors duration-300" aria-hidden />
+              <div className="flex size-12 items-center justify-center rounded-lg bg-primary/10 text-primary">
+                <Zap className="size-5" aria-hidden />
               </div>
               <div>
                 <h2 className="text-lg font-bold text-secondary-foreground">Điện</h2>
                 <p className="text-xs text-muted-foreground">Dữ liệu hoạt động hàng tháng</p>
               </div>
             </div>
-            <span className="rounded-full bg-red-50 text-red-700 border border-red-200 px-3 py-1 text-xs font-bold uppercase tracking-wider scale-90">
-              Bắt buộc
-            </span>
+            <Badge variant="danger">Bắt buộc</Badge>
           </div>
 
           <div className="grid gap-4 sm:grid-cols-3">
             <div className="space-y-1.5">
-              <Label className="text-[10px] font-bold tracking-widest text-muted-foreground uppercase">
-                Sản lượng (kWh)
-              </Label>
+              <Label className="text-xs font-medium text-muted-foreground">Sản lượng (kWh)</Label>
               <Input
                 type="number"
                 value={electricity}
@@ -247,7 +240,7 @@ export function DataInputPage() {
               />
             </div>
             <div className="space-y-1.5">
-              <Label className="text-[10px] font-bold tracking-widest text-muted-foreground uppercase">
+              <Label className="text-xs font-medium text-muted-foreground">
                 Chi nhánh
               </Label>
               <Input
@@ -257,7 +250,7 @@ export function DataInputPage() {
               />
             </div>
             <div className="space-y-1.5">
-              <Label className="text-[10px] font-bold tracking-widest text-muted-foreground uppercase">
+              <Label className="text-xs font-medium text-muted-foreground">
                 Kỳ hóa đơn
               </Label>
               <Input
@@ -269,11 +262,11 @@ export function DataInputPage() {
           </div>
 
           <div className="mt-4 flex items-center justify-between rounded-lg bg-emerald-500/5 px-4 py-2.5 border border-emerald-500/10">
-            <span className="text-xs font-bold text-emerald-700 uppercase tracking-wider flex items-center gap-1.5">
+            <span className="text-xs font-medium text-emerald-700 dark:text-emerald-400 flex items-center gap-1.5">
               <Calculator className="size-3.5" />
               Lượng phát thải tính toán:
             </span>
-            <span className="text-sm font-bold text-emerald-700">{co2eElectricity} tCO₂e</span>
+            <span className="text-sm font-semibold text-emerald-700 dark:text-emerald-400">{co2eElectricity} tCO₂e</span>
           </div>
         </AppPanel>
 
@@ -281,22 +274,20 @@ export function DataInputPage() {
         <AppPanel bodyClassName="space-y-6" interactive className="group">
           <div className="flex items-start justify-between gap-4">
             <div className="flex items-center gap-4">
-              <div className="flex size-12 items-center justify-center rounded-xl bg-primary/10 text-primary border border-primary/15 transition-all duration-300 group-hover:scale-105 group-hover:bg-primary group-hover:text-white group-hover:border-primary">
-                <Fuel className="size-5 transition-colors duration-300" aria-hidden />
+              <div className="flex size-12 items-center justify-center rounded-lg bg-primary/10 text-primary">
+                <Fuel className="size-5" aria-hidden />
               </div>
               <div>
                 <h2 className="text-lg font-bold text-secondary-foreground">Nhiên liệu</h2>
                 <p className="text-xs text-muted-foreground">Dữ liệu hoạt động hàng tháng</p>
               </div>
             </div>
-            <span className="rounded-full bg-red-50 text-red-700 border border-red-200 px-3 py-1 text-xs font-bold uppercase tracking-wider scale-90">
-              Bắt buộc
-            </span>
+            <Badge variant="danger">Bắt buộc</Badge>
           </div>
 
           <div className="grid gap-4 sm:grid-cols-3">
             <div className="space-y-1.5">
-              <Label className="text-[10px] font-bold tracking-widest text-muted-foreground uppercase">
+              <Label className="text-xs font-medium text-muted-foreground">
                 Loại nhiên liệu
               </Label>
               <Input
@@ -306,7 +297,7 @@ export function DataInputPage() {
               />
             </div>
             <div className="space-y-1.5">
-              <Label className="text-[10px] font-bold tracking-widest text-muted-foreground uppercase">
+              <Label className="text-xs font-medium text-muted-foreground">
                 Số lượng (lít)
               </Label>
               <Input
@@ -317,7 +308,7 @@ export function DataInputPage() {
               />
             </div>
             <div className="space-y-1.5">
-              <Label className="text-[10px] font-bold tracking-widest text-muted-foreground uppercase">
+              <Label className="text-xs font-medium text-muted-foreground">
                 Chi nhánh
               </Label>
               <Input
@@ -329,11 +320,11 @@ export function DataInputPage() {
           </div>
 
           <div className="mt-4 flex items-center justify-between rounded-lg bg-emerald-500/5 px-4 py-2.5 border border-emerald-500/10">
-            <span className="text-xs font-bold text-emerald-700 uppercase tracking-wider flex items-center gap-1.5">
+            <span className="text-xs font-medium text-emerald-700 dark:text-emerald-400 flex items-center gap-1.5">
               <Calculator className="size-3.5" />
               Lượng phát thải tính toán:
             </span>
-            <span className="text-sm font-bold text-emerald-700">{co2eFuel} tCO₂e</span>
+            <span className="text-sm font-semibold text-emerald-700 dark:text-emerald-400">{co2eFuel} tCO₂e</span>
           </div>
         </AppPanel>
 
@@ -341,22 +332,20 @@ export function DataInputPage() {
         <AppPanel bodyClassName="space-y-6" interactive className="group">
           <div className="flex items-start justify-between gap-4">
             <div className="flex items-center gap-4">
-              <div className="flex size-12 items-center justify-center rounded-xl bg-primary/10 text-primary border border-primary/15 transition-all duration-300 group-hover:scale-105 group-hover:bg-primary group-hover:text-white group-hover:border-primary">
-                <Truck className="size-5 transition-colors duration-300" aria-hidden />
+              <div className="flex size-12 items-center justify-center rounded-lg bg-primary/10 text-primary">
+                <Truck className="size-5" aria-hidden />
               </div>
               <div>
                 <h2 className="text-lg font-bold text-secondary-foreground">Vận tải</h2>
                 <p className="text-xs text-muted-foreground">Dữ liệu hoạt động hàng tháng</p>
               </div>
             </div>
-            <span className="rounded-full bg-red-50 text-red-700 border border-red-200 px-3 py-1 text-xs font-bold uppercase tracking-wider scale-90">
-              Bắt buộc
-            </span>
+            <Badge variant="danger">Bắt buộc</Badge>
           </div>
 
           <div className="grid gap-4 sm:grid-cols-3">
             <div className="space-y-1.5">
-              <Label className="text-[10px] font-bold tracking-widest text-muted-foreground uppercase">
+              <Label className="text-xs font-medium text-muted-foreground">
                 Quãng đường (km)
               </Label>
               <Input
@@ -367,7 +356,7 @@ export function DataInputPage() {
               />
             </div>
             <div className="space-y-1.5">
-              <Label className="text-[10px] font-bold tracking-widest text-muted-foreground uppercase">
+              <Label className="text-xs font-medium text-muted-foreground">
                 Loại xe
               </Label>
               <Input
@@ -377,7 +366,7 @@ export function DataInputPage() {
               />
             </div>
             <div className="space-y-1.5">
-              <Label className="text-[10px] font-bold tracking-widest text-muted-foreground uppercase">
+              <Label className="text-xs font-medium text-muted-foreground">
                 Kỳ báo cáo
               </Label>
               <Input
@@ -389,11 +378,11 @@ export function DataInputPage() {
           </div>
 
           <div className="mt-4 flex items-center justify-between rounded-lg bg-emerald-500/5 px-4 py-2.5 border border-emerald-500/10">
-            <span className="text-xs font-bold text-emerald-700 uppercase tracking-wider flex items-center gap-1.5">
+            <span className="text-xs font-medium text-emerald-700 dark:text-emerald-400 flex items-center gap-1.5">
               <Calculator className="size-3.5" />
               Lượng phát thải tính toán:
             </span>
-            <span className="text-sm font-bold text-emerald-700">{co2eDistance} tCO₂e</span>
+            <span className="text-sm font-semibold text-emerald-700 dark:text-emerald-400">{co2eDistance} tCO₂e</span>
           </div>
         </AppPanel>
 
@@ -401,22 +390,20 @@ export function DataInputPage() {
         <AppPanel bodyClassName="space-y-6" interactive className="group">
           <div className="flex items-start justify-between gap-4">
             <div className="flex items-center gap-4">
-              <div className="flex size-12 items-center justify-center rounded-xl bg-primary/10 text-primary border border-primary/15 transition-all duration-300 group-hover:scale-105 group-hover:bg-primary group-hover:text-white group-hover:border-primary">
-                <Trash2 className="size-5 transition-colors duration-300" aria-hidden />
+              <div className="flex size-12 items-center justify-center rounded-lg bg-primary/10 text-primary">
+                <Trash2 className="size-5" aria-hidden />
               </div>
               <div>
                 <h2 className="text-lg font-bold text-secondary-foreground">Chất thải</h2>
                 <p className="text-xs text-muted-foreground">Dữ liệu hoạt động hàng tháng</p>
               </div>
             </div>
-            <span className="rounded-full bg-red-50 text-red-700 border border-red-200 px-3 py-1 text-xs font-bold uppercase tracking-wider scale-90">
-              Bắt buộc
-            </span>
+            <Badge variant="danger">Bắt buộc</Badge>
           </div>
 
           <div className="grid gap-4 sm:grid-cols-3">
             <div className="space-y-1.5">
-              <Label className="text-[10px] font-bold tracking-widest text-muted-foreground uppercase">
+              <Label className="text-xs font-medium text-muted-foreground">
                 Khối lượng (tấn)
               </Label>
               <Input
@@ -427,7 +414,7 @@ export function DataInputPage() {
               />
             </div>
             <div className="space-y-1.5">
-              <Label className="text-[10px] font-bold tracking-widest text-muted-foreground uppercase">
+              <Label className="text-xs font-medium text-muted-foreground">
                 Phương pháp
               </Label>
               <Input
@@ -437,7 +424,7 @@ export function DataInputPage() {
               />
             </div>
             <div className="space-y-1.5">
-              <Label className="text-[10px] font-bold tracking-widest text-muted-foreground uppercase">
+              <Label className="text-xs font-medium text-muted-foreground">
                 Chi nhánh
               </Label>
               <Input
@@ -449,11 +436,11 @@ export function DataInputPage() {
           </div>
 
           <div className="mt-4 flex items-center justify-between rounded-lg bg-emerald-500/5 px-4 py-2.5 border border-emerald-500/10">
-            <span className="text-xs font-bold text-emerald-700 uppercase tracking-wider flex items-center gap-1.5">
+            <span className="text-xs font-medium text-emerald-700 dark:text-emerald-400 flex items-center gap-1.5">
               <Calculator className="size-3.5" />
               Lượng phát thải tính toán:
             </span>
-            <span className="text-sm font-bold text-emerald-700">{co2eWaste} tCO₂e</span>
+            <span className="text-sm font-semibold text-emerald-700 dark:text-emerald-400">{co2eWaste} tCO₂e</span>
           </div>
         </AppPanel>
 
@@ -461,22 +448,20 @@ export function DataInputPage() {
         <AppPanel bodyClassName="space-y-6" interactive className="group">
           <div className="flex items-start justify-between gap-4">
             <div className="flex items-center gap-4">
-              <div className="flex size-12 items-center justify-center rounded-xl bg-primary/10 text-primary border border-primary/15 transition-all duration-300 group-hover:scale-105 group-hover:bg-primary group-hover:text-white group-hover:border-primary">
-                <Droplets className="size-5 transition-colors duration-300" aria-hidden />
+              <div className="flex size-12 items-center justify-center rounded-lg bg-primary/10 text-primary">
+                <Droplets className="size-5" aria-hidden />
               </div>
               <div>
                 <h2 className="text-lg font-bold text-secondary-foreground">Nước</h2>
                 <p className="text-xs text-muted-foreground">Dữ liệu hoạt động hàng tháng</p>
               </div>
             </div>
-            <span className="rounded-full bg-red-50 text-red-700 border border-red-200 px-3 py-1 text-xs font-bold uppercase tracking-wider scale-90">
-              Bắt buộc
-            </span>
+            <Badge variant="danger">Bắt buộc</Badge>
           </div>
 
           <div className="grid gap-4 sm:grid-cols-3">
             <div className="space-y-1.5">
-              <Label className="text-[10px] font-bold tracking-widest text-muted-foreground uppercase">
+              <Label className="text-xs font-medium text-muted-foreground">
                 Tiêu thụ (m³)
               </Label>
               <Input
@@ -487,7 +472,7 @@ export function DataInputPage() {
               />
             </div>
             <div className="space-y-1.5">
-              <Label className="text-[10px] font-bold tracking-widest text-muted-foreground uppercase">
+              <Label className="text-xs font-medium text-muted-foreground">
                 Chi nhánh
               </Label>
               <Input
@@ -497,7 +482,7 @@ export function DataInputPage() {
               />
             </div>
             <div className="space-y-1.5">
-              <Label className="text-[10px] font-bold tracking-widest text-muted-foreground uppercase">
+              <Label className="text-xs font-medium text-muted-foreground">
                 Kỳ hóa đơn
               </Label>
               <Input
@@ -509,21 +494,17 @@ export function DataInputPage() {
           </div>
 
           <div className="mt-4 flex items-center justify-between rounded-lg bg-emerald-500/5 px-4 py-2.5 border border-emerald-500/10">
-            <span className="text-xs font-bold text-emerald-700 uppercase tracking-wider flex items-center gap-1.5">
+            <span className="text-xs font-medium text-emerald-700 dark:text-emerald-400 flex items-center gap-1.5">
               <Calculator className="size-3.5" />
               Lượng phát thải tính toán:
             </span>
-            <span className="text-sm font-bold text-emerald-700">{co2eWater} tCO₂e</span>
+            <span className="text-sm font-semibold text-emerald-700 dark:text-emerald-400">{co2eWater} tCO₂e</span>
           </div>
         </AppPanel>
       </div>
 
       <div className="flex justify-end gap-3">
-        <Button
-          onClick={handleCalculate}
-          disabled={isCalculating}
-          className="bg-primary text-primary-foreground hover:bg-primary/95 font-bold px-6 py-5 shadow-md flex items-center gap-2"
-        >
+        <Button onClick={handleCalculate} disabled={isCalculating} size="lg" className="gap-2">
           {isCalculating ? (
             <>
               <Loader2 className="size-4 animate-spin" />

@@ -24,6 +24,7 @@ import {
 } from "@/features/businesses/constants/businesses-copy";
 import { useBusiness } from "@/features/businesses/hooks/use-business";
 import { useBusinessMembers } from "@/features/businesses/hooks/use-business-members";
+import { useBusinessRole } from "@/features/businesses/hooks/use-business-role";
 import { useChangeMemberRole } from "@/features/businesses/hooks/use-change-member-role";
 import { useChangeMemberStatus } from "@/features/businesses/hooks/use-change-member-status";
 import { useRemoveBusinessMember } from "@/features/businesses/hooks/use-remove-business-member";
@@ -78,10 +79,18 @@ export function BusinessMembersPage() {
     [search, role, status, page],
   );
 
+  const { role: membershipRole, isLoading: roleLoading } =
+    useBusinessRole(businessId);
+  const canManageMembers =
+    membershipRole === "COMPANY_ADMIN" || membershipRole === "SYSTEM_ADMIN";
+  const canViewMembers =
+    canManageMembers || membershipRole === "BRANCH_MANAGER";
+
   const { data: business } = useBusiness(businessId);
   const { data, isLoading, isError, error, isFetching } = useBusinessMembers(
     businessId,
     params,
+    canViewMembers,
   );
 
   const roleMutation = useChangeMemberRole(businessId);
@@ -137,12 +146,14 @@ export function BusinessMembersPage() {
         title={business ? `${copy.title} · ${business.name}` : copy.title}
         description={copy.description}
         actions={
-          <Button asChild variant="outline">
-            <Link to={ROUTES.app.businessInvitations(businessId)}>
-              <Mail className="size-4" aria-hidden />
-              {INVITATIONS_COPY.manageCta}
-            </Link>
-          </Button>
+          canManageMembers ? (
+            <Button asChild variant="outline">
+              <Link to={ROUTES.app.businessInvitations(businessId)}>
+                <Mail className="size-4" aria-hidden />
+                {INVITATIONS_COPY.manageCta}
+              </Link>
+            </Button>
+          ) : undefined
         }
       />
 
@@ -163,6 +174,14 @@ export function BusinessMembersPage() {
       ) : null}
 
       <AppPanel bodyClassName="p-0">
+       {roleLoading ? (
+        <TableSkeleton columns={5} rows={4} />
+       ) : !canViewMembers ? (
+        <p className="p-6 text-sm text-destructive" role="alert">
+          {copy.noPermission}
+        </p>
+       ) : (
+        <>
         <div className="flex flex-col gap-4 border-b border-border p-4">
           <div className="relative w-full sm:max-w-xs">
             <Search
@@ -283,41 +302,49 @@ export function BusinessMembersPage() {
                         </div>
                       </td>
                       <td className="px-6 py-4">
-                        <RowSelect
-                          value={member.role}
-                          disabled={rolePending}
-                          loading={rolePending}
-                          ariaLabel={`${copy.columns.role} · ${member.user.email}`}
-                          currentLabel={MEMBER_ROLE_LABELS[member.role]}
-                          isManaged={MANAGEABLE_ROLE_OPTIONS.some(
-                            (opt) => opt.value === member.role,
-                          )}
-                          options={MANAGEABLE_ROLE_OPTIONS}
-                          onChange={(next) =>
-                            handleRoleChange(member, next as ManageableRole)
-                          }
-                        />
+                        {canManageMembers ? (
+                          <RowSelect
+                            value={member.role}
+                            disabled={rolePending}
+                            loading={rolePending}
+                            ariaLabel={`${copy.columns.role} · ${member.user.email}`}
+                            currentLabel={MEMBER_ROLE_LABELS[member.role]}
+                            isManaged={MANAGEABLE_ROLE_OPTIONS.some(
+                              (opt) => opt.value === member.role,
+                            )}
+                            options={MANAGEABLE_ROLE_OPTIONS}
+                            onChange={(next) =>
+                              handleRoleChange(member, next as ManageableRole)
+                            }
+                          />
+                        ) : (
+                          <span className="text-sm font-medium text-foreground">
+                            {MEMBER_ROLE_LABELS[member.role]}
+                          </span>
+                        )}
                       </td>
                       <td className="px-6 py-4">
                         <div className="flex items-center gap-3">
                           <MemberStatusBadge status={member.status} />
-                          <RowSelect
-                            value={member.status}
-                            disabled={statusPending}
-                            loading={statusPending}
-                            ariaLabel={`${copy.columns.status} · ${member.user.email}`}
-                            currentLabel={MEMBER_STATUS_LABELS[member.status]}
-                            isManaged={MANAGEABLE_STATUS_OPTIONS.some(
-                              (opt) => opt.value === member.status,
-                            )}
-                            options={MANAGEABLE_STATUS_OPTIONS}
-                            onChange={(next) =>
-                              handleStatusChange(
-                                member,
-                                next as ManageableMemberStatus,
-                              )
-                            }
-                          />
+                          {canManageMembers ? (
+                            <RowSelect
+                              value={member.status}
+                              disabled={statusPending}
+                              loading={statusPending}
+                              ariaLabel={`${copy.columns.status} · ${member.user.email}`}
+                              currentLabel={MEMBER_STATUS_LABELS[member.status]}
+                              isManaged={MANAGEABLE_STATUS_OPTIONS.some(
+                                (opt) => opt.value === member.status,
+                              )}
+                              options={MANAGEABLE_STATUS_OPTIONS}
+                              onChange={(next) =>
+                                handleStatusChange(
+                                  member,
+                                  next as ManageableMemberStatus,
+                                )
+                              }
+                            />
+                          ) : null}
                         </div>
                       </td>
                       <td className="px-6 py-4 text-muted-foreground">
@@ -325,20 +352,26 @@ export function BusinessMembersPage() {
                       </td>
                       <td className="px-6 py-4">
                         <div className="flex items-center justify-end">
-                          <Button
-                            variant="ghost"
-                            size="icon-sm"
-                            className="text-muted-foreground hover:text-destructive"
-                            onClick={() => handleRemove(member)}
-                            disabled={removePending}
-                            aria-label={`${copy.remove} ${member.user.email}`}
-                          >
-                            {removePending ? (
-                              <Loader2 className="size-4 animate-spin" aria-hidden />
-                            ) : (
-                              <Trash2 className="size-4" aria-hidden />
-                            )}
-                          </Button>
+                          {canManageMembers ? (
+                            <Button
+                              variant="ghost"
+                              size="icon-sm"
+                              className="text-muted-foreground hover:text-destructive"
+                              onClick={() => handleRemove(member)}
+                              disabled={removePending}
+                              aria-label={`${copy.remove} ${member.user.email}`}
+                            >
+                              {removePending ? (
+                                <Loader2 className="size-4 animate-spin" aria-hidden />
+                              ) : (
+                                <Trash2 className="size-4" aria-hidden />
+                              )}
+                            </Button>
+                          ) : (
+                            <span className="text-xs text-muted-foreground">
+                              {copy.noValue}
+                            </span>
+                          )}
                         </div>
                       </td>
                     </tr>
@@ -379,6 +412,8 @@ export function BusinessMembersPage() {
             </div>
           </div>
         ) : null}
+        </>
+       )}
       </AppPanel>
 
       <ConfirmDialog

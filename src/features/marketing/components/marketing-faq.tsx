@@ -32,7 +32,7 @@ export function MarketingFaq() {
             <HelpCircle className="size-3.5" />
             Giải đáp thắc mắc
           </div>
-          <h2 className="mt-4 text-3xl font-extrabold tracking-tight text-foreground sm:text-4xl">
+          <h2 className="mt-4 text-3xl font-bold tracking-tight text-foreground sm:text-4xl">
             Câu Hỏi Thường Gặp Của Doanh Nghiệp
           </h2>
           <p className="mt-3 text-base text-muted-foreground">
@@ -46,7 +46,7 @@ export function MarketingFaq() {
             return (
               <div
                 key={faq.q}
-                className="rounded-2xl border border-border/80 bg-card transition-all duration-200 overflow-hidden shadow-sm hover:border-primary/30"
+                className="rounded-xl border border-border bg-card overflow-hidden shadow-sm transition-colors hover:border-primary/30"
               >
                 <button
                   type="button"
@@ -62,7 +62,7 @@ export function MarketingFaq() {
                   />
                 </button>
                 {isOpen ? (
-                  <div className="border-t border-border/40 px-5 pb-5 pt-3 text-sm leading-relaxed text-muted-foreground">
+                  <div className="border-t border-border px-5 pb-5 pt-3 text-sm leading-relaxed text-muted-foreground">
                     {faq.a}
                   </div>
                 ) : null}
