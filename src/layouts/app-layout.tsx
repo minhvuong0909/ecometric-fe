@@ -1,10 +1,11 @@
 import type { LucideIcon } from "lucide-react";
 import { Briefcase, Menu, PanelLeftClose, PanelLeftOpen, X } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
-import { NavLink, Outlet, useLocation } from "react-router";
+import { NavLink, Outlet, useLocation, useNavigate } from "react-router";
 import { AppTopBar } from "@/features/app/components/app-top-bar";
 import { LogoutButton } from "@/features/app/components/logout-button";
 import { APP_SHARED_COPY } from "@/features/app/constants/app-copy";
+import { useProfile } from "@/features/auth/hooks/use-profile";
 import { useAuthStore } from "@/features/auth/stores/auth-store";
 import { BUSINESSES_COPY } from "@/features/businesses/constants/businesses-copy";
 import { Logo } from "@/shared/components/logo";
@@ -159,9 +160,27 @@ function SidebarUser({ collapsed = false }: SidebarBodyProps) {
 
 export function AppLayout() {
   const location = useLocation();
+  const navigate = useNavigate();
+  // Nạp profile + vai trò theo từng doanh nghiệp (memberships) ngay khi vào /app,
+  // để các trang con dùng useBusinessRole() có dữ liệu sẵn.
+  useProfile();
+  const platformRole = useAuthStore((state) => state.user?.platformRole);
+  const memberships = useAuthStore((state) => state.memberships);
+  const membershipsLoaded = useAuthStore((state) => state.membershipsLoaded);
   const [collapsed, setCollapsed] = useState(readCollapsed);
   const [mobileOpen, setMobileOpen] = useState(false);
   const mobileNavRef = useRef<HTMLElement>(null);
+
+  // User chưa có Business nào (chưa "mua gói") và không phải SYSTEM_ADMIN
+  // -> đẩy vào bước chọn gói/tạo doanh nghiệp trước khi dùng phần còn lại của app.
+  useEffect(() => {
+    if (!membershipsLoaded) return;
+    if (platformRole === "SYSTEM_ADMIN") return;
+    if (memberships.length > 0) return;
+    if (location.pathname === ROUTES.app.onboarding) return;
+
+    navigate(ROUTES.app.onboarding, { replace: true });
+  }, [membershipsLoaded, platformRole, memberships, location.pathname, navigate]);
 
   useEffect(() => {
     window.localStorage.setItem(SIDEBAR_COLLAPSED_KEY, collapsed ? "1" : "0");

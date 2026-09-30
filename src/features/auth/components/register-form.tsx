@@ -12,7 +12,7 @@ import {
 } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
-import { Link, useNavigate } from "react-router";
+import { Link, useNavigate, useSearchParams } from "react-router";
 import { AuthField } from "@/features/auth/components/auth-field";
 import { GoogleAuthButton } from "@/features/auth/components/google-auth-button";
 import { PasswordStrength } from "@/features/auth/components/password-strength";
@@ -31,11 +31,21 @@ type RegisterFormProps = {
   className?: string;
 };
 
+/**
+ * Chỉ tạo tài khoản USER (khớp `POST /auth/register`). Việc chọn gói và tạo
+ * Business diễn ra ở bước tiếp theo (`/app/onboarding`, xem `useSubscribeBusiness`)
+ * — không gộp chung với đăng ký như trước.
+ */
 export function RegisterForm({ className }: RegisterFormProps) {
   const copy = AUTH_COPY.register;
   const [showPassword, setShowPassword] = useState(false);
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const registerMutation = useRegister();
+
+  // Giữ lại gói người dùng đã chọn ở trang pricing để chuyển tiếp sang bước
+  // chọn gói sau khi tạo tài khoản xong, tránh bắt họ chọn lại từ đầu.
+  const planParam = searchParams.get("plan");
 
   const {
     register,
@@ -54,11 +64,7 @@ export function RegisterForm({ className }: RegisterFormProps) {
   const watchedPassword = watch("password");
 
   const onSubmit = (values: RegisterFormValues) => {
-    registerMutation.mutate({
-      fullName: values.fullName,
-      email: values.email,
-      password: values.password,
-    });
+    registerMutation.mutate(values);
   };
 
   const serverError = registerMutation.error
@@ -69,11 +75,14 @@ export function RegisterForm({ className }: RegisterFormProps) {
   useEffect(() => {
     if (registerMutation.isSuccess) {
       toast.success("Tạo tài khoản thành công!", {
-        description: "Chào mừng bạn đến với EcoMetric.",
+        description: "Chọn gói dịch vụ để kích hoạt không gian làm việc doanh nghiệp.",
       });
-      navigate(ROUTES.app.dashboard, { replace: true });
+      const onboardingUrl = planParam
+        ? `${ROUTES.app.onboarding}?plan=${encodeURIComponent(planParam)}`
+        : ROUTES.app.onboarding;
+      navigate(onboardingUrl, { replace: true });
     }
-  }, [registerMutation.isSuccess, navigate]);
+  }, [registerMutation.isSuccess, planParam, navigate]);
 
   useEffect(() => {
     if (registerMutation.isError) {
@@ -87,13 +96,13 @@ export function RegisterForm({ className }: RegisterFormProps) {
     <div className={cn("space-y-5", className)}>
       <form
         onSubmit={handleSubmit(onSubmit)}
-        className="space-y-5"
+        className="space-y-4"
         noValidate
         aria-busy={isSubmitting}
       >
         <AuthField
           id="fullName"
-          label={copy.fullNameLabel}
+          label="Họ và tên *"
           icon={User}
           type="text"
           autoComplete="name"
@@ -105,7 +114,7 @@ export function RegisterForm({ className }: RegisterFormProps) {
 
         <AuthField
           id="email"
-          label={copy.emailLabel}
+          label="Email *"
           icon={Mail}
           type="email"
           autoComplete="email"
@@ -158,7 +167,7 @@ export function RegisterForm({ className }: RegisterFormProps) {
 
         <Button
           type="submit"
-          className="eco-tactile h-12 w-full bg-gradient-to-r from-emerald-600 to-teal-600 text-sm font-bold tracking-wide text-white shadow-lg shadow-emerald-600/25 transition-all hover:from-emerald-700 hover:to-teal-700"
+          className="h-11 w-full font-bold shadow-sm"
           disabled={isSubmitting}
           aria-busy={isSubmitting}
           data-loading={isSubmitting}

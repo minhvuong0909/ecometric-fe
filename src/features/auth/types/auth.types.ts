@@ -12,6 +12,8 @@ export type AuthUser = {
   email: string;
   fullName: string | null;
   platformRole: PlatformRole;
+  avatarUrl?: string | null;
+  phone?: string | null;
 };
 
 export type ProfileMembership = {
@@ -20,7 +22,7 @@ export type ProfileMembership = {
   role: UserRole;
 };
 
-/** POST /auth/register */
+/** POST /auth/register — chỉ tạo tài khoản USER, không tạo Business. */
 export type RegisterRequest = {
   email: string;
   password: string;
@@ -38,6 +40,13 @@ export type RefreshRequest = {
   refreshToken: string;
 };
 
+/** PATCH /auth/profile */
+export type UpdateProfileRequest = {
+  fullName?: string;
+  phone?: string | null;
+  avatarUrl?: string | null;
+};
+
 /** PATCH /auth/change-password */
 export type ChangePasswordRequest = {
   currentPassword: string;
@@ -49,7 +58,7 @@ export type AuthTokens = {
   refreshToken: string;
 };
 
-/** data của /auth/register và /auth/login */
+/** data của /auth/register và /auth/login — không kèm Business. */
 export type LoginResponse = AuthTokens & {
   user: AuthUser;
 };

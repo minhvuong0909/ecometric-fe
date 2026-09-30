@@ -4,6 +4,7 @@ import { AUTH_QUERY_KEYS } from "@/features/auth/hooks/query-keys";
 import { useAuthStore } from "@/features/auth/stores/auth-store";
 import type { RegisterRequest } from "@/features/auth/types/auth.types";
 
+/** Chỉ tạo tài khoản USER — chưa có Business nào (xem `useSubscribeBusiness`). */
 export function useRegister() {
   const queryClient = useQueryClient();
   const setSession = useAuthStore((state) => state.setSession);

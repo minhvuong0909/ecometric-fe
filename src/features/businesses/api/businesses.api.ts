@@ -6,6 +6,7 @@ import type {
   BusinessSuccessResponse,
   CreateBusinessRequest,
   ListBusinessesParams,
+  SubscribeBusinessRequest,
   UpdateBusinessRequest,
 } from "@/features/businesses/types/businesses.types";
 
@@ -54,6 +55,13 @@ export function createBusiness(
   body: CreateBusinessRequest,
 ): Promise<BusinessOnboardingResponse> {
   return apiClient.post<BusinessOnboardingResponse>(BASE_PATH, body);
+}
+
+/** POST /api/v1/businesses/subscribe — user đăng nhập tự tạo Business của mình (mua gói). */
+export function subscribeBusiness(
+  body: SubscribeBusinessRequest,
+): Promise<Business> {
+  return apiClient.post<Business>(`${BASE_PATH}/subscribe`, body);
 }
 
 /** PATCH /api/v1/businesses/:id */

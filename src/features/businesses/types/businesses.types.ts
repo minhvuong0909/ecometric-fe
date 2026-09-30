@@ -18,6 +18,9 @@ export type Business = {
   timezone: string;
   website: string | null;
   status: BusinessStatus;
+  subscriptionTier?: "STARTER" | "PROFESSIONAL" | "ENTERPRISE";
+  subscriptionStatus?: "TRIALING" | "ACTIVE" | "EXPIRED";
+  trialEndsAt?: string | null;
   createdAt: string;
   updatedAt: string;
 };
@@ -96,6 +99,15 @@ export type CreateBusinessRequest = {
   companyAdminEmail: string;
   companyAdminFullName?: string;
   defaultBranch?: CreateBusinessDefaultBranch;
+};
+
+/** POST /businesses/subscribe — tự phục vụ, user đăng nhập tự tạo Business của chính mình. */
+export type SubscribeBusinessRequest = {
+  name: string;
+  taxCode?: string;
+  industry?: string;
+  country?: string;
+  planTier: "STARTER" | "PROFESSIONAL" | "ENTERPRISE";
 };
 
 export type UpdateBusinessRequest = {

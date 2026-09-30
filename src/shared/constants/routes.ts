@@ -7,6 +7,7 @@ export const ROUTES = {
   acceptInvitation: "/invitations/accept",
   app: {
     root: "/app",
+    onboarding: "/app/onboarding",
     dashboard: "/app/dashboard",
     dataInput: "/app/data-input",
     dataInputStep1: "/app/data-input/step-1",

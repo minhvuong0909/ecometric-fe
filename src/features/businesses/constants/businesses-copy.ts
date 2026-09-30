@@ -147,6 +147,70 @@ export const BUSINESSES_COPY = {
   },
 } as const;
 
+/* ── Onboarding: mua gói / tự tạo doanh nghiệp ── */
+
+export const ONBOARDING_COPY = {
+  breadcrumbs: [{ label: "Chọn gói dịch vụ", active: true }],
+  title: "Chọn gói để bắt đầu",
+  description:
+    "Tài khoản của bạn đã sẵn sàng. Chọn gói phù hợp để tạo không gian làm việc cho doanh nghiệp và kích hoạt 14 ngày dùng thử miễn phí.",
+  planLabel: "Gói dịch vụ",
+  sectionBusiness: "Thông tin doanh nghiệp",
+  labels: {
+    name: "Tên Doanh nghiệp / Tổ chức",
+    taxCode: "Mã số thuế (tuỳ chọn)",
+    industry: "Ngành nghề (tuỳ chọn)",
+  },
+  placeholders: {
+    name: "VD: Công ty TNHH Phát triển Xanh",
+    taxCode: "VD: 0312345678",
+    industry: "Sản xuất, Bán lẻ…",
+  },
+  submit: "Kích hoạt dùng thử 14 ngày",
+  submitting: "Đang kích hoạt…",
+  success: "Kích hoạt doanh nghiệp thành công! Gói dùng thử 14 ngày đã sẵn sàng.",
+  steps: {
+    plan: "Chọn gói",
+    business: "Thông tin doanh nghiệp",
+    payment: "Thanh toán",
+  },
+  back: "Quay lại",
+  next: "Tiếp tục",
+  payment: {
+    title: "Xác nhận & thanh toán",
+    description: "Xem lại gói đã chọn và hoàn tất thanh toán để kích hoạt không gian làm việc.",
+    orderSummaryTitle: "Tóm tắt đơn hàng",
+    trialNote:
+      "Bạn được dùng thử miễn phí 14 ngày đầu tiên. Hệ thống sẽ tự động thu phí theo gói đã chọn khi hết hạn dùng thử.",
+    methodCard: "Thẻ tín dụng / ghi nợ",
+    methodQr: "Chuyển khoản / QR",
+    cardholderLabel: "Tên chủ thẻ",
+    cardholderPlaceholder: "NGUYEN VAN A",
+    cardNumberLabel: "Số thẻ",
+    expiryLabel: "Ngày hết hạn",
+    cvvLabel: "CVV",
+    bankName: "Vietcombank – Chi nhánh TP. Hồ Chí Minh",
+    bankAccountName: "CONG TY TNHH ECOMETRIC VIETNAM",
+    bankAccountNumberLabel: "Số tài khoản",
+    transferContentLabel: "Nội dung chuyển khoản",
+    copyCta: "Sao chép",
+    copied: "Đã sao chép",
+    scanHint: "Quét mã QR bằng ứng dụng ngân hàng hoặc ví điện tử để thanh toán nhanh.",
+    confirmCta: "Xác nhận thanh toán & Kích hoạt",
+    processing: "Đang xử lý thanh toán…",
+  },
+  enterpriseContact: {
+    eyebrow: "Gói Enterprise",
+    title: "Gói Enterprise cần tư vấn riêng",
+    description:
+      "Gói Enterprise được tuỳ chỉnh theo quy mô và yêu cầu vận hành của từng doanh nghiệp. Đội ngũ tư vấn sẽ liên hệ để thiết kế giải pháp phù hợp, thay vì kích hoạt dùng thử tự động như các gói khác.",
+    cta: "Liên hệ đội ngũ tư vấn",
+    switchPlanHint: "Muốn dùng thử ngay? Chọn gói Starter hoặc Professional ở trên.",
+  },
+  nameRequired: "Vui lòng nhập tên doanh nghiệp / tổ chức",
+  nameMin: "Tên tối thiểu 2 ký tự",
+} as const;
+
 /* ── Thành viên doanh nghiệp ── */
 
 export const MEMBER_ROLE_LABELS: Record<UserRole, string> = {
@@ -217,6 +281,8 @@ export const MEMBERS_COPY = {
   updating: "Đang cập nhật…",
   noName: "Chưa đặt tên",
   noValue: "—",
+  noPermission:
+    "Bạn không có quyền xem danh sách thành viên của doanh nghiệp này. Chỉ Quản trị doanh nghiệp và Quản lý chi nhánh mới xem được.",
   pagination: {
     summary: (from: number, to: number, total: number) =>
       `${from}–${to} trên ${total}`,
@@ -287,6 +353,8 @@ export const INVITATIONS_COPY = {
     `Thu hồi lời mời cho "${email}"? Người dùng sẽ không thể dùng liên kết cũ.`,
   revoked: "Đã thu hồi lời mời.",
   noValue: "—",
+  noPermission:
+    "Bạn không có quyền quản lý lời mời của doanh nghiệp này. Chỉ Quản trị doanh nghiệp mới mời/gỡ được thành viên.",
   pagination: {
     summary: (from: number, to: number, total: number) =>
       `${from}–${to} trên ${total}`,

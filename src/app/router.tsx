@@ -11,6 +11,7 @@ import { BusinessDetailPage } from "@/features/businesses/pages/business-detail-
 import { BusinessEditPage } from "@/features/businesses/pages/business-edit-page";
 import { BusinessInvitationsPage } from "@/features/businesses/pages/business-invitations-page";
 import { BusinessMembersPage } from "@/features/businesses/pages/business-members-page";
+import { BusinessOnboardingPage } from "@/features/businesses/pages/business-onboarding-page";
 import { BusinessesPage } from "@/features/businesses/pages/businesses-page";
 import { ForgotPasswordPage } from "@/features/auth/pages/forgot-password-page";
 import { LoginPage } from "@/features/auth/pages/login-page";
@@ -78,6 +79,10 @@ const router = createBrowserRouter([
           {
             index: true,
             element: <Navigate to={ROUTES.app.dashboard} replace />,
+          },
+          {
+            path: "onboarding",
+            element: <BusinessOnboardingPage />,
           },
           {
             path: "businesses",
