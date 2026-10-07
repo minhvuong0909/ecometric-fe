@@ -3,6 +3,7 @@ import { useState } from "react";
 import { Link } from "react-router";
 import { Logo } from "@/shared/components/logo";
 import { ThemeToggle } from "@/shared/components/theme-toggle";
+
 import {
   HEADER_COPY,
   NAV_LINKS,
@@ -16,12 +17,16 @@ export function MarketingHeader() {
 
   return (
     <header className="sticky top-0 z-50 border-b border-border bg-card/95 backdrop-blur-sm">
-      <div className="mx-auto flex h-16 max-w-7xl items-center justify-between gap-4 px-6 lg:px-8">
+      <div className="mx-auto flex h-20 max-w-7xl items-center justify-between gap-4 px-6 lg:px-8">
         <div className="flex items-center gap-8 lg:gap-12">
-          <Link to={ROUTES.home} className="focus-ring rounded-sm" aria-label="EcoMetric trang chủ">
+          <Link
+            to={ROUTES.home}
+            className="focus-ring rounded-sm"
+            aria-label="EcoMetric trang chủ"
+          >
             <Logo />
           </Link>
-          <nav aria-label="Chính" className="hidden items-center gap-1 md:flex">
+          <nav aria-label="Chính" className="hidden items-center gap-1 xl:flex">
             {NAV_LINKS.map((link) =>
               link.href.startsWith("#") ? (
                 <a
@@ -54,8 +59,9 @@ export function MarketingHeader() {
           </nav>
         </div>
 
-        <div className="hidden items-center gap-3 md:flex">
+        <div className="hidden items-center gap-3 xl:flex">
           <ThemeToggle />
+
           <Link
             to={ROUTES.login}
             className="text-sm font-semibold tracking-wide text-muted-foreground transition-all duration-200 hover:bg-primary/10 hover:text-primary px-3 py-1.5 rounded-lg focus-ring"
@@ -67,18 +73,25 @@ export function MarketingHeader() {
           </Button>
         </div>
 
-        <div className="flex items-center gap-2 md:hidden">
+        <div className="flex items-center gap-2 xl:hidden">
           <ThemeToggle />
+
           <Button
             type="button"
             variant="ghost"
             size="icon"
             aria-expanded={mobileOpen}
             aria-controls="mobile-nav"
-            aria-label={mobileOpen ? HEADER_COPY.closeMenu : HEADER_COPY.openMenu}
+            aria-label={
+              mobileOpen ? HEADER_COPY.closeMenu : HEADER_COPY.openMenu
+            }
             onClick={() => setMobileOpen((open) => !open)}
           >
-            {mobileOpen ? <X className="size-5" /> : <Menu className="size-5" />}
+            {mobileOpen ? (
+              <X className="size-5" />
+            ) : (
+              <Menu className="size-5" />
+            )}
           </Button>
         </div>
       </div>
@@ -87,7 +100,7 @@ export function MarketingHeader() {
         <nav
           id="mobile-nav"
           aria-label="Di động"
-          className="border-t border-border bg-card px-6 py-4 md:hidden"
+          className="border-t border-border bg-card px-6 py-4 xl:hidden"
         >
           <ul className="flex flex-col gap-1">
             {NAV_LINKS.map((link) => (

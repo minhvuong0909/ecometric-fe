@@ -32,23 +32,27 @@ export function AppPanel({
   return (
     <section
       className={cn(
-        "rounded-xl border border-border bg-card shadow-sm",
-        isInteractive ? "eco-card-hover hover:border-primary/40" : "eco-surface-hover",
+        "eco-panel rounded-2xl border border-border bg-card",
+        isInteractive ? "eco-card-hover hover:border-primary/40" : "",
         className,
       )}
     >
       {title ? (
-        <div className="flex items-start justify-between gap-4 border-b border-border px-5 py-4">
+        <div className="flex items-start justify-between gap-4 border-b border-border/70 px-6 py-5">
           <div className="space-y-1">
-            <h2 className="text-sm font-semibold tracking-tight text-foreground">{title}</h2>
+            <h2 className="text-base font-semibold tracking-tight text-foreground">
+              {title}
+            </h2>
             {description ? (
-              <p className="text-xs text-muted-foreground">{description}</p>
+              <p className="text-sm leading-relaxed text-muted-foreground">
+                {description}
+              </p>
             ) : null}
           </div>
           {badge}
         </div>
       ) : null}
-      <div className={cn("p-5", bodyClassName)}>{children}</div>
+      <div className={cn("p-5 sm:p-6", bodyClassName)}>{children}</div>
     </section>
   );
 }

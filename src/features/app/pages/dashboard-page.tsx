@@ -1,25 +1,17 @@
 import { useMemo, useState } from "react";
 import {
-  Activity,
   BarChart3,
+  Building2,
   Database,
   FileUp,
-  Flame,
   Leaf,
-  Loader2,
-  Sparkles,
-  TrendingDown,
-  TrendingUp,
-  Zap,
+  ArrowRight,
 } from "lucide-react";
+import { useReducedMotion } from "framer-motion";
 import { Link } from "react-router";
 import {
   ResponsiveContainer,
-  PieChart,
-  Pie,
   Cell,
-  AreaChart,
-  Area,
   BarChart,
   Bar,
   XAxis,
@@ -42,485 +34,468 @@ import { ROUTES } from "@/shared/constants/routes";
 import { Button } from "@/shared/components/ui/button";
 import { cn } from "@/shared/lib/utils";
 
-const METRIC_ICONS = [BarChart3, Leaf, Database, TrendingUp] as const;
-
-const SOURCE_COLORS = ["#10B981", "#3B82F6", "#F59E0B", "#8B5CF6", "#EC4899", "#6366F1"];
+import {
+  PERIODS,
+  scopeLabels,
+  formatNumber as number,
+  formatEmission as emission,
+  getDashboardParams,
+  type DashboardPeriod,
+} from "@/features/app/lib/dashboard-presentation";
+import { ChartState } from "@/features/app/components/dashboard-chart-state";
+const tooltipStyle = {
+  background: "var(--card)",
+  border: "1px solid var(--border)",
+  borderRadius: 12,
+  color: "var(--foreground)",
+  fontSize: 12,
+};
 
 export function DashboardPage() {
   const copy = DASHBOARD_COPY;
-  const [selectedPeriod, setSelectedPeriod] = useState<"7d" | "30d" | "1y">("30d");
-  const { activeBusinessId } = useBusinessStore();
-
-  const queryParams = useMemo(() => {
-    return { businessId: activeBusinessId ?? undefined };
-  }, [activeBusinessId]);
-
-  const { data: summary, isLoading: isLoadingSummary } = useDashboardSummary(queryParams);
-  const { data: scopeBreakdown } = useDashboardByScope(queryParams);
-  const { data: topSources } = useDashboardTopSources({ ...queryParams, limit: 5 });
-  const { data: trendData } = useDashboardTrend({ ...queryParams, groupBy: "month" });
-
-  // Nguồn phát thải: Dữ liệu thực từ API hoặc fallback mẫu
-  const sourceData = useMemo(() => {
-    if (topSources && topSources.length > 0) {
-      const totalKg = topSources.reduce((sum, item) => sum + Number(item.totalCo2eKg), 0);
-      return topSources.map((item, idx) => {
-        const valKg = Number(item.totalCo2eKg);
-        const percent = totalKg > 0 ? Math.round((valKg / totalKg) * 100) : 0;
-        return {
-          name: item.emissionSourceName,
-          value: percent,
-          color: SOURCE_COLORS[idx % SOURCE_COLORS.length],
-          absoluteValue: `${(valKg / 1000).toFixed(2)} t`,
-          icon: Zap,
-        };
-      });
-    }
-    return [
-      { name: "Điện", value: 42, color: "#10B981", absoluteValue: "1.34 t", icon: Zap },
-      { name: "Nhiên liệu", value: 28, color: "#3B82F6", absoluteValue: "0.90 t", icon: Flame },
-      { name: "Vận tải", value: 15, color: "#F59E0B", absoluteValue: "0.48 t", icon: TrendingUp },
-      { name: "Chất thải", value: 9, color: "#8B5CF6", absoluteValue: "0.29 t", icon: Leaf },
-      { name: "Nước", value: 6, color: "#EC4899", absoluteValue: "0.19 t", icon: Activity },
-    ];
-  }, [topSources]);
-
-  // Xu hướng: Dữ liệu thực từ API hoặc fallback mẫu
-  const monthlyTrendData = useMemo(() => {
-    if (trendData && trendData.length > 0) {
-      return trendData.map((item) => ({
-        name: item.period,
-        "CO₂e": Number((Number(item.totalCo2eKg) / 1000).toFixed(2)),
-      }));
-    }
-    return [
-      { name: "T1", "CO₂e": 1.2 },
-      { name: "T2", "CO₂e": 1.5 },
-      { name: "T3", "CO₂e": 2.1 },
-      { name: "T4", "CO₂e": 2.5 },
-      { name: "T5", "CO₂e": 2.8 },
-      { name: "T6", "CO₂e": 3.2 },
-    ];
-  }, [trendData]);
-
-  // Biến động so với kỳ trước, tính từ 2 điểm dữ liệu gần nhất (không dùng số cố định)
-  const trendChangePercent = useMemo(() => {
-    if (monthlyTrendData.length < 2) return null;
-    const prev = monthlyTrendData[monthlyTrendData.length - 2]["CO₂e"];
-    const current = monthlyTrendData[monthlyTrendData.length - 1]["CO₂e"];
-    if (!prev) return null;
-    return Math.round(((current - prev) / prev) * 100);
-  }, [monthlyTrendData]);
-
-  const previousPeriodLabel =
-    monthlyTrendData.length >= 2 ? monthlyTrendData[monthlyTrendData.length - 2].name : null;
-
-  // Scope: Dữ liệu thực từ API hoặc fallback mẫu
-  const scopeData = useMemo(() => {
-    if (scopeBreakdown && scopeBreakdown.length > 0) {
-      const scopeMap: Record<string, { name: string; color: string; desc: string }> = {
-        SCOPE_1: { name: "Scope 1", color: "#3B82F6", desc: "Trực tiếp (Nhiên liệu, đốt cháy)" },
-        SCOPE_2: { name: "Scope 2", color: "#10B981", desc: "Gián tiếp (Điện lưới tiêu thụ)" },
-        SCOPE_3: { name: "Scope 3", color: "#8B5CF6", desc: "Chuỗi cung ứng & Vận tải" },
-      };
-      return scopeBreakdown.map((item) => ({
-        name: scopeMap[item.scope]?.name ?? item.scope,
-        "Phát thải": Number((Number(item.totalCo2eKg) / 1000).toFixed(2)),
-        color: scopeMap[item.scope]?.color ?? "#10B981",
-        desc: scopeMap[item.scope]?.desc ?? "",
-      }));
-    }
-    return [
-      { name: "Scope 1", "Phát thải": 1.12, color: "#3B82F6", desc: "Trực tiếp (Nhiên liệu)" },
-      { name: "Scope 2", "Phát thải": 2.72, color: "#10B981", desc: "Gián tiếp (Điện lưới)" },
-      { name: "Scope 3", "Phát thải": 1.44, color: "#8B5CF6", desc: "Chuỗi cung ứng & Vận tải" },
-    ];
-  }, [scopeBreakdown]);
-
-  // KPI Metrics tính từ summary API
-  const metrics = useMemo(() => {
-    if (summary) {
-      const totalTons = (Number(summary.totalCo2eKg) / 1000).toFixed(2);
-      return [
-        {
-          label: "Tổng phát thải",
-          value: `${totalTons} tCO₂e`,
-          hint: `${summary.resultCount} phép tính phát thải`,
-        },
-        {
-          label: "Bản ghi hoạt động",
-          value: `${summary.activityCount}`,
-          hint: "Đã ghi nhận trong kỳ",
-        },
-        {
-          label: "Chi nhánh / Cơ sở",
-          value: `${summary.branchCount}`,
-          hint: "Cơ sở tham gia kiểm kê",
-        },
-        {
-          label: "Nguồn phát thải",
-          value: `${summary.sourceCount}`,
-          hint: "Phân loại theo GHG Protocol",
-        },
-      ];
-    }
-    return copy.metrics;
-  }, [summary, copy.metrics]);
-
-
+  const reduced = useReducedMotion();
+  const [period, setPeriod] = useState<DashboardPeriod>("30d");
+  const activeBusinessId = useBusinessStore((state) => state.activeBusinessId);
+  const params = useMemo(
+    () => getDashboardParams(activeBusinessId, period),
+    [activeBusinessId, period],
+  );
+  const summary = useDashboardSummary(params);
+  const scopes = useDashboardByScope(params);
+  const sources = useDashboardTopSources({ ...params, limit: 5 });
+  const trend = useDashboardTrend({
+    ...params,
+    groupBy: period === "1y" ? "month" : "day",
+  });
+  const sourceRows = useMemo(
+    () =>
+      (sources.data ?? [])
+        .map((row) => ({ ...row, kg: Number(row.totalCo2eKg) }))
+        .sort((a, b) => b.kg - a.kg),
+    [sources.data],
+  );
+  const trendRows = useMemo(
+    () =>
+      (trend.data ?? [])
+        .map((row) => ({
+          ...row,
+          kg: Number(row.totalCo2eKg),
+          label:
+            period === "1y"
+              ? `T${Number(row.period.slice(5, 7))}`
+              : `${Number(row.period.slice(8, 10))}/${Number(row.period.slice(5, 7))}`,
+        }))
+        .sort((a, b) => a.period.localeCompare(b.period)),
+    [trend.data, period],
+  );
+  const scopeRows = useMemo(
+    () =>
+      (scopes.data ?? [])
+        .map((row) => ({
+          ...row,
+          kg: Number(row.totalCo2eKg),
+          ...scopeLabels[row.scope],
+        }))
+        .sort((a, b) => a.scope.localeCompare(b.scope)),
+    [scopes.data],
+  );
+  const maxKg = Math.max(
+    0,
+    ...trendRows.map((row) => row.kg),
+    ...scopeRows.map((row) => row.kg),
+  );
+  const divisor = maxKg >= 1000 ? 1000 : 1;
+  const unit = divisor === 1000 ? "tCO₂e" : "kgCO₂e";
+  const trendChartRows = useMemo(
+    () => trendRows.map((row) => ({ ...row, value: row.kg / divisor })),
+    [trendRows, divisor],
+  );
+  const scopeChartRows = useMemo(
+    () => scopeRows.map((row) => ({ ...row, value: row.kg / divisor })),
+    [scopeRows, divisor],
+  );
+  const metrics = [
+    {
+      label: "Tổng phát thải",
+      value: summary.data ? emission(Number(summary.data.totalCo2eKg)) : "—",
+      hint: summary.data
+        ? `${summary.data.resultCount} kết quả tính toán`
+        : summary.isError
+          ? "Không tải được dữ liệu"
+          : summary.isLoading
+            ? "Đang tải…"
+            : "Chưa chọn doanh nghiệp",
+      icon: Leaf,
+    },
+    {
+      label: "Bản ghi hoạt động",
+      value: summary.data ? String(summary.data.activityCount) : "—",
+      hint: "Đã ghi nhận trong kỳ",
+      icon: Database,
+    },
+    {
+      label: "Chi nhánh / Cơ sở",
+      value: summary.data ? String(summary.data.branchCount) : "—",
+      hint: "Tham gia kiểm kê",
+      icon: Building2,
+    },
+    {
+      label: "Nguồn phát thải",
+      value: summary.data ? String(summary.data.sourceCount) : "—",
+      hint: "Được ghi nhận trong kỳ",
+      icon: BarChart3,
+    },
+  ];
   return (
-    <div className="space-y-8 pb-8">
-      {/* Top Header Section */}
+    <div className="space-y-6 pb-8">
       <AppPageHeader
         breadcrumbs={copy.breadcrumbs}
         title={copy.title}
-        description={copy.description}
+        description="Theo dõi phát thải, nhận diện nguồn lớn nhất và chọn hành động tiếp theo."
         actions={
-          <div className="flex items-center gap-3">
-            {/* Period Selector Tabs */}
-            <div className="flex items-center rounded-lg border border-border bg-muted/40 p-1 text-xs font-medium">
-              <button
-                type="button"
-                onClick={() => setSelectedPeriod("7d")}
-                className={cn(
-                  "rounded-md px-3 py-1.5 transition-colors duration-150",
-                  selectedPeriod === "7d"
-                    ? "bg-card text-foreground font-semibold shadow-xs"
-                    : "text-muted-foreground hover:text-foreground",
-                )}
-              >
-                7 ngày
-              </button>
-              <button
-                type="button"
-                onClick={() => setSelectedPeriod("30d")}
-                className={cn(
-                  "rounded-md px-3 py-1.5 transition-colors duration-150",
-                  selectedPeriod === "30d"
-                    ? "bg-card text-foreground font-semibold shadow-xs"
-                    : "text-muted-foreground hover:text-foreground",
-                )}
-              >
-                Tháng này
-              </button>
-              <button
-                type="button"
-                onClick={() => setSelectedPeriod("1y")}
-                className={cn(
-                  "rounded-md px-3 py-1.5 transition-colors duration-150",
-                  selectedPeriod === "1y"
-                    ? "bg-card text-foreground font-semibold shadow-xs"
-                    : "text-muted-foreground hover:text-foreground",
-                )}
-              >
-                Năm 2026
-              </button>
+          <div className="flex flex-wrap items-center gap-3">
+            <div
+              role="group"
+              aria-label="Kỳ báo cáo"
+              className="flex rounded-lg border border-border bg-muted/40 p-1"
+            >
+              {PERIODS.map((item) => (
+                <button
+                  key={item.id}
+                  type="button"
+                  aria-pressed={period === item.id}
+                  onClick={() => setPeriod(item.id)}
+                  className={cn(
+                    "rounded-md px-3 py-2 text-xs font-medium focus-ring",
+                    period === item.id
+                      ? "bg-card text-foreground shadow-xs"
+                      : "text-muted-foreground hover:text-foreground",
+                  )}
+                >
+                  {item.label}
+                </button>
+              ))}
             </div>
-
-            {isLoadingSummary && (
-              <span className="flex items-center gap-1.5 text-xs text-muted-foreground">
-                <Loader2 className="size-3.5 animate-spin" />
-                Đang cập nhật...
-              </span>
-            )}
-
-            <Button asChild variant="outline" className="gap-2">
+            <Button asChild className="gap-2">
               <Link to={ROUTES.app.uploadDoc}>
                 <FileUp className="size-4" />
                 Tải hóa đơn mới
               </Link>
             </Button>
-
-            <Button asChild className="gap-2">
-              <Link to={ROUTES.app.recommendations}>
-                <Sparkles className="size-4" />
-                {copy.cta}
-              </Link>
-            </Button>
           </div>
         }
       />
-
-      {/* KPI Cards Grid */}
-      <div className="grid gap-5 sm:grid-cols-2 xl:grid-cols-4">
+      {!activeBusinessId && (
+        <div className="rounded-xl border border-border bg-muted/40 p-4 text-sm">
+          Chọn doanh nghiệp để xem dữ liệu kiểm kê.{" "}
+          <Link to={ROUTES.app.businesses} className="link-primary">
+            Quản lý doanh nghiệp
+          </Link>
+        </div>
+      )}
+      {summary.isError && (
+        <div
+          role="alert"
+          className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-destructive/30 bg-destructive/5 p-4 text-sm"
+        >
+          <span>Không tải được tổng quan. Số liệu chưa được xác nhận.</span>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => {
+              void summary.refetch();
+            }}
+          >
+            Thử lại
+          </Button>
+        </div>
+      )}
+      <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
         {metrics.map((metric, index) => (
           <MetricCard
             key={metric.label}
-            icon={METRIC_ICONS[index]}
-            label={metric.label}
-            value={metric.value}
-            hint={metric.hint}
-            hintClassName={"hintClass" in metric ? (metric as any).hintClass : undefined}
+            {...metric}
+            animateValue={false}
+            className={
+              index === 0 ? "border-primary/30 bg-primary/5" : undefined
+            }
           />
         ))}
       </div>
-
-      {/* Main Charts Row */}
-      <div className="grid gap-6 lg:grid-cols-5">
-        {/* Source Donut Chart */}
+      <div className="grid gap-6 xl:grid-cols-[1.4fr_1fr]">
         <AppPanel
-          title={copy.emissionBySource.title}
-          description={copy.emissionBySource.subtitle}
-          className="lg:col-span-2"
+          title="Phát thải theo thời gian"
+          description={`${period === "1y" ? "Tổng theo tháng" : "Tổng theo ngày"} · ${unit} · trong kỳ được chọn`}
         >
-          <div className="flex flex-col items-center gap-6 sm:flex-row sm:items-center justify-between">
-            <div className="relative flex size-48 shrink-0 items-center justify-center">
+          <ChartState
+            loading={trend.isLoading}
+            error={trend.isError}
+            empty={!trendRows.length}
+            retry={() => {
+              void trend.refetch();
+            }}
+          >
+            <div
+              className="h-64 min-w-0"
+              role="img"
+              aria-label={`Biểu đồ cột phát thải ${period === "1y" ? "theo tháng" : "theo ngày"}, đơn vị ${unit}`}
+            >
               <ResponsiveContainer width="100%" height="100%">
-                <PieChart>
-                  <Pie
-                    data={sourceData}
-                    cx="50%"
-                    cy="50%"
-                    innerRadius={62}
-                    outerRadius={78}
-                    paddingAngle={4}
-                    dataKey="value"
-                    stroke="transparent"
-                  >
-                    {sourceData.map((entry, index) => (
-                      <Cell
-                        key={`cell-${index}`}
-                        fill={entry.color}
-                        className="transition-all duration-300 hover:opacity-80"
-                      />
-                    ))}
-                  </Pie>
-                  <Tooltip
-                    content={({ active, payload }) => {
-                      if (active && payload && payload.length) {
-                        const data = payload[0].payload;
-                        return (
-                          <div className="rounded-xl border border-border/80 bg-card/95 backdrop-blur-md p-3 shadow-xl text-xs font-medium">
-                            <p className="font-bold text-foreground">{data.name}</p>
-                            <p className="font-semibold text-emerald-600 dark:text-emerald-400 mt-1">
-                              {data.value}% ({data.absoluteValue} CO₂e)
-                            </p>
-                          </div>
-                        );
-                      }
-                      return null;
-                    }}
+                <BarChart
+                  data={trendChartRows}
+                  margin={{ top: 12, right: 8, left: 0, bottom: 8 }}
+                  accessibilityLayer
+                >
+                  <CartesianGrid
+                    vertical={false}
+                    stroke="var(--border)"
+                    strokeDasharray="3 4"
                   />
-                </PieChart>
-              </ResponsiveContainer>
-              <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
-                <span className="text-2xl font-bold tracking-tight text-foreground">
-                  {copy.emissionBySource.center}
-                </span>
-                <span className="text-[11px] text-muted-foreground">
-                  {copy.emissionBySource.centerLabel}
-                </span>
-              </div>
-            </div>
-
-            {/* Legend breakdown */}
-            <ul className="flex-1 w-full space-y-2">
-              {sourceData.map((item) => {
-                return (
-                  <li
-                    key={item.name}
-                    className="-mx-2 flex items-center justify-between rounded-lg px-2.5 py-1.5 text-xs"
-                  >
-                    <span className="flex items-center gap-2 font-medium text-foreground">
-                      <span
-                        className="size-2.5 rounded-full"
-                        style={{ backgroundColor: item.color }}
-                        aria-hidden
-                      />
-                      {item.name}
-                    </span>
-                    <div className="flex items-center gap-2">
-                      <span className="text-muted-foreground text-[11px] font-mono">
-                        {item.absoluteValue}
-                      </span>
-                      <span className="font-semibold text-foreground">{item.value}%</span>
-                    </div>
-                  </li>
-                );
-              })}
-            </ul>
-          </div>
-        </AppPanel>
-
-        {/* Monthly Trend Area Chart */}
-        <AppPanel
-          title={copy.monthlyTrend.title}
-          description={copy.monthlyTrend.subtitle}
-          badge={
-            trendChangePercent !== null && previousPeriodLabel ? (
-              <div
-                className={cn(
-                  "flex items-center gap-1.5 rounded-md px-2 py-1 text-xs font-semibold",
-                  trendChangePercent >= 0
-                    ? "bg-rose-500/10 text-rose-600 dark:text-rose-400"
-                    : "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400",
-                )}
-              >
-                {trendChangePercent >= 0 ? (
-                  <TrendingUp className="size-3" />
-                ) : (
-                  <TrendingDown className="size-3" />
-                )}
-                {trendChangePercent >= 0 ? "+" : ""}
-                {trendChangePercent}% so với {previousPeriodLabel}
-              </div>
-            ) : null
-          }
-          className="lg:col-span-3"
-        >
-          <div className="h-60 mt-2">
-            <ResponsiveContainer width="100%" height="100%">
-              <AreaChart data={monthlyTrendData} margin={{ top: 10, right: 10, left: -15, bottom: 0 }}>
-                <defs>
-                  <linearGradient id="colorEmission" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor="#10B981" stopOpacity={0.35} />
-                    <stop offset="95%" stopColor="#10B981" stopOpacity={0.0} />
-                  </linearGradient>
-                </defs>
-                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="currentColor" className="text-border/60" />
-                <XAxis
-                  dataKey="name"
-                  tickLine={false}
-                  axisLine={false}
-                  tick={{ fill: "currentColor", fontSize: 12 }}
-                  className="text-muted-foreground"
-                  dy={8}
-                />
-                <YAxis
-                  domain={[0, 4]}
-                  ticks={[0, 1, 2, 3, 4]}
-                  tickLine={false}
-                  axisLine={false}
-                  tickFormatter={(val) => `${val} t`}
-                  tick={{ fill: "currentColor", fontSize: 11 }}
-                  className="text-muted-foreground"
-                  dx={-4}
-                  width={36}
-                />
-                <Tooltip
-                  content={({ active, payload }) => {
-                    if (active && payload && payload.length) {
-                      return (
-                        <div className="rounded-xl border border-border/80 bg-card/95 backdrop-blur-md p-3 shadow-xl text-xs font-medium">
-                          <p className="font-bold text-muted-foreground">Tháng {payload[0].payload.name}</p>
-                          <p className="font-bold text-emerald-600 dark:text-emerald-400 mt-1 text-sm">
-                            {payload[0].value} tCO₂e
-                          </p>
-                        </div>
-                      );
+                  <XAxis
+                    dataKey="label"
+                    tickLine={false}
+                    axisLine={false}
+                    minTickGap={22}
+                    tick={{ fill: "var(--muted-foreground)", fontSize: 11 }}
+                  />
+                  <YAxis
+                    domain={[0, "auto"]}
+                    tickLine={false}
+                    axisLine={false}
+                    width={54}
+                    tickFormatter={number}
+                    tick={{ fill: "var(--muted-foreground)", fontSize: 11 }}
+                  />
+                  <Tooltip
+                    contentStyle={tooltipStyle}
+                    cursor={{ fill: "var(--muted)", opacity: 0.5 }}
+                    formatter={(value) => [
+                      `${number(Number(value))} ${unit}`,
+                      "Phát thải",
+                    ]}
+                    labelFormatter={(_, payload) =>
+                      payload[0]?.payload.period ?? ""
                     }
-                    return null;
-                  }}
-                />
-                <Area
-                  type="monotone"
-                  dataKey="CO₂e"
-                  stroke="#10B981"
-                  strokeWidth={3}
-                  fillOpacity={1}
-                  fill="url(#colorEmission)"
-                />
-              </AreaChart>
-            </ResponsiveContainer>
-          </div>
+                  />
+                  <Bar
+                    dataKey="value"
+                    fill="var(--primary)"
+                    radius={[4, 4, 0, 0]}
+                    maxBarSize={36}
+                    isAnimationActive={!reduced}
+                    animationDuration={450}
+                  />
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
+            <details className="mt-4 border-t border-border pt-3">
+              <summary className="cursor-pointer text-xs font-medium text-muted-foreground">
+                Xem số liệu theo kỳ
+              </summary>
+              <div className="mt-3 max-h-48 overflow-auto">
+                <table className="w-full text-xs">
+                  <caption className="sr-only">
+                    Số liệu phát thải theo thời gian
+                  </caption>
+                  <thead>
+                    <tr className="border-b border-border text-muted-foreground">
+                      <th className="py-2 text-left">Kỳ</th>
+                      <th className="text-right">Phát thải</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {trendRows.map((row) => (
+                      <tr
+                        key={row.period}
+                        className="border-b border-border/50"
+                      >
+                        <td className="py-2">{row.period}</td>
+                        <td className="text-right tabular-nums">
+                          {emission(row.kg)}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </details>
+          </ChartState>
+        </AppPanel>
+        <AppPanel
+          title="5 nguồn phát thải lớn nhất"
+          description="Xếp giảm dần theo phát thải tuyệt đối trong kỳ; không đại diện cho toàn bộ cơ cấu."
+        >
+          <ChartState
+            loading={sources.isLoading}
+            error={sources.isError}
+            empty={!sourceRows.length}
+            retry={() => {
+              void sources.refetch();
+            }}
+          >
+            <ol className="space-y-5">
+              {sourceRows.map((row, index) => (
+                <li
+                  key={
+                    row.emissionSourceId ?? `${row.emissionSourceName}-${index}`
+                  }
+                >
+                  <div className="mb-2 flex items-start justify-between gap-3 text-sm">
+                    <span className="min-w-0 leading-relaxed">
+                      <span className="mr-2 text-xs text-muted-foreground">
+                        0{index + 1}
+                      </span>
+                      {row.emissionSourceName}
+                    </span>
+                    <span className="shrink-0 pt-1 text-xs font-semibold tabular-nums">
+                      {emission(row.kg)}
+                    </span>
+                  </div>
+                  <div
+                    className="h-2 overflow-hidden rounded-full bg-muted"
+                    aria-hidden="true"
+                  >
+                    <div
+                      className="h-full rounded-full bg-primary motion-safe:transition-[width] motion-safe:duration-500"
+                      style={{
+                        width: `${sourceRows[0].kg > 0 ? Math.max(0, (row.kg / sourceRows[0].kg) * 100) : 0}%`,
+                        opacity: index === 0 ? 1 : 0.65,
+                      }}
+                    />
+                  </div>
+                </li>
+              ))}
+            </ol>
+          </ChartState>
         </AppPanel>
       </div>
-
-      {/* Secondary Row: Scope Breakdown & ESG Insights */}
-      <div className="grid gap-6 lg:grid-cols-3">
-        {/* Scope Breakdown */}
+      <div className="grid gap-6 xl:grid-cols-[1.4fr_1fr]">
         <AppPanel
-          title={copy.scopeBreakdown.title}
-          description={copy.scopeBreakdown.subtitle}
-          className="lg:col-span-2"
+          title="So sánh phạm vi phát thải"
+          description={`Scope 1, 2 & 3 · ${unit} · cùng thang đo`}
         >
-          <div className="h-60 mt-2">
-            <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={scopeData} margin={{ top: 10, right: 10, left: -15, bottom: 0 }}>
-                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="currentColor" className="text-border/60" />
-                <XAxis
-                  dataKey="name"
-                  tickLine={false}
-                  axisLine={false}
-                  tick={{ fill: "currentColor", fontSize: 12 }}
-                  className="text-muted-foreground"
-                  dy={8}
-                />
-                <YAxis
-                  domain={[0, 3.5]}
-                  ticks={[0, 1, 2, 3]}
-                  tickLine={false}
-                  axisLine={false}
-                  tickFormatter={(val) => `${val} t`}
-                  tick={{ fill: "currentColor", fontSize: 11 }}
-                  className="text-muted-foreground"
-                  dx={-4}
-                  width={36}
-                />
-                <Tooltip
-                  content={({ active, payload }) => {
-                    if (active && payload && payload.length) {
-                      const data = payload[0].payload;
-                      return (
-                        <div className="rounded-xl border border-border/80 bg-card/95 backdrop-blur-md p-3 shadow-xl text-xs font-medium">
-                          <p className="font-bold text-foreground">{data.name}</p>
-                          <p className="text-[11px] text-muted-foreground">{data.desc}</p>
-                          <p className="font-bold text-blue-600 dark:text-blue-400 mt-1 text-sm">
-                            {payload[0].value} tCO₂e
-                          </p>
-                        </div>
-                      );
-                    }
-                    return null;
-                  }}
-                />
-                <Bar
-                  dataKey="Phát thải"
-                  radius={[8, 8, 0, 0]}
-                  maxBarSize={56}
+          <ChartState
+            loading={scopes.isLoading}
+            error={scopes.isError}
+            empty={!scopeRows.length}
+            retry={() => {
+              void scopes.refetch();
+            }}
+          >
+            <div
+              className="h-56 min-w-0"
+              role="img"
+              aria-label={`So sánh phát thải Scope 1, 2, 3 bằng cột, đơn vị ${unit}`}
+            >
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart
+                  data={scopeChartRows}
+                  margin={{ top: 8, right: 8, left: 0, bottom: 8 }}
+                  accessibilityLayer
                 >
-                  {scopeData.map((entry, index) => (
-                    <Cell key={`scope-cell-${index}`} fill={entry.color} />
-                  ))}
-                </Bar>
-              </BarChart>
-            </ResponsiveContainer>
+                  <CartesianGrid
+                    vertical={false}
+                    stroke="var(--border)"
+                    strokeDasharray="3 4"
+                  />
+                  <XAxis
+                    dataKey="label"
+                    tickLine={false}
+                    axisLine={false}
+                    tick={{ fill: "var(--muted-foreground)", fontSize: 12 }}
+                  />
+                  <YAxis
+                    domain={[0, "auto"]}
+                    width={54}
+                    tickLine={false}
+                    axisLine={false}
+                    tickFormatter={number}
+                    tick={{ fill: "var(--muted-foreground)", fontSize: 11 }}
+                  />
+                  <Tooltip
+                    contentStyle={tooltipStyle}
+                    cursor={{ fill: "var(--muted)", opacity: 0.5 }}
+                    formatter={(value) => [
+                      `${number(Number(value))} ${unit}`,
+                      "Phát thải",
+                    ]}
+                  />
+                  <Bar
+                    dataKey="value"
+                    radius={[5, 5, 0, 0]}
+                    maxBarSize={64}
+                    isAnimationActive={!reduced}
+                    animationDuration={450}
+                  >
+                    {scopeRows.map((row) => (
+                      <Cell key={row.scope} fill={row.color} />
+                    ))}
+                  </Bar>
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
+            <ul className="mt-4 divide-y divide-border border-t border-border">
+              {scopeRows.map((row) => (
+                <li
+                  key={row.scope}
+                  className="flex items-center justify-between gap-3 py-3 text-xs"
+                >
+                  <span>
+                    <strong>{row.label}</strong>
+                    <span className="ml-2 text-muted-foreground">
+                      {row.description}
+                    </span>
+                  </span>
+                  <span className="shrink-0 font-medium tabular-nums">
+                    {emission(row.kg)}
+                  </span>
+                </li>
+              ))}
+            </ul>
+          </ChartState>
+        </AppPanel>
+        <AppPanel
+          title="Bước tiếp theo"
+          description="Từ dữ liệu kiểm kê đến hành động giảm phát thải."
+        >
+          <div className="divide-y divide-border">
+            {[
+              {
+                title: "Bổ sung dữ liệu hoạt động",
+                description:
+                  "Ghi nhận điện, nhiên liệu và tài nguyên trong kỳ.",
+                href: ROUTES.app.dataInput,
+              },
+              {
+                title: "Xem khuyến nghị",
+                description:
+                  "Đánh giá cơ hội cải thiện từ dữ liệu đã ghi nhận.",
+                href: ROUTES.app.recommendations,
+              },
+              {
+                title: "Kiểm tra báo cáo",
+                description: "Rà kỳ báo cáo và kết quả trước khi xuất.",
+                href: ROUTES.app.reports,
+              },
+            ].map((item) => (
+              <Link
+                key={item.href}
+                to={item.href}
+                className="focus-ring flex items-center gap-3 py-5 group"
+              >
+                <div>
+                  <h3 className="text-sm font-semibold group-hover:text-primary">
+                    {item.title}
+                  </h3>
+                  <p className="mt-1 text-xs leading-relaxed text-muted-foreground">
+                    {item.description}
+                  </p>
+                </div>
+                <ArrowRight className="ml-auto size-4 shrink-0 text-muted-foreground" />
+              </Link>
+            ))}
           </div>
         </AppPanel>
-
-        {/* Insights & Actions */}
-        <div className="space-y-6">
-          <AppPanel title={copy.insights.title}>
-            <div className="space-y-4">
-              {copy.insights.alerts.map((alert) => (
-                <div key={alert.title} className="rounded-lg border border-border bg-muted/30 p-3.5">
-                  <h3 className="text-xs font-semibold text-foreground">{alert.title}</h3>
-                  <p className="mt-1 text-xs leading-relaxed text-muted-foreground">{alert.body}</p>
-                </div>
-              ))}
-              <Button asChild variant="outline" className="w-full">
-                <Link to={ROUTES.app.recommendations}>{copy.insights.cta}</Link>
-              </Button>
-            </div>
-          </AppPanel>
-
-          {/* System Status */}
-          <div className="rounded-xl border border-border bg-card p-5">
-            <div className="flex items-center justify-between">
-              <span className="text-xs font-medium tracking-wide text-muted-foreground uppercase">
-                {copy.insights.systemLabel}
-              </span>
-              <span className="size-2 rounded-full bg-emerald-500" />
-            </div>
-            <p className="mt-2.5 flex items-center gap-2 text-sm font-semibold text-foreground">
-              <Activity className="size-4 text-emerald-600 dark:text-emerald-400 shrink-0" aria-hidden />
-              {copy.insights.systemStatus}
-            </p>
-            <p className="mt-1 text-xs text-muted-foreground leading-relaxed">
-              Đồng bộ tự động theo thời gian thực chuẩn GHG Protocol Scope 1-3.
-            </p>
-          </div>
-        </div>
       </div>
     </div>
   );

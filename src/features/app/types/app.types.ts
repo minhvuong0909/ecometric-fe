@@ -162,7 +162,23 @@ export interface ListActivityDataParams {
 // ==========================================
 // AI Scan Types
 // ==========================================
-export type ScanJobStatus = "QUEUED" | "PROCESSING" | "NEED_REVIEW" | "CONFIRMED" | "REJECTED" | "FAILED";
+export type AiDocumentType =
+  | "ELECTRICITY_BILL"
+  | "WATER_BILL"
+  | "FUEL_RECEIPT"
+  | "TRANSPORT_RECEIPT"
+  | "WASTE_RECORD"
+  | "PURCHASE_INVOICE"
+  | "OTHER";
+
+export interface InvoiceScanQueuedResponse {
+  documentId: string;
+  scanJobId: string;
+  status: "QUEUED";
+  queued: boolean;
+}
+
+export type ScanJobStatus = "QUEUED" | "PROCESSING" | "NEED_REVIEW" | "COMPLETED" | "CONFIRMED" | "REJECTED" | "FAILED";
 
 export interface AiScanDocument {
   id: string;
@@ -268,8 +284,9 @@ export interface Recommendation {
 // ==========================================
 // Reports Types
 // ==========================================
-export type ReportStatus = "DRAFT" | "GENERATING" | "COMPLETED" | "FAILED";
-export type ReportType = "GHG_PROTOCOL" | "CSRD_ESRS_E1" | "ISO_14064" | "INTERNAL_SUMMARY";
+export type ReportStatus = "QUEUED" | "GENERATING" | "COMPLETED" | "FAILED";
+export type ReportType = "MONTHLY_EMISSION" | "QUARTERLY_EMISSION" | "YEARLY_EMISSION" | "ESG_BASIC" | "BRANCH_COMPARISON" | "ECO_SCORE" | "TARGET_PROGRESS";
+export type ReportFormat = "JSON" | "PDF" | "XLSX" | "CSV";
 
 export interface Report {
   id: string;
@@ -298,6 +315,7 @@ export interface CreateReportInput {
   branchId?: string;
   title: string;
   type: ReportType;
+  format?: ReportFormat;
   periodStart?: string;
   periodEnd?: string;
 }
@@ -308,4 +326,13 @@ export interface PaginatedResponse<T> {
   page: number;
   limit: number;
   totalPages: number;
+}
+
+export interface EmissionResult {
+  id: string; activityRecordId: string; co2eKg: string; scope: EmissionScope;
+  factorUsed: string | null; formula: string | null; metadata: unknown;
+  emissionFactor: { activityUnit: string; co2eUnit: string; sourceName: string | null; year: number | null } | null;
+}
+export interface GenerateRecommendationsInput {
+  businessId: string; branchId?: string; periodStart: string; periodEnd: string;
 }

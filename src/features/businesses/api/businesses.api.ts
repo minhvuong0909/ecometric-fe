@@ -1,6 +1,8 @@
 import { apiClient } from "@/shared/lib/api-client";
 import type {
   Business,
+  SubscriptionCheckout,
+  SubscriptionOrder,
   BusinessListResponse,
   BusinessOnboardingResponse,
   BusinessSuccessResponse,
@@ -60,8 +62,8 @@ export function createBusiness(
 /** POST /api/v1/businesses/subscribe — user đăng nhập tự tạo Business của mình (mua gói). */
 export function subscribeBusiness(
   body: SubscribeBusinessRequest,
-): Promise<Business> {
-  return apiClient.post<Business>(`${BASE_PATH}/subscribe`, body);
+): Promise<SubscriptionCheckout> {
+  return apiClient.post<SubscriptionCheckout>(`${BASE_PATH}/subscribe`, body);
 }
 
 /** PATCH /api/v1/businesses/:id */
@@ -76,3 +78,5 @@ export function updateBusiness(
 export function deleteBusiness(id: string): Promise<BusinessSuccessResponse> {
   return apiClient.delete<BusinessSuccessResponse>(`${BASE_PATH}/${id}`);
 }
+
+export const getSubscriptionOrder = (orderCode: number) => apiClient.get<SubscriptionOrder>(`/businesses/subscription-orders/${orderCode}`);

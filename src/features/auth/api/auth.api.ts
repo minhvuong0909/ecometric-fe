@@ -52,3 +52,7 @@ export function changePassword(
 ): Promise<SuccessResponse> {
   return apiClient.patch<SuccessResponse>("/auth/change-password", body);
 }
+
+export function exchangeExternal(token: string): Promise<LoginResponse> {
+  return apiClient.post<LoginResponse>("/auth/external/exchange", { token }, { auth: false, retryOnUnauthorized: false });
+}

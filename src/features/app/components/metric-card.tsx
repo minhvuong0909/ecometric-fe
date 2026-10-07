@@ -12,6 +12,7 @@ type MetricCardProps = {
   live?: boolean;
   iconClassName?: string;
   className?: string;
+  animateValue?: boolean;
 };
 
 export function MetricCard({
@@ -23,6 +24,7 @@ export function MetricCard({
   live = false,
   iconClassName,
   className,
+  animateValue = true,
 }: MetricCardProps) {
   // Parse numeric part and unit suffix for CountUp
   const match = value.match(/^([^\d.-]*)([\d,]+(?:\.\d+)?)(.*)$/);
@@ -69,7 +71,7 @@ export function MetricCard({
         </p>
         <div className="flex items-baseline justify-between gap-2">
           <p className="text-2xl font-bold tracking-tight text-foreground">
-            {numValue !== null && !isNaN(numValue) ? (
+            {animateValue && numValue !== null && !isNaN(numValue) ? (
               <CountUp
                 value={numValue}
                 prefix={prefix}

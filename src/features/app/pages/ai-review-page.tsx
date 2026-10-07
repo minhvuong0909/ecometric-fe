@@ -1,6 +1,8 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link, useNavigate, useSearchParams } from "react-router";
 import { toast } from "sonner";
+import { useQuery } from "@tanstack/react-query";
+import { getInvoiceScanFile } from "@/features/app/api/ai-scan.api";
 import {
   AlertCircle,
   ArrowLeft,
@@ -29,9 +31,10 @@ import {
   useRejectInvoiceScan,
   useRetryInvoiceScan,
 } from "@/features/app/hooks/use-ai-scan";
-import { useBranches, useReportingPeriods } from "@/features/app/hooks/use-app-meta";
-import { createReportingPeriod } from "@/features/app/api/meta.api";
-import type { AiScanDocument, ScanJobStatus } from "@/features/app/types/app.types";
+import { useBranches } from "@/features/app/hooks/use-app-meta";
+import { ActivityEntryForm } from "@/features/app/components/activity-entry-form";
+import { useBusinessRole } from "@/features/businesses/hooks/use-business-role";
+import type { AiScanDocument, ScanJobStatus, CreateActivityDataInput } from "@/features/app/types/app.types";
 import { useBusinessStore } from "@/shared/stores/business-store";
 import { Badge, type badgeVariants } from "@/shared/components/ui/badge";
 import { Button } from "@/shared/components/ui/button";
@@ -85,6 +88,7 @@ const STATUS_CONFIG: Record<
   QUEUED: { label: "Trong hàng đợi", variant: "info", icon: Clock },
   PROCESSING: { label: "Đang xử lý", variant: "info", icon: Loader2 },
   NEED_REVIEW: { label: "Cần rà soát", variant: "warning", icon: AlertCircle },
+  COMPLETED: { label: "Đã xử lý", variant: "success", icon: CheckCircle2 },
   CONFIRMED: { label: "Đã ghi nhận", variant: "success", icon: CheckCircle2 },
   REJECTED: { label: "Đã từ chối", variant: "neutral", icon: XCircle },
   FAILED: { label: "Lỗi trích xuất", variant: "danger", icon: XCircle },
@@ -178,11 +182,63 @@ function emptyDraft(): InvoiceDraft {
 
 function draftFromScanDoc(doc?: AiScanDocument): InvoiceDraft {
   const draft = emptyDraft();
-  const extracted = doc?.extractedData as Partial<InvoiceDraft> | null | undefined;
-  if (extracted && typeof extracted === "object") {
-    return { ...draft, ...extracted, items: Array.isArray(extracted.items) ? extracted.items : [] };
-  }
-  return draft;
+  const extracted = doc?.extractedData;
+  if (!extracted || typeof extracted !== "object") return draft;
+
+  const text = (value: unknown): string => typeof value === "string" ? value : "";
+  const number = (value: unknown): number => {
+    const parsed = Number(value);
+    return Number.isFinite(parsed) ? parsed : 0;
+  };
+  const party = (value: unknown): InvoiceDraft["seller"] => {
+    const fields = value && typeof value === "object" ? value as Record<string, unknown> : {};
+    return { name: text(fields.name), taxCode: text(fields.taxCode), address: text(fields.address) };
+  };
+  const seller = party(extracted.seller);
+  seller.name ||= text(extracted.supplierName);
+  const scope: ScopeLabel = doc?.documentType === "ELECTRICITY_BILL" ? "Scope 2"
+    : doc?.documentType === "FUEL_RECEIPT" ? "Scope 1" : "Scope Unassigned";
+  const quantity = number(extracted.quantity);
+  const totalAmount = number(extracted.totalAmount);
+  const items: LineItem[] = Array.isArray(extracted.items)
+    ? extracted.items.filter((item): item is Record<string, unknown> => Boolean(item) && typeof item === "object").map((item, index) => ({
+        id: index + 1,
+        description: text(item.description),
+        unit: text(item.unit),
+        quantity: number(item.quantity),
+        unitPrice: number(item.unitPrice),
+        amount: number(item.amount),
+        vatRate: number(item.vatRate),
+        scope: item.scope === "Scope 1" || item.scope === "Scope 2" ? item.scope : "Scope Unassigned",
+        confidence: number(item.confidence),
+        reasoning: text(item.reasoning),
+      }))
+    : quantity > 0 ? [{
+        id: 1,
+        description: text(extracted.supplierName) || "Dữ liệu trích xuất từ chứng từ",
+        unit: text(extracted.unit),
+        quantity,
+        unitPrice: totalAmount / quantity,
+        amount: totalAmount,
+        vatRate: 0,
+        scope,
+        confidence: number(doc?.confidenceScore),
+        reasoning: "Gợi ý theo loại chứng từ; cần kiểm tra trước khi ghi nhận.",
+      }] : [];
+
+  return {
+    ...draft,
+    serial: text(extracted.serial),
+    number: text(extracted.number) || text(extracted.invoiceNumber),
+    date: text(extracted.date) || (text(extracted.periodEnd) ? new Date(text(extracted.periodEnd)).toLocaleDateString("vi-VN") : ""),
+    defaultVat: number(extracted.defaultVat),
+    seller,
+    buyer: party(extracted.buyer),
+    subtotal: number(extracted.subtotal) || items.reduce((sum, item) => sum + item.amount, 0),
+    vatAmount: number(extracted.vatAmount),
+    totalAmount,
+    items,
+  };
 }
 
 function fmtMoney(n: number) {
@@ -209,20 +265,36 @@ export function AiReviewPage() {
     Boolean(activeBusinessId),
   );
   const queue = useMemo(
-    () => (scansData?.items ?? []).filter((doc) => doc.status !== "CONFIRMED" && doc.status !== "REJECTED"),
+    () => (scansData?.items ?? []).filter((doc) => doc.status !== "COMPLETED" && doc.status !== "CONFIRMED" && doc.status !== "REJECTED"),
     [scansData],
   );
 
   const [activeId, setActiveId] = useState<string | null>(searchParams.get("id"));
   useEffect(() => {
+    setActiveId(searchParams.get("id"));
+  }, [searchParams]);
+  useEffect(() => {
     if (!activeId && queue.length > 0) setActiveId(queue[0].id);
   }, [queue, activeId]);
 
-  const { data: scanDoc, isLoading: isLoadingDoc } = useInvoiceScanDetail(activeId, Boolean(activeId));
+  const { data: scanDoc, isLoading: isLoadingDoc, error: scanError } = useInvoiceScanDetail(activeId, Boolean(activeId));
+
+  const { data: originalFile, error: originalFileError } = useQuery({
+    queryKey: ["ai-scan", "file", activeId],
+    queryFn: () => getInvoiceScanFile(activeId!),
+    enabled: Boolean(activeId && scanDoc),
+  });
+  const [originalFileUrl, setOriginalFileUrl] = useState<string | null>(null);
+  useEffect(() => {
+    if (!originalFile) { setOriginalFileUrl(null); return; }
+    const url = URL.createObjectURL(originalFile.blob);
+    setOriginalFileUrl(url);
+    return () => URL.revokeObjectURL(url);
+  }, [originalFile]);
 
   const [drafts, setDrafts] = useState<Record<string, InvoiceDraft>>({});
   useEffect(() => {
-    if (activeId && scanDoc && !drafts[activeId]) {
+    if (activeId && scanDoc?.id === activeId && !drafts[activeId] && scanDoc.status !== "QUEUED" && scanDoc.status !== "PROCESSING") {
       setDrafts((prev) => ({ ...prev, [activeId]: draftFromScanDoc(scanDoc) }));
     }
   }, [activeId, scanDoc, drafts]);
@@ -243,7 +315,7 @@ export function AiReviewPage() {
   useEffect(() => {
     if (!branchId && branches[0]) setBranchId(branches[0].id);
   }, [branches, branchId]);
-  const { data: periodsData } = useReportingPeriods(activeBusinessId);
+  const { role } = useBusinessRole(activeBusinessId ?? "");
 
   const confirmMutation = useConfirmInvoiceScan();
   const rejectMutation = useRejectInvoiceScan();
@@ -369,51 +441,16 @@ export function AiReviewPage() {
     }
   };
 
-  const handleConfirm = async () => {
-    if (!activeId || !draft) return;
-    if (draft.items.length === 0) {
-      toast.error("Chưa có dòng hàng hóa/dịch vụ nào để ghi nhận.");
-      return;
-    }
-
-    try {
-      let periodId = periodsData?.items?.[0]?.id;
-      if (!periodId && activeBusinessId) {
-        const now = new Date();
-        const period = await createReportingPeriod({
-          businessId: activeBusinessId,
-          name: `Năm ${now.getFullYear()}`,
-          startDate: new Date(Date.UTC(now.getFullYear(), 0, 1)).toISOString(),
-          endDate: new Date(Date.UTC(now.getFullYear(), 11, 31, 23, 59, 59)).toISOString(),
-        });
-        periodId = period.id;
-      }
-      if (!periodId) {
-        toast.error("Không xác định được kỳ báo cáo.");
-        return;
-      }
-
-      const now = new Date();
-      await confirmMutation.mutateAsync({
-        id: activeId,
-        body: {
-          reportingPeriodId: periodId,
-          branchId: branchId || undefined,
-          // Chưa có ánh xạ hệ số phát thải theo từng dòng hàng — ghi nhận tổng tiền hàng
-          // (đơn vị "VND") để lưu hồ sơ, chờ xử lý CO2e thật khi có OCR + hệ số phát thải.
-          quantity: draft.subtotal,
-          unit: "VND",
-          periodStart: new Date(Date.UTC(now.getFullYear(), now.getMonth(), 1)).toISOString(),
-          periodEnd: new Date(Date.UTC(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59)).toISOString(),
-          metadata: { ...draft, scopeSummary },
-          reviewNotes: "Xác nhận thủ công từ trang rà soát hóa đơn (chưa có OCR thật).",
-        },
-      });
-      toast.success("Đã ghi nhận hóa đơn vào sổ cái!");
-      navigate(ROUTES.app.emissionDetail);
-    } catch (err) {
-      toast.error(getApiErrorMessage(err));
-    }
+  const handleConfirm = async (input: CreateActivityDataInput) => {
+    if (!activeId || scanDoc?.status !== "NEED_REVIEW") throw new Error("Tài liệu chưa sẵn sàng để ghi nhận.");
+    await confirmMutation.mutateAsync({ id: activeId, body: {
+      reportingPeriodId: input.reportingPeriodId, branchId: input.branchId,
+      emissionSourceId: input.emissionSourceId, quantity: input.quantity, unit: input.unit,
+      periodStart: input.periodStart, periodEnd: input.periodEnd,
+      metadata: { invoice: draft, scopeSummary }, reviewNotes: "Đã rà soát dữ liệu hoạt động từ chứng từ.",
+    }});
+    toast.success("Đã lưu hoạt động từ hóa đơn. Gửi duyệt để tính CO₂e.");
+    navigate(ROUTES.app.emissionDetail);
   };
 
   return (
@@ -433,7 +470,7 @@ export function AiReviewPage() {
             ) : (
               <div className="max-h-[360px] space-y-1.5 overflow-y-auto p-3">
                 {queue.map((doc) => {
-                  const status = STATUS_CONFIG[doc.status];
+                  const status = STATUS_CONFIG[doc.status] ?? STATUS_CONFIG.FAILED;
                   const StatusIcon = status.icon;
                   const isActive = doc.id === activeId;
                   return (
@@ -455,7 +492,7 @@ export function AiReviewPage() {
                           {(drafts[doc.id]?.items.length ?? 0)} dòng
                         </p>
                       </div>
-                      <Badge variant={status.variant} className="gap-1 text-[10px]">
+                      <Badge variant={status.variant} className="gap-1 text-[11px]">
                         <StatusIcon className="size-3" />
                         {status.label}
                       </Badge>
@@ -466,13 +503,17 @@ export function AiReviewPage() {
             )}
           </AppPanel>
 
-          {scanDoc?.fileUrl ? (
+          {scanDoc ? (
             <AppPanel title="Tài liệu gốc">
-              {scanDoc.mimeType?.startsWith("image/") ? (
-                <img src={scanDoc.fileUrl} alt={scanDoc.fileName ?? ""} className="w-full rounded-lg border border-border" />
+              {originalFileError ? (
+                <p className="text-sm text-destructive">{getApiErrorMessage(originalFileError)}</p>
+              ) : !originalFileUrl ? (
+                <p className="text-sm text-muted-foreground">Đang tải tài liệu gốc…</p>
+              ) : scanDoc.mimeType?.startsWith("image/") ? (
+                <img src={originalFileUrl ?? undefined} alt={scanDoc.fileName ?? ""} className="w-full rounded-lg border border-border" />
               ) : (
                 <a
-                  href={scanDoc.fileUrl}
+                  href={originalFileUrl ?? undefined}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="flex items-center gap-2 rounded-lg border border-border bg-muted/30 p-4 text-sm font-semibold text-primary hover:underline"
@@ -505,10 +546,14 @@ export function AiReviewPage() {
         <div className="space-y-6 lg:col-span-2">
           {!activeId || !draft ? (
             <AppPanel>
-              <EmptyState icon={Sparkles} title="Chưa chọn hóa đơn" description="Chọn 1 hóa đơn ở hàng đợi bên trái để bắt đầu rà soát." />
+              <EmptyState icon={Sparkles}
+                title={scanError ? "Không thể mở tài liệu" : isLoadingDoc ? "Đang tải dữ liệu trích xuất…" : scanDoc?.status === "QUEUED" || scanDoc?.status === "PROCESSING" ? "Tài liệu đang được xử lý" : "Chưa chọn hóa đơn"}
+                description={scanError ? getApiErrorMessage(scanError) : "Chọn hóa đơn trong hàng đợi để rà soát; kết quả sẽ xuất hiện sau khi xử lý xong."}
+              />
             </AppPanel>
           ) : (
             <>
+              {scanDoc?.status === "NEED_REVIEW" && activeBusinessId && role && role !== "VIEWER" && <div id="invoice-activity"><AppPanel title="Ghi nhận dữ liệu hoạt động" description="Kiểm tra số lượng, đơn vị và nguồn phát thải. Tổng tiền hóa đơn chỉ lưu làm thông tin tham chiếu."><ActivityEntryForm key={activeId} businessId={activeBusinessId} disabled={confirmMutation.isPending} submitLabel="Xác nhận & lưu bản nháp" initial={{quantity: Number(scanDoc.extractedData?.quantity) || undefined, unit: String(scanDoc.extractedData?.unit ?? ""), emissionSourceId: scanDoc.extractedData?._processing?.suggestedEmissionSourceId, periodStart: scanDoc.extractedData?.periodStart, periodEnd: scanDoc.extractedData?.periodEnd, branchId: branchId || undefined}} onSave={handleConfirm} /></AppPanel></div>}
               <AppPanel
                 title="Thông tin chung"
                 badge={
@@ -657,7 +702,7 @@ export function AiReviewPage() {
                                 placeholder="Tên hàng / dịch vụ"
                                 className="h-8 text-xs"
                               />
-                              <p className="mt-1 text-[10px] text-muted-foreground">
+                              <p className="mt-1 text-[11px] text-muted-foreground">
                                 {it.reasoning} · tin cậy {it.confidence.toFixed(2)}
                               </p>
                             </td>
@@ -817,8 +862,8 @@ export function AiReviewPage() {
                 </div>
 
                 <Button
-                  onClick={handleConfirm}
-                  disabled={confirmMutation.isPending || isLoadingDoc}
+                  onClick={() => document.getElementById("invoice-activity")?.scrollIntoView({ behavior: "smooth" })}
+                  disabled={confirmMutation.isPending || isLoadingDoc || scanDoc?.status !== "NEED_REVIEW" || role === "VIEWER"}
                   className="gap-1.5 bg-accent text-accent-foreground font-bold hover:bg-accent/90 shadow-md px-6"
                 >
                   {confirmMutation.isPending ? (

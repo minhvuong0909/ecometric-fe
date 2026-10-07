@@ -1,522 +1,86 @@
-import { useState } from "react";
-import { Link, useNavigate } from "react-router";
+import { DataEntryMethods } from "@/features/app/components/data-entry-methods";
+import { FileCheck2, Send, Calculator, Info } from "lucide-react";
+import { useNavigate } from "react-router";
 import { toast } from "sonner";
-import { Droplets, Fuel, Trash2, Truck, Zap, Calculator, Loader2, Sparkles, UploadCloud, ArrowRight } from "lucide-react";
 import { AppPageHeader } from "@/features/app/components/app-page-header";
 import { AppPanel } from "@/features/app/components/app-panel";
-import { DATA_INPUT_COPY, APP_SHARED_COPY } from "@/features/app/constants/app-copy";
+import { ActivityEntryForm } from "@/features/app/components/activity-entry-form";
 import { useCreateActivityData } from "@/features/app/hooks/use-activity-data";
-import { useBranches, useEmissionSources, useReportingPeriods } from "@/features/app/hooks/use-app-meta";
-import { createReportingPeriod } from "@/features/app/api/meta.api";
 import { useBusinessStore } from "@/shared/stores/business-store";
-import { Badge } from "@/shared/components/ui/badge";
-import { Button } from "@/shared/components/ui/button";
-import { Input } from "@/shared/components/ui/input";
-import { Label } from "@/shared/components/ui/label";
 import { ROUTES } from "@/shared/constants/routes";
-
 export function DataInputPage() {
-  const copy = DATA_INPUT_COPY;
+  const { activeBusinessId, activeBusiness } = useBusinessStore();
+  const mutation = useCreateActivityData();
   const navigate = useNavigate();
-  const [isCalculating, setIsCalculating] = useState(false);
-  const { activeBusiness, activeBusinessId } = useBusinessStore();
-
-  const { data: branchesData } = useBranches(activeBusinessId);
-  const { data: periodsData } = useReportingPeriods(activeBusinessId);
-  const { data: sourcesData } = useEmissionSources();
-  const createActivityMutation = useCreateActivityData();
-
-  // States cho các trường nhập liệu của Điện
-  const [electricity, setElectricity] = useState("1500");
-  const [branchElec, setBranchElec] = useState("Quận 1");
-  const [periodElec, setPeriodElec] = useState("Tháng 6 2026");
-
-  // States cho Nhiên liệu
-  const [fuelType, setFuelType] = useState("Dầu diesel");
-  const [fuel, setFuel] = useState("320");
-  const [branchFuel, setBranchFuel] = useState("Kho Bình Dương");
-
-  // States cho Vận tải
-  const [distance, setDistance] = useState("4200");
-  const [vehicleType, setVehicleType] = useState("Xe tải");
-  const [periodDist, setPeriodDist] = useState("Tháng 6 2026");
-
-  // States cho Chất thải
-  const [waste, setWaste] = useState("12.5");
-  const [wasteMethod, setWasteMethod] = useState("Tái chế");
-  const [branchWaste, setBranchWaste] = useState("Quận 1");
-
-  // States cho Nước
-  const [water, setWater] = useState("860");
-  const [branchWater, setBranchWater] = useState("Quận 1");
-  const [periodWater, setPeriodWater] = useState("Tháng 6 2026");
-
-  // Hệ số phát thải ngầm định
-  const ELECTRICITY_FACTOR = 0.00045; // tCO2e / kWh
-  const FUEL_FACTOR = 0.00268;        // tCO2e / L
-  const DISTANCE_FACTOR = 0.00012;    // tCO2e / km
-  const WASTE_FACTOR = 0.0089;        // tCO2e / ton
-  const WATER_FACTOR = 0.00035;       // tCO2e / m3
-
-  // Tính toán phát thải thời gian thực
-  const co2eElectricity = ((parseFloat(electricity) || 0) * ELECTRICITY_FACTOR).toFixed(2);
-  const co2eFuel = ((parseFloat(fuel) || 0) * FUEL_FACTOR).toFixed(2);
-  const co2eDistance = ((parseFloat(distance) || 0) * DISTANCE_FACTOR).toFixed(2);
-  const co2eWaste = ((parseFloat(waste) || 0) * WASTE_FACTOR).toFixed(2);
-  const co2eWater = ((parseFloat(water) || 0) * WATER_FACTOR).toFixed(2);
-
-  // Tính toán độ đầy đủ của dữ liệu động
-  const totalFields = 15;
-  const filledFields = [
-    electricity, branchElec, periodElec,
-    fuelType, fuel, branchFuel,
-    distance, vehicleType, periodDist,
-    waste, wasteMethod, branchWaste,
-    water, branchWater, periodWater
-  ].filter(val => val.trim() !== "").length;
-
-  const completenessPercent = Math.round((filledFields / totalFields) * 100);
-
-  const handleCalculate = async () => {
-    if (!activeBusinessId) {
-      toast.error("Vui lòng chọn hoặc tạo doanh nghiệp trước khi nhập dữ liệu");
-      navigate(ROUTES.app.businesses);
-      return;
-    }
-
-    setIsCalculating(true);
-    toast.loading("Đang lưu dữ liệu và tính toán phát thải...", { id: "calc-toast" });
-
-    try {
-      // 1. Tìm hoặc tạo kỳ báo cáo cho business
-      let periodId = periodsData?.items?.[0]?.id;
-      if (!periodId) {
-        const newPeriod = await createReportingPeriod({
-          businessId: activeBusinessId,
-          name: "Năm 2026",
-          startDate: new Date("2026-01-01T00:00:00.000Z").toISOString(),
-          endDate: new Date("2026-12-31T23:59:59.000Z").toISOString(),
-        });
-        periodId = newPeriod.id;
-      }
-
-      // 2. Lấy branch id đầu tiên nếu có
-      const branchId = branchesData?.items?.[0]?.id;
-
-      // 3. Tìm nguồn phát thải điện lưới / nhiên liệu
-      const sources = sourcesData?.items ?? [];
-      const elecSource = sources.find((s) => s.code.toLowerCase().includes("elec") || s.name.toLowerCase().includes("điện"));
-      const fuelSource = sources.find((s) => s.code.toLowerCase().includes("diesel") || s.name.toLowerCase().includes("nhiên liệu"));
-
-      // 4. Tạo các bản ghi hoạt động
-      const now = new Date();
-      const periodStart = new Date(Date.UTC(now.getFullYear(), now.getMonth(), 1)).toISOString();
-      const periodEnd = new Date(Date.UTC(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59)).toISOString();
-
-      if (parseFloat(electricity) > 0) {
-        await createActivityMutation.mutateAsync({
-          businessId: activeBusinessId,
-          reportingPeriodId: periodId,
-          branchId,
-          emissionSourceId: elecSource?.id,
-          quantity: parseFloat(electricity),
-          unit: "kWh",
-          periodStart,
-          periodEnd,
-          inputMethod: "MANUAL",
-          metadata: { note: `Nhập tay từ giao diện - Chi nhánh ${branchElec}` },
-        });
-      }
-
-      if (parseFloat(fuel) > 0) {
-        await createActivityMutation.mutateAsync({
-          businessId: activeBusinessId,
-          reportingPeriodId: periodId,
-          branchId,
-          emissionSourceId: fuelSource?.id,
-          quantity: parseFloat(fuel),
-          unit: "L",
-          periodStart,
-          periodEnd,
-          inputMethod: "MANUAL",
-          metadata: { note: `Nhiên liệu ${fuelType} - ${branchFuel}` },
-        });
-      }
-
-      toast.success("Tính toán và ghi nhận phát thải vào sổ cái thành công!", { id: "calc-toast" });
-      setTimeout(() => {
-        navigate(ROUTES.app.emissionDetail);
-      }, 500);
-    } catch (err: any) {
-      toast.error(err?.message || "Lỗi khi lưu dữ liệu phát thải", { id: "calc-toast" });
-    } finally {
-      setIsCalculating(false);
-    }
-  };
-
   return (
-    <div className="space-y-8">
+    <div className="space-y-6">
       <AppPageHeader
-        breadcrumbs={copy.breadcrumbs}
-        title={copy.title}
-        description={copy.description}
+        title="Nhập dữ liệu hoạt động"
+        description={`Ghi nhận lượng điện, nhiên liệu, nước, vận tải hoặc chất thải cho ${activeBusiness?.name ?? "doanh nghiệp"}.`}
       />
-
-      <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
-        <div className="rounded-xl border border-border bg-card px-6 py-4">
-          <p className="text-xs font-medium tracking-wide text-muted-foreground">
-            {APP_SHARED_COPY.topBar.companyLabel}
-          </p>
-          <p className="text-lg font-semibold text-secondary-foreground">{activeBusiness?.name ?? APP_SHARED_COPY.topBar.companyName}</p>
-        </div>
-
-        <div className="min-w-[320px] rounded-xl border border-border bg-card p-5">
-          <div className="mb-2 flex items-center justify-between text-sm font-medium">
-            <span className="text-secondary-foreground">Độ đầy đủ của dữ liệu</span>
-            <span className="text-primary font-semibold">{completenessPercent}%</span>
-          </div>
-          <div className="h-2 overflow-hidden rounded-full bg-muted">
-            <div
-              className="h-full rounded-full bg-primary transition-all duration-500 ease-out"
-              style={{ width: `${completenessPercent}%` }}
+      <DataEntryMethods />
+      <div className="grid items-start gap-6 xl:grid-cols-[minmax(0,1fr)_300px]">
+        <AppPanel
+          title="Thông tin hoạt động"
+          description="Ghi nhận lượng tiêu thụ thực tế trong kỳ báo cáo."
+        >
+          {activeBusinessId ? (
+            <ActivityEntryForm
+              key={activeBusinessId}
+              businessId={activeBusinessId}
+              disabled={mutation.isPending}
+              onSave={async (input) => {
+                await mutation.mutateAsync({ ...input, inputMethod: "MANUAL" });
+                toast.success("Đã lưu bản nháp. Gửi duyệt để tính phát thải.");
+                navigate(ROUTES.app.emissionDetail);
+              }}
             />
-          </div>
-        </div>
-      </div>
-
-      {/* Banner AI Upload hóa đơn thay vì nhập thủ công */}
-      <div className="rounded-xl border border-primary/20 bg-primary/5 p-6">
-        <div className="flex flex-col gap-6 lg:flex-row lg:items-center lg:justify-between">
-          <div className="flex items-start gap-4">
-            <div className="flex size-12 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary">
-              <Sparkles className="size-6" />
-            </div>
-            <div className="space-y-1">
-              <div className="flex items-center gap-2">
-                <span className="rounded-full bg-primary/15 px-2.5 py-0.5 text-[11px] font-medium text-primary">
-                  Nhanh & Tự động
-                </span>
-                <h3 className="text-base font-semibold text-foreground">Bạn không muốn nhập số liệu thủ công?</h3>
-              </div>
-              <p className="text-sm text-muted-foreground leading-relaxed max-w-2xl">
-                Tải lên ngay hóa đơn EVN, chứng từ nhiên liệu hoặc phiếu thu phí. Công nghệ AI của EcoMetric sẽ tự động trích xuất và kiểm tra số liệu cho bạn.
-              </p>
-            </div>
-          </div>
-          <Button asChild className="shrink-0 gap-2">
-            <Link to={ROUTES.app.uploadDoc}>
-              <UploadCloud className="size-5" />
-              Tải hóa đơn đính kèm (AI Scan)
-              <ArrowRight className="size-4" />
-            </Link>
-          </Button>
-        </div>
-      </div>
-
-      <div className="grid gap-6 md:grid-cols-2">
-        {/* Card: Điện */}
-        <AppPanel bodyClassName="space-y-6" interactive className="group">
-          <div className="flex items-start justify-between gap-4">
-            <div className="flex items-center gap-4">
-              <div className="flex size-12 items-center justify-center rounded-lg bg-primary/10 text-primary">
-                <Zap className="size-5" aria-hidden />
-              </div>
-              <div>
-                <h2 className="text-lg font-bold text-secondary-foreground">Điện</h2>
-                <p className="text-xs text-muted-foreground">Dữ liệu hoạt động hàng tháng</p>
-              </div>
-            </div>
-            <Badge variant="danger">Bắt buộc</Badge>
-          </div>
-
-          <div className="grid gap-4 sm:grid-cols-3">
-            <div className="space-y-1.5">
-              <Label className="text-xs font-medium text-muted-foreground">Sản lượng (kWh)</Label>
-              <Input
-                type="number"
-                value={electricity}
-                onChange={(e) => setElectricity(e.target.value)}
-                className="bg-background border-border focus:border-primary/50 transition-all"
-              />
-            </div>
-            <div className="space-y-1.5">
-              <Label className="text-xs font-medium text-muted-foreground">
-                Chi nhánh
-              </Label>
-              <Input
-                value={branchElec}
-                onChange={(e) => setBranchElec(e.target.value)}
-                className="bg-background border-border focus:border-primary/50 transition-all"
-              />
-            </div>
-            <div className="space-y-1.5">
-              <Label className="text-xs font-medium text-muted-foreground">
-                Kỳ hóa đơn
-              </Label>
-              <Input
-                value={periodElec}
-                onChange={(e) => setPeriodElec(e.target.value)}
-                className="bg-background border-border focus:border-primary/50 transition-all"
-              />
-            </div>
-          </div>
-
-          <div className="mt-4 flex items-center justify-between rounded-lg bg-emerald-500/5 px-4 py-2.5 border border-emerald-500/10">
-            <span className="text-xs font-medium text-emerald-700 dark:text-emerald-400 flex items-center gap-1.5">
-              <Calculator className="size-3.5" />
-              Lượng phát thải tính toán:
-            </span>
-            <span className="text-sm font-semibold text-emerald-700 dark:text-emerald-400">{co2eElectricity} tCO₂e</span>
-          </div>
-        </AppPanel>
-
-        {/* Card: Nhiên liệu */}
-        <AppPanel bodyClassName="space-y-6" interactive className="group">
-          <div className="flex items-start justify-between gap-4">
-            <div className="flex items-center gap-4">
-              <div className="flex size-12 items-center justify-center rounded-lg bg-primary/10 text-primary">
-                <Fuel className="size-5" aria-hidden />
-              </div>
-              <div>
-                <h2 className="text-lg font-bold text-secondary-foreground">Nhiên liệu</h2>
-                <p className="text-xs text-muted-foreground">Dữ liệu hoạt động hàng tháng</p>
-              </div>
-            </div>
-            <Badge variant="danger">Bắt buộc</Badge>
-          </div>
-
-          <div className="grid gap-4 sm:grid-cols-3">
-            <div className="space-y-1.5">
-              <Label className="text-xs font-medium text-muted-foreground">
-                Loại nhiên liệu
-              </Label>
-              <Input
-                value={fuelType}
-                onChange={(e) => setFuelType(e.target.value)}
-                className="bg-background border-border focus:border-primary/50 transition-all"
-              />
-            </div>
-            <div className="space-y-1.5">
-              <Label className="text-xs font-medium text-muted-foreground">
-                Số lượng (lít)
-              </Label>
-              <Input
-                type="number"
-                value={fuel}
-                onChange={(e) => setFuel(e.target.value)}
-                className="bg-background border-border focus:border-primary/50 transition-all"
-              />
-            </div>
-            <div className="space-y-1.5">
-              <Label className="text-xs font-medium text-muted-foreground">
-                Chi nhánh
-              </Label>
-              <Input
-                value={branchFuel}
-                onChange={(e) => setBranchFuel(e.target.value)}
-                className="bg-background border-border focus:border-primary/50 transition-all"
-              />
-            </div>
-          </div>
-
-          <div className="mt-4 flex items-center justify-between rounded-lg bg-emerald-500/5 px-4 py-2.5 border border-emerald-500/10">
-            <span className="text-xs font-medium text-emerald-700 dark:text-emerald-400 flex items-center gap-1.5">
-              <Calculator className="size-3.5" />
-              Lượng phát thải tính toán:
-            </span>
-            <span className="text-sm font-semibold text-emerald-700 dark:text-emerald-400">{co2eFuel} tCO₂e</span>
-          </div>
-        </AppPanel>
-
-        {/* Card: Vận tải */}
-        <AppPanel bodyClassName="space-y-6" interactive className="group">
-          <div className="flex items-start justify-between gap-4">
-            <div className="flex items-center gap-4">
-              <div className="flex size-12 items-center justify-center rounded-lg bg-primary/10 text-primary">
-                <Truck className="size-5" aria-hidden />
-              </div>
-              <div>
-                <h2 className="text-lg font-bold text-secondary-foreground">Vận tải</h2>
-                <p className="text-xs text-muted-foreground">Dữ liệu hoạt động hàng tháng</p>
-              </div>
-            </div>
-            <Badge variant="danger">Bắt buộc</Badge>
-          </div>
-
-          <div className="grid gap-4 sm:grid-cols-3">
-            <div className="space-y-1.5">
-              <Label className="text-xs font-medium text-muted-foreground">
-                Quãng đường (km)
-              </Label>
-              <Input
-                type="number"
-                value={distance}
-                onChange={(e) => setDistance(e.target.value)}
-                className="bg-background border-border focus:border-primary/50 transition-all"
-              />
-            </div>
-            <div className="space-y-1.5">
-              <Label className="text-xs font-medium text-muted-foreground">
-                Loại xe
-              </Label>
-              <Input
-                value={vehicleType}
-                onChange={(e) => setVehicleType(e.target.value)}
-                className="bg-background border-border focus:border-primary/50 transition-all"
-              />
-            </div>
-            <div className="space-y-1.5">
-              <Label className="text-xs font-medium text-muted-foreground">
-                Kỳ báo cáo
-              </Label>
-              <Input
-                value={periodDist}
-                onChange={(e) => setPeriodDist(e.target.value)}
-                className="bg-background border-border focus:border-primary/50 transition-all"
-              />
-            </div>
-          </div>
-
-          <div className="mt-4 flex items-center justify-between rounded-lg bg-emerald-500/5 px-4 py-2.5 border border-emerald-500/10">
-            <span className="text-xs font-medium text-emerald-700 dark:text-emerald-400 flex items-center gap-1.5">
-              <Calculator className="size-3.5" />
-              Lượng phát thải tính toán:
-            </span>
-            <span className="text-sm font-semibold text-emerald-700 dark:text-emerald-400">{co2eDistance} tCO₂e</span>
-          </div>
-        </AppPanel>
-
-        {/* Card: Chất thải */}
-        <AppPanel bodyClassName="space-y-6" interactive className="group">
-          <div className="flex items-start justify-between gap-4">
-            <div className="flex items-center gap-4">
-              <div className="flex size-12 items-center justify-center rounded-lg bg-primary/10 text-primary">
-                <Trash2 className="size-5" aria-hidden />
-              </div>
-              <div>
-                <h2 className="text-lg font-bold text-secondary-foreground">Chất thải</h2>
-                <p className="text-xs text-muted-foreground">Dữ liệu hoạt động hàng tháng</p>
-              </div>
-            </div>
-            <Badge variant="danger">Bắt buộc</Badge>
-          </div>
-
-          <div className="grid gap-4 sm:grid-cols-3">
-            <div className="space-y-1.5">
-              <Label className="text-xs font-medium text-muted-foreground">
-                Khối lượng (tấn)
-              </Label>
-              <Input
-                type="number"
-                value={waste}
-                onChange={(e) => setWaste(e.target.value)}
-                className="bg-background border-border focus:border-primary/50 transition-all"
-              />
-            </div>
-            <div className="space-y-1.5">
-              <Label className="text-xs font-medium text-muted-foreground">
-                Phương pháp
-              </Label>
-              <Input
-                value={wasteMethod}
-                onChange={(e) => setWasteMethod(e.target.value)}
-                className="bg-background border-border focus:border-primary/50 transition-all"
-              />
-            </div>
-            <div className="space-y-1.5">
-              <Label className="text-xs font-medium text-muted-foreground">
-                Chi nhánh
-              </Label>
-              <Input
-                value={branchWaste}
-                onChange={(e) => setBranchWaste(e.target.value)}
-                className="bg-background border-border focus:border-primary/50 transition-all"
-              />
-            </div>
-          </div>
-
-          <div className="mt-4 flex items-center justify-between rounded-lg bg-emerald-500/5 px-4 py-2.5 border border-emerald-500/10">
-            <span className="text-xs font-medium text-emerald-700 dark:text-emerald-400 flex items-center gap-1.5">
-              <Calculator className="size-3.5" />
-              Lượng phát thải tính toán:
-            </span>
-            <span className="text-sm font-semibold text-emerald-700 dark:text-emerald-400">{co2eWaste} tCO₂e</span>
-          </div>
-        </AppPanel>
-
-        {/* Card: Nước */}
-        <AppPanel bodyClassName="space-y-6" interactive className="group">
-          <div className="flex items-start justify-between gap-4">
-            <div className="flex items-center gap-4">
-              <div className="flex size-12 items-center justify-center rounded-lg bg-primary/10 text-primary">
-                <Droplets className="size-5" aria-hidden />
-              </div>
-              <div>
-                <h2 className="text-lg font-bold text-secondary-foreground">Nước</h2>
-                <p className="text-xs text-muted-foreground">Dữ liệu hoạt động hàng tháng</p>
-              </div>
-            </div>
-            <Badge variant="danger">Bắt buộc</Badge>
-          </div>
-
-          <div className="grid gap-4 sm:grid-cols-3">
-            <div className="space-y-1.5">
-              <Label className="text-xs font-medium text-muted-foreground">
-                Tiêu thụ (m³)
-              </Label>
-              <Input
-                type="number"
-                value={water}
-                onChange={(e) => setWater(e.target.value)}
-                className="bg-background border-border focus:border-primary/50 transition-all"
-              />
-            </div>
-            <div className="space-y-1.5">
-              <Label className="text-xs font-medium text-muted-foreground">
-                Chi nhánh
-              </Label>
-              <Input
-                value={branchWater}
-                onChange={(e) => setBranchWater(e.target.value)}
-                className="bg-background border-border focus:border-primary/50 transition-all"
-              />
-            </div>
-            <div className="space-y-1.5">
-              <Label className="text-xs font-medium text-muted-foreground">
-                Kỳ hóa đơn
-              </Label>
-              <Input
-                value={periodWater}
-                onChange={(e) => setPeriodWater(e.target.value)}
-                className="bg-background border-border focus:border-primary/50 transition-all"
-              />
-            </div>
-          </div>
-
-          <div className="mt-4 flex items-center justify-between rounded-lg bg-emerald-500/5 px-4 py-2.5 border border-emerald-500/10">
-            <span className="text-xs font-medium text-emerald-700 dark:text-emerald-400 flex items-center gap-1.5">
-              <Calculator className="size-3.5" />
-              Lượng phát thải tính toán:
-            </span>
-            <span className="text-sm font-semibold text-emerald-700 dark:text-emerald-400">{co2eWater} tCO₂e</span>
-          </div>
-        </AppPanel>
-      </div>
-
-      <div className="flex justify-end gap-3">
-        <Button onClick={handleCalculate} disabled={isCalculating} size="lg" className="gap-2">
-          {isCalculating ? (
-            <>
-              <Loader2 className="size-4 animate-spin" />
-              Đang tính toán...
-            </>
           ) : (
-            <>
-              <Calculator className="size-4" />
-              {copy.cta}
-            </>
+            <p>Chọn doanh nghiệp trước khi nhập dữ liệu.</p>
           )}
-        </Button>
+        </AppPanel>
+        <aside className="space-y-5 xl:sticky xl:top-24">
+          <AppPanel title="Sau khi nhập dữ liệu">
+            <ol className="space-y-6">
+              {[
+                {
+                  icon: FileCheck2,
+                  title: "Lưu bản nháp",
+                  text: "Kiểm tra thông tin trước khi gửi cho quản lý.",
+                },
+                {
+                  icon: Send,
+                  title: "Gửi duyệt",
+                  text: "Mở danh sách hoạt động và gửi bản ghi đã hoàn tất.",
+                },
+                {
+                  icon: Calculator,
+                  title: "Xác nhận & tính phát thải",
+                  text: "Quản lý duyệt, hệ thống tính CO₂e và cập nhật tổng phát thải.",
+                },
+              ].map(({ icon: Icon, title, text }) => (
+                <li key={title} className="flex gap-3">
+                  <span className="flex size-9 shrink-0 items-center justify-center rounded-lg bg-primary/8 text-primary">
+                    <Icon className="size-4" aria-hidden />
+                  </span>
+                  <div>
+                    <p className="text-sm font-semibold">{title}</p>
+                    <p className="mt-1 text-xs leading-relaxed text-muted-foreground">
+                      {text}
+                    </p>
+                  </div>
+                </li>
+              ))}
+            </ol>
+          </AppPanel>
+          <div className="flex gap-3 rounded-xl border border-primary/15 bg-primary/5 p-5">
+            <Info className="mt-0.5 size-4 shrink-0 text-primary" aria-hidden />
+            <p className="text-sm leading-relaxed text-muted-foreground">
+              Nhập kWh, lít, kg hoặc đơn vị của nguồn phát thải. Tổng tiền hóa
+              đơn không thay thế lượng tiêu thụ.
+            </p>
+          </div>
+        </aside>
       </div>
     </div>
   );

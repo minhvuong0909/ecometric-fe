@@ -21,7 +21,7 @@ export function useReports(businessId?: string | null, enabled = true) {
     queryFn: () => (businessId ? listReports(businessId) : Promise.resolve({ items: [], total: 0, page: 1, limit: 20, totalPages: 0 })),
     enabled: enabled && !!businessId,
     refetchInterval: (query) => {
-      const hasGenerating = query.state.data?.items.some((r) => r.status === "GENERATING");
+      const hasGenerating = query.state.data?.items.some((r) => r.status === "QUEUED" || r.status === "GENERATING");
       return hasGenerating ? 3000 : false;
     },
   });

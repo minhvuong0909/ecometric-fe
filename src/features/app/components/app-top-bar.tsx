@@ -89,7 +89,7 @@ export function AppTopBar({ className }: AppTopBarProps) {
                   : activeBusiness.subscriptionTier === "ENTERPRISE"
                     ? "Gói Enterprise"
                     : "Gói Starter"}{" "}
-                • Dùng thử 14 ngày
+
               </span>
             ) : null}
           </div>
@@ -97,7 +97,7 @@ export function AppTopBar({ className }: AppTopBarProps) {
       </div>
 
       <div className="flex items-center gap-3">
-        <LiveClock />
+        <div className="hidden xl:block"><LiveClock /></div>
         <AppSearch />
         <ThemeToggle />
         <Button
@@ -113,4 +113,3 @@ export function AppTopBar({ className }: AppTopBarProps) {
     </header>
   );
 }
-

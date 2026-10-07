@@ -1,0 +1,47 @@
+.eco-brand,
+.eco-workspace {
+  --background: #f6f7f8;
+  --foreground: #202a2e;
+  --card: #ffffff;
+  --card-foreground: #202a2e;
+  --popover: #ffffff;
+  --popover-foreground: #202a2e;
+  --primary: #22634b;
+  --primary-foreground: #ffffff;
+  --secondary: #edf1ef;
+  --secondary-foreground: #273b32;
+  --muted: #eef0f2;
+  --muted-foreground: #5d6870;
+  --accent: #22634b;
+  --accent-foreground: #ffffff;
+  --border: #dce2e4;
+  --input: #cbd3d7;
+  --ring: #22634b;
+  --footer-muted: #647078;
+  --destructive: #b42332;
+  color: var(--foreground);
+  background: var(--background);
+  color-scheme: light;
+}
+.dark .eco-brand,
+.dark .eco-workspace {
+  --background: #13191c;
+  --foreground: #f0f3f4;
+  --card: #1c2428;
+  --card-foreground: #f0f3f4;
+  --popover: #1c2428;
+  --popover-foreground: #f0f3f4;
+  --primary: #9ed8b2;
+  --primary-foreground: #13261c;
+  --secondary: #27332e;
+  --secondary-foreground: #e0ebe4;
+  --muted: #242d32;
+  --muted-foreground: #b1bdc4;
+  --accent: #9ed8b2;
+  --accent-foreground: #13261c;
+  --border: #364248;
+  --input: #46555d;
+  --ring: #9ed8b2;
+  --destructive: #ff9b9b;
+  color-scheme: dark;
+}

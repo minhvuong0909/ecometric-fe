@@ -211,3 +211,6 @@ export type AcceptInvitationResponse = {
     status: MemberStatus;
   };
 };
+
+export type SubscriptionCheckout = { orderCode: number; checkoutUrl: string; qrCode: string; amount: number; planTier: "STARTER" | "PROFESSIONAL" | "ENTERPRISE" };
+export type SubscriptionOrder = { orderCode: number; status: "PENDING" | "PAID" | "CANCELLED" | "EXPIRED" | "FAILED"; amount: number; planTier: string; businessId: string | null; checkoutUrl: string | null };

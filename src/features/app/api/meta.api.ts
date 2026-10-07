@@ -32,7 +32,10 @@ export function createReportingPeriod(body: {
   return apiClient.post<ReportingPeriod>("/reporting-periods", body);
 }
 
-export function listEmissionSources(): Promise<PaginatedResponse<EmissionSource>> {
-  return apiClient.get<PaginatedResponse<EmissionSource>>("/emission-sources?limit=100");
+export function listEmissionSources(businessId?: string): Promise<PaginatedResponse<EmissionSource>> {
+  return apiClient.get<PaginatedResponse<EmissionSource>>(`/emission-sources?limit=100&isActive=true${businessId ? `&businessId=${encodeURIComponent(businessId)}&includeGlobal=true` : ""}`);
 }
 
+
+export const closeReportingPeriod = (id: string) => apiClient.post<ReportingPeriod>(`/reporting-periods/${id}/close`);
+export const reopenReportingPeriod = (id: string) => apiClient.post<ReportingPeriod>(`/reporting-periods/${id}/reopen`);

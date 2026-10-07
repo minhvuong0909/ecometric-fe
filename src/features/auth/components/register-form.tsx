@@ -186,15 +186,6 @@ export function RegisterForm({ className }: RegisterFormProps) {
         </Button>
       </form>
 
-      <div className="relative flex items-center justify-center pt-1">
-        <div className="absolute inset-0 flex items-center">
-          <span className="w-full border-t border-border/80" />
-        </div>
-        <span className="relative bg-card px-3 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-          Hoặc tạo tài khoản bằng Google
-        </span>
-      </div>
-
       <GoogleAuthButton mode="signup" />
 
       <p className="text-center text-sm text-muted-foreground pt-1">

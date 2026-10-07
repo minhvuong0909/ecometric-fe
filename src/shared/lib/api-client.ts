@@ -209,12 +209,22 @@ export async function downloadFile(
   options: RequestOptions = {},
 ): Promise<{ blob: Blob; fileName: string }> {
   const { auth = true, headers, signal } = options;
-  const response = await fetch(`${API_BASE_URL}${path}`, {
+  let response = await fetch(`${API_BASE_URL}${path}`, {
     method: "GET",
     headers: buildHeaders(auth, false, false, headers),
     signal,
   });
 
+  if (response.status === 401 && auth && options.retryOnUnauthorized !== false) {
+    if (await tryRefreshTokens()) {
+      response = await fetch(`${API_BASE_URL}${path}`, {
+        method: "GET", headers: buildHeaders(auth, false, false, headers), signal,
+      });
+    } else {
+      clearSession();
+      if (typeof window !== "undefined") window.dispatchEvent(new Event(AUTH_EXPIRED_EVENT));
+    }
+  }
   if (!response.ok) {
     const payload = await parseResponse(response);
     const errorBody = payload as BackendError | null;
@@ -249,4 +259,3 @@ export const apiClient = {
   download: (path: string, options?: Omit<RequestOptions, "method" | "body">) =>
     downloadFile(path, options),
 };
-

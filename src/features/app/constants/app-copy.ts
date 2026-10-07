@@ -222,7 +222,7 @@ export const UPLOAD_DOC_COPY = {
     "Tải lên các hóa đơn, biên lai hoặc báo cáo. EcoMetric sẽ tự động trích xuất các dữ liệu cốt lõi bằng mô hình AI độc quyền để tính toán phát thải một cách chính xác.",
   uploadTitle: "Kéo và thả tệp vào đây",
   uploadHint:
-    "Định dạng hỗ trợ: JPG, PNG, PDF, Excel, CSV. Bạn có thể tải lên nhiều tài liệu cùng lúc và phân loại chúng trước khi trích xuất.",
+    "Định dạng hỗ trợ: JPG, PNG, PDF. Chọn loại tài liệu trước khi tải lên để hỗ trợ rà soát kết quả trích xuất.",
   docTypes: ["Hóa đơn tiền điện", "Biên lai nhiên liệu", "Báo cáo vận tải", "Báo cáo chất thải", "Hóa đơn tiền nước", "Khác"],
   tableTitle: "Tệp đã tải lên",
   tableSubtitle: "4 tài liệu đã sẵn sàng xử lý",

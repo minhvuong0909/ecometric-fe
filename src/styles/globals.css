@@ -203,3 +203,59 @@
     transform: none !important;
   }
 }
+
+/* Product surfaces: restrained brand color, legible controls and quiet depth. */
+@layer components {
+  .eco-panel {
+    box-shadow:
+      0 2px 3px rgb(15 42 30 / 0.025),
+      0 8px 28px rgb(15 42 30 / 0.025);
+  }
+  .eco-workspace select {
+    min-height: 42px;
+    max-width: 100%;
+    border-radius: 8px;
+    border-color: var(--input);
+    font-size: 14px;
+    color: var(--foreground);
+    background-color: var(--card);
+  }
+  .eco-workspace select:focus-visible {
+    outline: 2px solid var(--ring);
+    outline-offset: 3px;
+  }
+  .eco-workspace input {
+    min-height: 42px;
+    background-color: var(--card);
+  }
+  .eco-workspace label {
+    display: inline-block;
+    margin-bottom: 6px;
+    line-height: 1.5;
+  }
+  .eco-workspace button {
+    white-space: nowrap;
+  }
+  .eco-workspace progress {
+    height: 6px;
+    appearance: none;
+    overflow: hidden;
+    border-radius: 3px;
+    background: var(--muted);
+  }
+  .eco-workspace progress::-webkit-progress-bar {
+    background: var(--muted);
+  }
+  .eco-workspace progress::-webkit-progress-value {
+    background: var(--primary);
+    border-radius: 3px;
+  }
+  .eco-workspace progress::-moz-progress-bar {
+    background: var(--primary);
+  }
+  .eco-workspace [role="alert"] {
+    border-radius: 8px;
+    padding: 12px 16px;
+    background: color-mix(in srgb, var(--destructive) 7%, var(--card));
+  }
+}

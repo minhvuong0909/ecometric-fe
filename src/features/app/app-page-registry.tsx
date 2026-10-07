@@ -1,20 +1,70 @@
-import type { ComponentType } from "react";
+import { lazy, type ComponentType } from "react";
 import type { AppRouteScreenId } from "@/features/app/app-route-config";
-import { AiReviewPage } from "@/features/app/pages/ai-review-page";
-import { CompanyPage } from "@/features/app/pages/company-page";
-import { DashboardPage } from "@/features/app/pages/dashboard-page";
-import { DataInputPage } from "@/features/app/pages/data-input-page";
-import {
-  DataInputStep1Page,
-  DataInputStep2Page,
-  DataInputStep3Page,
-} from "@/features/app/pages/data-input-steps-page";
-import { EcoScorePage } from "@/features/app/pages/eco-score-page";
-import { EmissionDetailPage } from "@/features/app/pages/emission-detail-page";
-import { RecommendationsPage } from "@/features/app/pages/recommendations-page";
-import { ReportsPage } from "@/features/app/pages/reports-page";
-import { SettingsPage } from "@/features/app/pages/settings-page";
-import { UploadDocPage } from "@/features/app/pages/upload-doc-page";
+const AiReviewPage = lazy(() =>
+  import("@/features/app/pages/ai-review-page").then((module) => ({
+    default: module.AiReviewPage,
+  })),
+);
+const CompanyPage = lazy(() =>
+  import("@/features/app/pages/company-page").then((module) => ({
+    default: module.CompanyPage,
+  })),
+);
+const DashboardPage = lazy(() =>
+  import("@/features/app/pages/dashboard-page").then((module) => ({
+    default: module.DashboardPage,
+  })),
+);
+const DataInputPage = lazy(() =>
+  import("@/features/app/pages/data-input-page").then((module) => ({
+    default: module.DataInputPage,
+  })),
+);
+const DataInputStep1Page = lazy(() =>
+  import("@/features/app/pages/data-input-steps-page").then((module) => ({
+    default: module.DataInputStep1Page,
+  })),
+);
+const DataInputStep2Page = lazy(() =>
+  import("@/features/app/pages/data-input-steps-page").then((module) => ({
+    default: module.DataInputStep2Page,
+  })),
+);
+const DataInputStep3Page = lazy(() =>
+  import("@/features/app/pages/data-input-steps-page").then((module) => ({
+    default: module.DataInputStep3Page,
+  })),
+);
+const EcoScorePage = lazy(() =>
+  import("@/features/app/pages/eco-score-page").then((module) => ({
+    default: module.EcoScorePage,
+  })),
+);
+const EmissionDetailPage = lazy(() =>
+  import("@/features/app/pages/emission-detail-page").then((module) => ({
+    default: module.EmissionDetailPage,
+  })),
+);
+const RecommendationsPage = lazy(() =>
+  import("@/features/app/pages/recommendations-page").then((module) => ({
+    default: module.RecommendationsPage,
+  })),
+);
+const ReportsPage = lazy(() =>
+  import("@/features/app/pages/reports-page").then((module) => ({
+    default: module.ReportsPage,
+  })),
+);
+const SettingsPage = lazy(() =>
+  import("@/features/app/pages/settings-page").then((module) => ({
+    default: module.SettingsPage,
+  })),
+);
+const UploadDocPage = lazy(() =>
+  import("@/features/app/pages/upload-doc-page").then((module) => ({
+    default: module.UploadDocPage,
+  })),
+);
 
 export const APP_PAGE_REGISTRY: Record<AppRouteScreenId, ComponentType> = {
   dashboard: DashboardPage,

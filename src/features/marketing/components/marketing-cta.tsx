@@ -6,12 +6,12 @@ import { Reveal } from "@/shared/components/reveal";
 
 export function MarketingCta() {
   return (
-    <section id="contact" className="scroll-mt-16 border-t border-border bg-foreground py-20">
+    <section id="contact" className="scroll-mt-16 border-t border-border eco-contact py-20">
       <Reveal className="mx-auto max-w-4xl px-6 text-center lg:px-8">
-        <h2 className="text-3xl font-bold tracking-tight text-background sm:text-4xl">
+        <h2 className="text-3xl font-bold tracking-tight text-foreground sm:text-4xl">
           {CTA_SECTION.title}
         </h2>
-        <p className="mx-auto mt-6 max-w-xl text-lg leading-relaxed text-background/70">
+        <p className="mx-auto mt-6 max-w-xl text-lg leading-relaxed text-muted-foreground">
           {CTA_SECTION.description}
         </p>
         <div className="mt-10 flex flex-col items-center justify-center gap-4 sm:flex-row">
@@ -22,7 +22,7 @@ export function MarketingCta() {
             asChild
             variant="outline"
             size="lg"
-            className="border-background/20 bg-transparent px-10 text-background hover:bg-background/10"
+            className="border-border bg-transparent px-10 text-foreground hover:bg-secondary"
           >
             <Link to={ROUTES.register}>{CTA_SECTION.secondary}</Link>
           </Button>

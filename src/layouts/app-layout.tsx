@@ -1,5 +1,11 @@
 import type { LucideIcon } from "lucide-react";
-import { Briefcase, Menu, PanelLeftClose, PanelLeftOpen, X } from "lucide-react";
+import {
+  Briefcase,
+  Menu,
+  PanelLeftClose,
+  PanelLeftOpen,
+  X,
+} from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { NavLink, Outlet, useLocation, useNavigate } from "react-router";
 import { AppTopBar } from "@/features/app/components/app-top-bar";
@@ -9,6 +15,7 @@ import { useProfile } from "@/features/auth/hooks/use-profile";
 import { useAuthStore } from "@/features/auth/stores/auth-store";
 import { BUSINESSES_COPY } from "@/features/businesses/constants/businesses-copy";
 import { Logo } from "@/shared/components/logo";
+import { ThemeToggle } from "@/shared/components/theme-toggle";
 import { Button } from "@/shared/components/ui/button";
 import { APP_NAV_ITEMS } from "@/shared/constants/figma-screens";
 import { ROUTES } from "@/shared/constants/routes";
@@ -49,6 +56,10 @@ type SidebarBodyProps = {
 };
 
 function SidebarNav({ collapsed = false, onNavigate }: SidebarBodyProps) {
+  const location = useLocation();
+  const inputActive =
+    location.pathname === ROUTES.app.uploadDoc ||
+    location.pathname === ROUTES.app.aiReview;
   return (
     <nav
       aria-label="Không gian làm việc"
@@ -59,7 +70,7 @@ function SidebarNav({ collapsed = false, onNavigate }: SidebarBodyProps) {
           {collapsed ? (
             <div className="mx-3 mb-1 h-px bg-border" aria-hidden />
           ) : (
-            <p className="px-3 pb-1 text-[10px] font-semibold tracking-widest text-muted-foreground/70 uppercase">
+            <p className="px-3 pb-1 text-[11px] font-semibold tracking-wider text-muted-foreground uppercase">
               {group.label}
             </p>
           )}
@@ -74,41 +85,47 @@ function SidebarNav({ collapsed = false, onNavigate }: SidebarBodyProps) {
                 onClick={onNavigate}
                 title={collapsed ? item.title : undefined}
                 aria-label={collapsed ? item.title : undefined}
-                className={({ isActive }) =>
-                  cn(
+                className={({ isActive: routeActive }) => {
+                  const isActive =
+                    routeActive || (item.id === "data-input" && inputActive);
+                  return cn(
                     "group relative flex items-center gap-3 rounded-lg py-2.5 text-sm font-medium transition-all duration-150 focus-ring active:scale-[0.98]",
                     collapsed ? "justify-center px-0" : "px-3",
                     isActive
-                      ? "bg-primary/10 text-primary font-bold shadow-xs border border-primary/20"
+                      ? "bg-primary/10 text-primary font-semibold border border-primary/10"
                       : "text-muted-foreground hover:bg-primary/10 hover:text-primary",
-                  )
-                }
+                  );
+                }}
               >
-                {({ isActive }) => (
-                  <>
-                    <span
-                      aria-hidden
-                      className={cn(
-                        "absolute top-1/2 left-0 h-5 w-1 -translate-y-1/2 rounded-r-full bg-primary transition-opacity duration-150",
-                        isActive ? "opacity-100" : "opacity-0",
-                      )}
-                    />
-                    {Icon ? (
-                      <Icon
-                        className={cn(
-                          "size-4 shrink-0 transition-colors duration-150",
-                          isActive
-                            ? "text-primary"
-                            : "text-muted-foreground group-hover:text-primary",
-                        )}
+                {({ isActive: routeActive }) => {
+                  const isActive =
+                    routeActive || (item.id === "data-input" && inputActive);
+                  return (
+                    <>
+                      <span
                         aria-hidden
+                        className={cn(
+                          "absolute top-1/2 left-0 h-5 w-1 -translate-y-1/2 rounded-r-full bg-primary transition-opacity duration-150",
+                          isActive ? "opacity-100" : "opacity-0",
+                        )}
                       />
-                    ) : null}
-                    {collapsed ? null : (
-                      <span className="truncate">{item.title}</span>
-                    )}
-                  </>
-                )}
+                      {Icon ? (
+                        <Icon
+                          className={cn(
+                            "size-4 shrink-0 transition-colors duration-150",
+                            isActive
+                              ? "text-primary"
+                              : "text-muted-foreground group-hover:text-primary",
+                          )}
+                          aria-hidden
+                        />
+                      ) : null}
+                      {collapsed ? null : (
+                        <span className="truncate">{item.title}</span>
+                      )}
+                    </>
+                  );
+                }}
               </NavLink>
             );
           })}
@@ -147,9 +164,13 @@ function SidebarUser({ collapsed = false }: SidebarBodyProps) {
           {initials}
         </span>
         <div className="min-w-0">
-          <p className="truncate text-sm font-semibold text-foreground">{name}</p>
+          <p className="truncate text-sm font-semibold text-foreground">
+            {name}
+          </p>
           {user?.email ? (
-            <p className="truncate text-xs text-muted-foreground">{user.email}</p>
+            <p className="truncate text-xs text-muted-foreground">
+              {user.email}
+            </p>
           ) : null}
         </div>
       </div>
@@ -180,7 +201,13 @@ export function AppLayout() {
     if (location.pathname === ROUTES.app.onboarding) return;
 
     navigate(ROUTES.app.onboarding, { replace: true });
-  }, [membershipsLoaded, platformRole, memberships, location.pathname, navigate]);
+  }, [
+    membershipsLoaded,
+    platformRole,
+    memberships,
+    location.pathname,
+    navigate,
+  ]);
 
   useEffect(() => {
     window.localStorage.setItem(SIDEBAR_COLLAPSED_KEY, collapsed ? "1" : "0");
@@ -239,12 +266,12 @@ export function AppLayout() {
   }, [mobileOpen]);
 
   return (
-    <div className="flex min-h-dvh bg-background">
+    <div className="eco-workspace flex min-h-dvh bg-background">
       {/* Desktop sidebar (collapsible) */}
       <aside
         className={cn(
           "hidden shrink-0 border-r border-border bg-card transition-[width] duration-300 ease-out lg:sticky lg:top-0 lg:flex lg:h-dvh lg:flex-col",
-          collapsed ? "lg:w-[76px]" : "lg:w-[280px]",
+          collapsed ? "lg:w-[76px]" : "lg:w-[252px]",
         )}
       >
         <div
@@ -345,11 +372,14 @@ export function AppLayout() {
             <Menu className="size-5" aria-hidden />
           </Button>
           <Logo />
-          <span className="size-9" aria-hidden />
+          <ThemeToggle />
         </div>
         <AppTopBar className="sticky top-0 z-20 hidden lg:flex" />
-        <main className="flex-1 px-6 py-8 lg:px-8">
-          <div key={location.pathname} className="route-transition">
+        <main className="flex-1 px-4 py-6 sm:px-6 lg:px-9 lg:py-8">
+          <div
+            key={location.pathname}
+            className="route-transition mx-auto w-full max-w-[1360px]"
+          >
             <Outlet />
           </div>
         </main>

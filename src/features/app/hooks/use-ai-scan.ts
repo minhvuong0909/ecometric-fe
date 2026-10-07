@@ -7,7 +7,11 @@ import {
   retryInvoiceScan,
   uploadInvoiceScan,
 } from "@/features/app/api/ai-scan.api";
-import type { ConfirmInvoiceScanInput, ScanJobStatus } from "@/features/app/types/app.types";
+import type {
+  AiDocumentType,
+  ConfirmInvoiceScanInput,
+  ScanJobStatus,
+} from "@/features/app/types/app.types";
 import { ACTIVITY_DATA_QUERY_KEYS } from "./use-activity-data";
 
 export const AI_SCAN_QUERY_KEYS = {
@@ -58,7 +62,7 @@ export function useUploadInvoiceScan() {
     }: {
       file: File;
       businessId: string;
-      documentType?: string;
+      documentType?: AiDocumentType;
     }) => uploadInvoiceScan(file, businessId, documentType),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: AI_SCAN_QUERY_KEYS.all });

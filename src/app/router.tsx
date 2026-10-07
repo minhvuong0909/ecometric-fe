@@ -1,3 +1,4 @@
+import { Suspense } from "react";
 import { Navigate, createBrowserRouter, RouterProvider } from "react-router";
 import { APP_ROUTE_CONFIG } from "@/features/app/app-route-config";
 import { APP_PAGE_REGISTRY } from "@/features/app/app-page-registry";
@@ -21,6 +22,7 @@ import { AppLayout } from "@/layouts/app-layout";
 import { RootLayout } from "@/layouts/root-layout";
 import { ROUTES } from "@/shared/constants/routes";
 
+import { PaymentResultPage } from "@/features/businesses/pages/payment-result-page";
 import { SsoCallbackPage } from "@/features/auth/pages/sso-callback-page";
 
 function getAppScreenElement(screenId: keyof typeof APP_PAGE_REGISTRY) {
@@ -28,7 +30,17 @@ function getAppScreenElement(screenId: keyof typeof APP_PAGE_REGISTRY) {
   if (!Page) {
     throw new Error(`Unknown app screen id: ${screenId}`);
   }
-  return <Page />;
+  return (
+    <Suspense
+      fallback={
+        <div role="status" className="p-6 text-sm text-muted-foreground">
+          Đang tải trang…
+        </div>
+      }
+    >
+      <Page />
+    </Suspense>
+  );
 }
 
 const router = createBrowserRouter([
@@ -59,6 +71,22 @@ const router = createBrowserRouter([
       {
         path: "sso-callback",
         element: <SsoCallbackPage />,
+      },
+      {
+        path: "payment/payos/return",
+        element: (
+          <RequireAuth>
+            <PaymentResultPage />
+          </RequireAuth>
+        ),
+      },
+      {
+        path: "payment/payos/cancel",
+        element: (
+          <RequireAuth>
+            <PaymentResultPage />
+          </RequireAuth>
+        ),
       },
       {
         path: "forgot-password",

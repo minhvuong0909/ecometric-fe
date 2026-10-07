@@ -46,3 +46,7 @@ export function rejectActivityData(id: string, reason: string): Promise<Activity
 export function archiveActivityData(id: string): Promise<{ success: true }> {
   return apiClient.delete<{ success: true }>(`/activity-data/${id}`);
 }
+
+export function updateActivityData(id: string, body: { emissionSourceId: string; quantity: number; unit: string; branchId?: string; periodStart: string; periodEnd: string }): Promise<ActivityRecord> {
+  return apiClient.patch<ActivityRecord>(`/activity-data/${id}`, body);
+}

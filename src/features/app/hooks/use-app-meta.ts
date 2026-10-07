@@ -58,10 +58,10 @@ export function useReportingPeriods(businessId?: string | null, enabled = true) 
   });
 }
 
-export function useEmissionSources(enabled = true) {
+export function useEmissionSources(enabled = true, businessId?: string) {
   return useQuery({
-    queryKey: META_QUERY_KEYS.emissionSources,
-    queryFn: () => listEmissionSources(),
+    queryKey: [...META_QUERY_KEYS.emissionSources, businessId],
+    queryFn: () => listEmissionSources(businessId),
     enabled,
     staleTime: 1000 * 60 * 30, // 30 mins
   });

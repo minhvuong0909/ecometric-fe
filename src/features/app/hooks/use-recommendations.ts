@@ -4,7 +4,7 @@ import {
   listRecommendations,
   updateRecommendationStatus,
 } from "@/features/app/api/recommendations.api";
-import type { RecommendationStatus } from "@/features/app/types/app.types";
+import type { GenerateRecommendationsInput, RecommendationStatus } from "@/features/app/types/app.types";
 
 export const RECOMMENDATION_QUERY_KEYS = {
   all: ["recommendations"] as const,
@@ -23,7 +23,7 @@ export function useGenerateRecommendations() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: (businessId: string) => generateRecommendations(businessId),
+    mutationFn: (body: GenerateRecommendationsInput) => generateRecommendations(body),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: RECOMMENDATION_QUERY_KEYS.all });
     },

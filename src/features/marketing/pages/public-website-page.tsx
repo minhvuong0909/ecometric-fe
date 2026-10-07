@@ -10,7 +10,7 @@ import { MarketingWorkflow } from "@/features/marketing/components/marketing-wor
 
 export function PublicWebsitePage() {
   return (
-    <div className="min-h-dvh bg-background">
+    <div className="eco-brand eco-home min-h-dvh bg-background">
       <MarketingHeader />
       <main>
         <MarketingHero />

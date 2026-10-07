@@ -1,487 +1,381 @@
-import { useMemo, useState } from "react";
+import { formatDate } from "@/shared/lib/date-format";
+import { useEffect, useState } from "react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Link } from "react-router";
 import { toast } from "sonner";
-import {
-  BarChart3,
-  Calculator,
-  Download,
-  RefreshCw,
-  CheckCircle2,
-  ArrowRight,
-  ShieldCheck,
-  Zap,
-  Fuel,
-  Truck,
-  Search,
-} from "lucide-react";
 import { AppPageHeader } from "@/features/app/components/app-page-header";
 import { AppPanel } from "@/features/app/components/app-panel";
-import { MetricCard } from "@/features/app/components/metric-card";
-import { EMISSION_DETAIL_COPY } from "@/features/app/constants/app-copy";
+import { ActivityEntryForm } from "@/features/app/components/activity-entry-form";
 import { useActivityDataList } from "@/features/app/hooks/use-activity-data";
+import { useReportingPeriods } from "@/features/app/hooks/use-app-meta";
 import { useDashboardSummary } from "@/features/app/hooks/use-dashboard";
+import {
+  confirmActivityData,
+  submitActivityData,
+  rejectActivityData,
+  updateActivityData,
+} from "@/features/app/api/activity-data.api";
+import {
+  getEmissionResult,
+  recalculateEmission,
+} from "@/features/app/api/emission-calculation.api";
+import { useBusinessRole } from "@/features/businesses/hooks/use-business-role";
 import { useBusinessStore } from "@/shared/stores/business-store";
-import { ROUTES } from "@/shared/constants/routes";
-import { Badge, badgeVariants } from "@/shared/components/ui/badge";
+import { ApiError } from "@/shared/lib/api-client";
 import { Button } from "@/shared/components/ui/button";
-import { Input } from "@/shared/components/ui/input";
-import { cn } from "@/shared/lib/utils";
-import type { VariantProps } from "class-variance-authority";
-
-type EmissionRow = {
-  id: string;
-  source: string;
-  category: string;
-  scope: "Phạm vi 1" | "Phạm vi 2" | "Phạm vi 3";
-  activityData: string;
-  factor: string;
-  factorUnit: string;
-  sourceDb: string;
-  result: string;
-  co2eNumeric: number;
-  status: "Đã xác thực" | "Cần kiểm tra";
+import { ROUTES } from "@/shared/constants/routes";
+import type { ActivityRecord } from "@/features/app/types/app.types";
+const STATUS_LABELS = {
+  DRAFT: "Bản nháp",
+  PENDING_REVIEW: "Chờ duyệt",
+  CONFIRMED: "Đã duyệt",
+  REJECTED: "Bị từ chối",
+  ARCHIVED: "Lưu trữ",
 };
-
-const INITIAL_ROWS: EmissionRow[] = [
-  {
-    id: "1",
-    source: "Điện lưới tiêu thụ (Quận 1)",
-    category: "Năng lượng điện",
-    scope: "Phạm vi 2",
-    activityData: "1,500 kWh",
-    factor: "0.000453",
-    factorUnit: "tCO₂e / kWh",
-    sourceDb: "Bộ TN&MT 2026 / EVN",
-    result: "0.68 t",
-    co2eNumeric: 0.68,
-    status: "Đã xác thực",
-  },
-  {
-    id: "2",
-    source: "Nhiên liệu Dầu Diesel (Kho BD)",
-    category: "Đốt cháy cố định",
-    scope: "Phạm vi 1",
-    activityData: "320 Lít",
-    factor: "0.002687",
-    factorUnit: "tCO₂e / L",
-    sourceDb: "GHG Protocol / IPCC 2024",
-    result: "0.86 t",
-    co2eNumeric: 0.86,
-    status: "Đã xác thực",
-  },
-  {
-    id: "3",
-    source: "Vận chuyển hàng hóa bằng Xe tải",
-    category: "Vận tải logistic",
-    scope: "Phạm vi 3",
-    activityData: "4,200 km",
-    factor: "0.000119",
-    factorUnit: "tCO₂e / km",
-    sourceDb: "DEFRA 2025 Standard",
-    result: "0.50 t",
-    co2eNumeric: 0.5,
-    status: "Đã xác thực",
-  },
-  {
-    id: "4",
-    source: "Chất thải rắn sinh hoạt",
-    category: "Xử lý chất thải",
-    scope: "Phạm vi 3",
-    activityData: "12.5 tấn",
-    factor: "0.008880",
-    factorUnit: "tCO₂e / tấn",
-    sourceDb: "EPA WARM Model 2025",
-    result: "0.11 t",
-    co2eNumeric: 0.11,
-    status: "Đã xác thực",
-  },
-];
-
-const SCOPE_VARIANTS: Record<EmissionRow["scope"], VariantProps<typeof badgeVariants>["variant"]> = {
-  "Phạm vi 1": "info",
-  "Phạm vi 2": "success",
-  "Phạm vi 3": "accent",
-};
-
-export function EmissionDetailPage() {
-  const copy = EMISSION_DETAIL_COPY;
-  const { activeBusinessId } = useBusinessStore();
-
-  const { data: activityData, refetch, isFetching } = useActivityDataList(
-    { businessId: activeBusinessId ?? undefined, limit: 100 },
-    !!activeBusinessId,
-  );
-  const { data: summaryData } = useDashboardSummary(
-    { businessId: activeBusinessId ?? undefined },
-    !!activeBusinessId,
-  );
-
-  const [selectedScopeFilter, setSelectedScopeFilter] = useState<string>("Tất cả");
-  const [searchTerm, setSearchTerm] = useState("");
-  const [isRecalculating, setIsRecalculating] = useState(false);
-
-  // Chuyển đổi dữ liệu API sang hàng bảng biểu, fallback INITIAL_ROWS nếu chưa có
-  const rows: EmissionRow[] = useMemo(() => {
-    if (activityData && activityData.items.length > 0) {
-      return activityData.items.map((item) => {
-        const scope = item.emissionSource?.defaultScope;
-        const scopeLabel: EmissionRow["scope"] =
-          scope === "SCOPE_1" ? "Phạm vi 1" : scope === "SCOPE_2" ? "Phạm vi 2" : "Phạm vi 3";
-
-        // Ước tính tạm phát thải hiển thị dựa trên hệ số thông dụng
-        const qty = parseFloat(item.quantity) || 0;
-        let factor = 0.00045;
-        if (scope === "SCOPE_1") factor = 0.00268;
-        if (scope === "SCOPE_3") factor = 0.00012;
-        const co2eNumeric = Number((qty * factor).toFixed(2));
-
-        return {
-          id: item.id,
-          source: `${item.emissionSource?.name ?? "Hoạt động phát thải"} (${item.branch?.name ?? "Cơ sở"})`,
-          category: item.inputMethod === "AI_SCAN" ? "Hóa đơn AI OCR" : "Nhập thủ công",
-          scope: scopeLabel,
-          activityData: `${Number(qty).toLocaleString("vi-VN")} ${item.unit}`,
-          factor: factor.toFixed(6),
-          factorUnit: `tCO₂e / ${item.unit}`,
-          sourceDb: "GHG Protocol Vietnam Database",
-          result: `${co2eNumeric} t`,
-          co2eNumeric,
-          status: item.status === "CONFIRMED" ? "Đã xác thực" : "Cần kiểm tra",
-        };
-      });
-    }
-    return INITIAL_ROWS;
-  }, [activityData]);
-
-  // Tính toán tổng lượng phát thải theo các phạm vi
-  const totalEmissions = useMemo(() => {
-    if (summaryData?.totalCo2eKg) {
-      return (Number(summaryData.totalCo2eKg) / 1000).toFixed(2);
-    }
-    return rows.reduce((sum, r) => sum + r.co2eNumeric, 0).toFixed(2);
-  }, [summaryData, rows]);
-
-  const scope1Total = rows
-    .filter((r) => r.scope === "Phạm vi 1")
-    .reduce((sum, r) => sum + r.co2eNumeric, 0)
-    .toFixed(2);
-  const scope2Total = rows
-    .filter((r) => r.scope === "Phạm vi 2")
-    .reduce((sum, r) => sum + r.co2eNumeric, 0)
-    .toFixed(2);
-  const scope3Total = rows
-    .filter((r) => r.scope === "Phạm vi 3")
-    .reduce((sum, r) => sum + r.co2eNumeric, 0)
-    .toFixed(2);
-
-  // Lọc dữ liệu theo phạm vi và từ khóa tìm kiếm
-  const filteredRows = rows.filter((r) => {
-    const matchesSearch =
-      r.source.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      r.category.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesScope =
-      selectedScopeFilter === "Tất cả" || r.scope === selectedScopeFilter;
-    return matchesSearch && matchesScope;
+function ActivityRow({
+  record,
+  canWrite,
+  canReview,
+  canEdit,
+  mutable,
+}: {
+  record: ActivityRecord;
+  canWrite: boolean;
+  canReview: boolean;
+  canEdit: boolean;
+  mutable: boolean;
+}) {
+  const queryClient = useQueryClient();
+  const [busy, setBusy] = useState(false);
+  const [editing, setEditing] = useState(false);
+  const [rejecting, setRejecting] = useState(false);
+  const [reason, setReason] = useState("");
+  const result = useQuery({
+    queryKey: ["emission-result", record.id],
+    enabled: record.status === "CONFIRMED",
+    retry: false,
+    queryFn: async () => {
+      try {
+        return await getEmissionResult(record.id);
+      } catch (e) {
+        if (e instanceof ApiError && e.status === 404) return null;
+        throw e;
+      }
+    },
   });
-
-  const handleRecalculate = async () => {
-    setIsRecalculating(true);
-    toast.loading("Đang quy đổi lại dữ liệu với hệ số phát thải cập nhật...", { id: "recalc-toast" });
-
-    await refetch();
-    setTimeout(() => {
-      setIsRecalculating(false);
-      toast.success("Đã hoàn tất tính toán lại với hệ số phát thải cập nhật.", {
-        id: "recalc-toast",
-      });
-    }, 600);
-  };
-
-
-  const handleExportReport = () => {
-    toast.loading("Đang xuất bảng tính toán CO₂e dạng Excel/PDF chuẩn kiểm toán...", {
-      id: "export-toast",
-    });
-    setTimeout(() => {
-      toast.success("Đã xuất file emission_calculation_2026.xlsx thành công!", {
-        id: "export-toast",
-      });
-    }, 1200);
-  };
-
+  async function refresh() {
+    await Promise.all([
+      queryClient.invalidateQueries({ queryKey: ["activity-data"] }),
+      queryClient.invalidateQueries({ queryKey: ["dashboard"] }),
+      queryClient.invalidateQueries({
+        queryKey: ["emission-result", record.id],
+      }),
+    ]);
+  }
+  async function action(fn: () => Promise<unknown>, message: string) {
+    setBusy(true);
+    try {
+      await fn();
+      await refresh();
+      toast.success(message);
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Thao tác thất bại.");
+    } finally {
+      setBusy(false);
+    }
+  }
+  const editable =
+    mutable &&
+    canEdit &&
+    (record.status === "DRAFT" || record.status === "REJECTED");
   return (
-    <div className="space-y-8">
+    <AppPanel
+      title={record.emissionSource?.name ?? "Hoạt động chưa có nguồn phát thải"}
+      description={`${record.branch?.name ?? "Toàn doanh nghiệp"} · ${formatDate(record.periodStart)} - ${formatDate(record.periodEnd)}`}
+    >
+      <div className="flex flex-wrap items-center justify-between gap-4">
+        <div>
+          <p className="font-semibold">
+            {Number(record.quantity).toLocaleString("vi-VN")} {record.unit}
+          </p>
+          <p className="text-sm text-muted-foreground">
+            {STATUS_LABELS[record.status]} ·{" "}
+            {record.emissionSource?.defaultScope?.replace("SCOPE_", "Scope ") ??
+              "Chưa phân Scope"}
+          </p>
+          {record.rejectReason && (
+            <p className="text-sm text-destructive">{record.rejectReason}</p>
+          )}
+        </div>
+        <div className="text-right">
+          <p className="text-lg font-bold text-primary">
+            {result.data
+              ? `${(Number(result.data.co2eKg) / 1000).toLocaleString("vi-VN", { maximumFractionDigits: 6 })} tCO₂e`
+              : record.status === "CONFIRMED"
+                ? result.isLoading
+                  ? "Đang tải…"
+                  : "Chưa có kết quả"
+                : "Chưa tính CO₂e"}
+          </p>
+          {result.data && (
+            <p className="text-xs text-muted-foreground">
+              EF: {result.data.factorUsed}{" "}
+              {result.data.emissionFactor?.co2eUnit}/
+              {result.data.emissionFactor?.activityUnit} ·{" "}
+              {result.data.emissionFactor?.sourceName}
+            </p>
+          )}
+          {result.error && (
+            <p role="alert" className="text-sm text-destructive">
+              {result.error.message}
+            </p>
+          )}
+        </div>
+      </div>
+      <div className="mt-4 flex flex-wrap gap-2">
+        {editable && (
+          <Button
+            variant="outline"
+            disabled={busy}
+            onClick={() => setEditing(!editing)}
+          >
+            Sửa hoạt động
+          </Button>
+        )}
+        {canWrite &&
+          mutable &&
+          (record.status === "DRAFT" || record.status === "REJECTED") && (
+            <Button
+              disabled={busy}
+              onClick={() =>
+                action(() => submitActivityData(record.id), "Đã gửi duyệt.")
+              }
+            >
+              Gửi duyệt
+            </Button>
+          )}
+        {canReview && mutable && record.status === "PENDING_REVIEW" && (
+          <>
+            <Button
+              disabled={busy}
+              onClick={() =>
+                action(
+                  () => confirmActivityData(record.id),
+                  "Đã duyệt và tính CO₂e.",
+                )
+              }
+            >
+              Duyệt & tính CO₂e
+            </Button>
+            <Button
+              variant="outline"
+              disabled={busy}
+              onClick={() => setRejecting(!rejecting)}
+            >
+              Từ chối
+            </Button>
+          </>
+        )}
+        {canReview && mutable && record.status === "CONFIRMED" && (
+          <Button
+            variant="outline"
+            disabled={busy}
+            onClick={() =>
+              action(
+                () => recalculateEmission(record.id),
+                "Đã tính lại bằng hệ số backend.",
+              )
+            }
+          >
+            Tính lại CO₂e
+          </Button>
+        )}
+      </div>
+      {rejecting && (
+        <form
+          className="mt-4 flex gap-2"
+          onSubmit={(e) => {
+            e.preventDefault();
+            void action(
+              () => rejectActivityData(record.id, reason),
+              "Đã từ chối.",
+            );
+          }}
+        >
+          <input
+            className="min-w-0 flex-1 rounded border bg-background px-3"
+            aria-label="Lý do từ chối"
+            value={reason}
+            onChange={(e) => setReason(e.target.value)}
+            required
+            maxLength={500}
+          />
+          <Button disabled={busy || !reason.trim()}>Xác nhận từ chối</Button>
+        </form>
+      )}
+      {editing && (
+        <div className="mt-5 border-t pt-5">
+          <ActivityEntryForm
+            businessId={record.businessId}
+            initial={{
+              reportingPeriodId: record.reportingPeriodId ?? undefined,
+              emissionSourceId: record.emissionSourceId ?? undefined,
+              branchId: record.branchId ?? undefined,
+              quantity: Number(record.quantity),
+              unit: record.unit,
+              periodStart: record.periodStart,
+              periodEnd: record.periodEnd,
+            }}
+            onSave={async (input) => {
+              await updateActivityData(record.id, {
+                emissionSourceId: input.emissionSourceId!,
+                quantity: input.quantity,
+                unit: input.unit,
+                branchId: input.branchId,
+                periodStart: input.periodStart,
+                periodEnd: input.periodEnd,
+              });
+              await refresh();
+              setEditing(false);
+              toast.success("Đã sửa hoạt động.");
+            }}
+          />
+        </div>
+      )}
+    </AppPanel>
+  );
+}
+export function EmissionDetailPage() {
+  const { activeBusinessId } = useBusinessStore();
+  const { role } = useBusinessRole(activeBusinessId ?? "");
+  const [page, setPage] = useState(1);
+  const [periodId, setPeriodId] = useState("");
+  useEffect(() => {
+    setPage(1);
+    setPeriodId("");
+  }, [activeBusinessId]);
+  const periods = useReportingPeriods(activeBusinessId);
+  const activity = useActivityDataList(
+    {
+      businessId: activeBusinessId ?? undefined,
+      reportingPeriodId: periodId || undefined,
+      page,
+      limit: 20,
+    },
+    Boolean(activeBusinessId),
+  );
+  const summary = useDashboardSummary(
+    {
+      businessId: activeBusinessId ?? undefined,
+      reportingPeriodId: periodId || undefined,
+    },
+    Boolean(activeBusinessId),
+  );
+  const canWrite = Boolean(role && role !== "VIEWER");
+  const canReview =
+    role === "SYSTEM_ADMIN" ||
+    role === "COMPANY_ADMIN" ||
+    role === "BRANCH_MANAGER";
+  return (
+    <div className="space-y-6">
       <AppPageHeader
-        breadcrumbs={[{ label: copy.eyebrow, active: true }]}
-        title={copy.title}
-        description={copy.description}
+        title="Sổ dữ liệu & Kết quả CO₂e"
+        description="Bản nháp chưa được tính phát thải. Quản lý duyệt hoạt động để backend chọn hệ số và tính CO₂e."
         actions={
-          <div className="flex flex-wrap gap-2">
-            <Button variant="outline" onClick={handleExportReport} className="gap-1.5">
-              <Download className="size-4" />
-              {copy.exportCta}
+          <>
+            <Button asChild variant="outline">
+              <Link to={ROUTES.app.dataInput}>Nhập hoạt động</Link>
             </Button>
-
-            <Button onClick={handleRecalculate} disabled={isRecalculating || isFetching} className="gap-1.5">
-              <RefreshCw className={cn("size-4", (isRecalculating || isFetching) && "animate-spin")} />
-              {copy.recalculateCta}
+            <Button asChild>
+              <Link to={ROUTES.app.reports}>Kỳ báo cáo & Xuất báo cáo</Link>
             </Button>
-          </div>
+          </>
         }
       />
-
-      {/* Thanh tiến trình luồng xử lý */}
-      <div className="rounded-xl border border-border bg-card p-4">
-        <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-          <div className="flex items-center gap-3">
-            <span className="flex size-9 items-center justify-center rounded-lg bg-emerald-500 text-white text-sm">
-              <CheckCircle2 className="size-5" />
+      <AppPanel title="Tổng phát thải đã tính">
+        <p className="text-3xl font-bold text-primary">
+          {(Number(summary.data?.totalCo2eKg ?? 0) / 1000).toLocaleString(
+            "vi-VN",
+            { maximumFractionDigits: 6 },
+          )}{" "}
+          tCO₂e
+        </p>
+        <p className="text-sm text-muted-foreground">
+          {summary.data?.resultCount ?? 0} kết quả đã tính
+        </p>
+        <div className="mt-3 flex flex-wrap gap-4">
+          {summary.data?.byScope.map((s) => (
+            <span key={s.scope}>
+              {s.scope.replace("SCOPE_", "Scope ")}:{" "}
+              {(Number(s.totalCo2eKg) / 1000).toLocaleString("vi-VN")} tCO₂e
             </span>
-            <div>
-              <p className="text-xs font-medium tracking-wide text-emerald-600 dark:text-emerald-400">Bước 1: Hoàn thành</p>
-              <h2 className="text-sm font-semibold text-secondary-foreground">Tải chứng từ / Nhập dữ liệu</h2>
-            </div>
-          </div>
-
-          <div className="hidden h-px flex-1 bg-border md:block mx-4" />
-
-          <div className="flex items-center gap-3">
-            <span className="flex size-9 items-center justify-center rounded-lg bg-emerald-500 text-white text-sm">
-              <CheckCircle2 className="size-5" />
-            </span>
-            <div>
-              <p className="text-xs font-medium tracking-wide text-emerald-600 dark:text-emerald-400">Bước 2: Hoàn thành</p>
-              <h2 className="text-sm font-semibold text-secondary-foreground">AI Trích xuất & Xác nhận</h2>
-            </div>
-          </div>
-
-          <div className="hidden h-px flex-1 bg-border md:block mx-4" />
-
-          <div className="flex items-center gap-3">
-            <span className="flex size-9 items-center justify-center rounded-lg bg-primary text-primary-foreground text-sm font-semibold">
-              3
-            </span>
-            <div>
-              <p className="text-xs font-medium tracking-wide text-primary">Bước 3 / 3</p>
-              <h2 className="text-sm font-semibold text-secondary-foreground">Tính toán lượng CO₂e</h2>
-            </div>
-          </div>
+          ))}
         </div>
-      </div>
-
-      {/* Bộ 4 Thẻ Thống kê Tổng lượng Phát thải */}
-      <div className="grid gap-6 sm:grid-cols-2 xl:grid-cols-4">
-        <MetricCard
-          icon={BarChart3}
-          label="Tổng lượng phát thải CO₂e"
-          value={`${totalEmissions} tCO₂e`}
-          hint="Đã đối chiếu với hệ số EF 2026"
-          hintClassName="text-primary font-bold"
-        />
-
-        <MetricCard
-          icon={Fuel}
-          label="Phạm vi 1 (Phát thải trực tiếp)"
-          value={`${scope1Total} tCO₂e`}
-          hint="Nhiên liệu đốt cháy cố định & Đội xe"
-          hintClassName="text-blue-600 dark:text-blue-400 font-semibold"
-        />
-
-        <MetricCard
-          icon={Zap}
-          label="Phạm vi 2 (Điện mua ngoài)"
-          value={`${scope2Total} tCO₂e`}
-          hint="Điện tiêu thụ tại các chi nhánh"
-          hintClassName="text-emerald-600 dark:text-emerald-400 font-semibold"
-        />
-
-        <MetricCard
-          icon={Truck}
-          label="Phạm vi 3 (Gián tiếp & Chuỗi v.chuyển)"
-          value={`${scope3Total} tCO₂e`}
-          hint="Vận tải logistics & Xử lý chất thải"
-          hintClassName="text-purple-600 dark:text-purple-400 font-semibold"
-        />
-      </div>
-
-      {/* Banner Công thức & Tiêu chuẩn Kiểm toán */}
-      <div className="rounded-xl border border-border bg-card p-6">
-        <div className="flex flex-col gap-6 lg:flex-row lg:items-center lg:justify-between">
-          <div className="flex items-start gap-4">
-            <div className="flex size-12 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary">
-              <Calculator className="size-6" />
-            </div>
-            <div className="space-y-1">
-              <div className="flex items-center gap-2">
-                <span className="rounded-full bg-emerald-500/10 px-2.5 py-0.5 text-[11px] font-medium text-emerald-700 dark:text-emerald-400 border border-emerald-500/20">
-                  GHG Protocol Standard
-                </span>
-                <h3 className="text-base font-semibold text-foreground">Công thức tính toán phát thải chính thức</h3>
-              </div>
-              <p className="text-sm text-muted-foreground leading-relaxed max-w-2xl">
-                <code className="rounded bg-muted px-2 py-0.5 font-mono text-primary">
-                  Lượng CO₂e (tấn) = Dữ liệu hoạt động × Hệ số phát thải (EF)
-                </code>
-                . Dữ liệu được xác thực theo các cơ sở dữ liệu quốc tế IPCC, DEFRA và Bộ TN&MT Việt Nam.
-              </p>
-            </div>
-          </div>
-
-          <div className="flex items-center gap-3 shrink-0">
-            <div className="rounded-lg bg-muted p-3 text-center border border-border">
-              <p className="text-[11px] font-medium text-muted-foreground">Trạng thái Kiểm toán</p>
-              <p className="text-sm font-semibold text-emerald-600 dark:text-emerald-400 flex items-center gap-1 mt-0.5">
-                <ShieldCheck className="size-4" />
-                Audit Ready (Sẵn sàng)
-              </p>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* Bảng Chi tiết Tính toán CO2e với Bộ lọc & Tìm kiếm */}
-      <AppPanel
-        title={copy.tableTitle}
-        description={copy.tableSubtitle}
-        badge={
-          <span className="rounded-full bg-emerald-500/10 px-3 py-1 text-xs font-medium text-emerald-700 dark:text-emerald-400 border border-emerald-500/20">
-            4 Nguồn phát thải đã đối chiếu
-          </span>
-        }
-        bodyClassName="p-0"
-      >
-        {/* Toolbar Tìm kiếm & Lọc Scope */}
-        <div className="flex flex-col gap-4 border-b border-border p-4 sm:flex-row sm:items-center sm:justify-between">
-          <div className="relative w-full sm:max-w-xs">
-            <Search className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground" />
-            <Input
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              placeholder="Tìm theo nguồn hoặc danh mục..."
-              className="pl-9"
-            />
-          </div>
-
-          <div className="flex flex-wrap gap-2">
-            {["Tất cả", "Phạm vi 1", "Phạm vi 2", "Phạm vi 3"].map((scope) => {
-              const active = selectedScopeFilter === scope;
-              return (
-                <button
-                  type="button"
-                  key={scope}
-                  onClick={() => setSelectedScopeFilter(scope)}
-                  className={cn(
-                    "rounded-full px-3 py-1 text-xs font-semibold transition-colors focus-ring",
-                    active
-                      ? "bg-primary text-primary-foreground"
-                      : "bg-muted text-muted-foreground hover:text-foreground",
-                  )}
-                >
-                  {scope}
-                </button>
-              );
-            })}
-          </div>
-        </div>
-
-        {/* Bảng Chi Tiết Kết Quả */}
-        <div className="overflow-x-auto">
-          <table className="w-full min-w-[840px] text-left text-sm">
-            <thead className="border-b border-border bg-muted/50">
-              <tr>
-                <th className="px-6 py-3.5 text-xs font-medium text-muted-foreground">
-                  Nguồn phát thải & Danh mục
-                </th>
-                <th className="px-6 py-3.5 text-xs font-medium text-muted-foreground">
-                  Phạm vi (Scope)
-                </th>
-                <th className="px-6 py-3.5 text-xs font-medium text-muted-foreground">
-                  Dữ liệu hoạt động
-                </th>
-                <th className="px-6 py-3.5 text-xs font-medium text-muted-foreground">
-                  Hệ số phát thải (EF)
-                </th>
-                <th className="px-6 py-3.5 text-xs font-medium text-muted-foreground">
-                  Cơ sở dữ liệu
-                </th>
-                <th className="px-6 py-3.5 text-right text-xs font-medium text-muted-foreground">
-                  Kết quả CO₂e
-                </th>
-              </tr>
-            </thead>
-            <tbody>
-              {filteredRows.map((row) => {
-                return (
-                  <tr
-                    key={row.id}
-                    className="border-b border-border last:border-0 hover:bg-muted/20 transition-colors"
-                  >
-                    <td className="px-6 py-4">
-                      <div>
-                        <p className="font-bold text-foreground">{row.source}</p>
-                        <p className="text-xs text-muted-foreground">{row.category}</p>
-                      </div>
-                    </td>
-
-                    <td className="px-6 py-4">
-                      <Badge variant={SCOPE_VARIANTS[row.scope]} className="font-bold">
-                        {row.scope}
-                      </Badge>
-                    </td>
-
-                    <td className="px-6 py-4 font-semibold text-foreground">
-                      {row.activityData}
-                    </td>
-
-                    <td className="px-6 py-4">
-                      <div className="font-mono text-xs">
-                        <span className="font-bold text-primary">{row.factor}</span>{" "}
-                        <span className="text-muted-foreground">{row.factorUnit}</span>
-                      </div>
-                    </td>
-
-                    <td className="px-6 py-4 text-xs text-muted-foreground">
-                      <span className="rounded bg-muted px-2 py-1 font-medium border border-border/50">
-                        {row.sourceDb}
-                      </span>
-                    </td>
-
-                    <td className="px-6 py-4 text-right">
-                      <span className="text-base font-bold text-emerald-700 dark:text-emerald-400">
-                        {row.result}
-                      </span>
-                    </td>
-                  </tr>
-                );
-              })}
-            </tbody>
-            <tfoot className="bg-muted/40 border-t border-border">
-              <tr>
-                <td colSpan={5} className="px-6 py-4 text-right font-semibold text-secondary-foreground">
-                  Tổng cộng lượng phát thải đợt này:
-                </td>
-                <td className="px-6 py-4 text-right text-xl font-bold text-primary">
-                  {totalEmissions} tCO₂e
-                </td>
-              </tr>
-            </tfoot>
-          </table>
-        </div>
+        {summary.error && (
+          <p role="alert" className="text-destructive">
+            {summary.error.message}
+          </p>
+        )}
       </AppPanel>
-
-      {/* Điều hướng chuyển sang bước tiếp theo */}
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between pt-4 border-t border-border">
-        <Button asChild variant="outline">
-          <Link to={ROUTES.app.aiReview} className="flex items-center gap-2">
-            Quay lại Kiểm tra trích xuất
-          </Link>
+      <label className="block space-y-2">
+        <span>Kỳ báo cáo</span>
+        <select
+          className="h-10 w-full rounded-md border bg-background px-3"
+          value={periodId}
+          onChange={(e) => {
+            setPeriodId(e.target.value);
+            setPage(1);
+          }}
+        >
+          <option value="">Tất cả các kỳ</option>
+          {periods.data?.items.map((p) => (
+            <option key={p.id} value={p.id}>
+              {p.name} · {p.status}
+            </option>
+          ))}
+        </select>
+      </label>
+      {activity.isLoading && <p>Đang tải hoạt động…</p>}
+      {activity.error && (
+        <p role="alert" className="text-destructive">
+          {activity.error.message}
+        </p>
+      )}
+      {activity.data?.items.length === 0 && (
+        <AppPanel>
+          <p>Chưa có hoạt động trong kỳ này.</p>
+        </AppPanel>
+      )}
+      {activity.data?.items.map((record) => (
+        <ActivityRow
+          key={record.id}
+          record={record}
+          canWrite={canWrite}
+          canReview={canReview}
+          canEdit={canReview}
+          mutable={
+            periods.data?.items.find((p) => p.id === record.reportingPeriodId)
+              ?.status === "OPEN"
+          }
+        />
+      ))}
+      <div className="flex items-center justify-between gap-3">
+        <Button
+          variant="outline"
+          disabled={page <= 1}
+          onClick={() => setPage(page - 1)}
+        >
+          Trang trước
         </Button>
-
-        <Button asChild size="lg" className="gap-2">
-          <Link to={ROUTES.app.ecoScore}>
-            Xem Điểm số Eco & Khuyến nghị Giảm thải
-            <ArrowRight className="size-5" />
-          </Link>
+        <span>
+          Trang {page} · {activity.data?.total ?? 0} hoạt động
+        </span>
+        <Button
+          variant="outline"
+          disabled={page >= (activity.data?.totalPages ?? 1)}
+          onClick={() => setPage(page + 1)}
+        >
+          Trang sau
         </Button>
       </div>
     </div>

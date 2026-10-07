@@ -1,3 +1,4 @@
+import { DataEntryMethods } from "@/features/app/components/data-entry-methods";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Link, useNavigate } from "react-router";
 import { toast } from "sonner";
@@ -11,7 +12,6 @@ import {
   CheckCircle2,
   AlertTriangle,
   Clock,
-  Trash2,
   RefreshCw,
   Eye,
   ArrowRight,
@@ -24,7 +24,11 @@ import { AppPageHeader } from "@/features/app/components/app-page-header";
 import { AppPanel } from "@/features/app/components/app-panel";
 import { MetricCard } from "@/features/app/components/metric-card";
 import { UPLOAD_DOC_COPY } from "@/features/app/constants/app-copy";
-import { useInvoiceScans, useUploadInvoiceScan } from "@/features/app/hooks/use-ai-scan";
+import {
+  useInvoiceScans,
+  useUploadInvoiceScan,
+  useRetryInvoiceScan,
+} from "@/features/app/hooks/use-ai-scan";
 import { useBusinesses } from "@/features/businesses/hooks/use-businesses";
 import { useBusinessStore } from "@/shared/stores/business-store";
 import { ROUTES } from "@/shared/constants/routes";
@@ -32,6 +36,7 @@ import { Badge, type badgeVariants } from "@/shared/components/ui/badge";
 import { Button } from "@/shared/components/ui/button";
 import { Input } from "@/shared/components/ui/input";
 import { cn } from "@/shared/lib/utils";
+import type { AiDocumentType } from "@/features/app/types/app.types";
 import type { VariantProps } from "class-variance-authority";
 
 type FileItem = {
@@ -42,49 +47,42 @@ type FileItem = {
   date: string;
   status: "Chờ kiểm tra" | "Đã trích xuất" | "Cần xác nhận" | "Lỗi";
   confidence?: string;
+  retryable: boolean;
 };
 
-const INITIAL_FILES: FileItem[] = [
-  {
-    id: "1",
-    name: "hoa-don-dien-t6.pdf",
-    type: "Hóa đơn tiền điện",
-    size: "2.4 MB",
-    date: "14/06/2026",
-    status: "Chờ kiểm tra",
-    confidence: "92%",
-  },
-  {
-    id: "2",
-    name: "nhien-lieu-xe-tai.xlsx",
-    type: "Biên lai nhiên liệu",
-    size: "1.1 MB",
-    date: "13/06/2026",
-    status: "Đã trích xuất",
-    confidence: "98%",
-  },
-  {
-    id: "3",
-    name: "van-tai-q2.pdf",
-    type: "Báo cáo vận tải",
-    size: "3.8 MB",
-    date: "12/06/2026",
-    status: "Cần xác nhận",
-    confidence: "85%",
-  },
-  {
-    id: "4",
-    name: "chat-thai-thang-6.csv",
-    type: "Báo cáo chất thải",
-    size: "450 KB",
-    date: "11/06/2026",
-    status: "Lỗi",
-  },
-];
+const DOCUMENT_TYPE_BY_CATEGORY: Record<string, AiDocumentType> = {
+  "Hóa đơn tiền điện": "ELECTRICITY_BILL",
+  "Biên lai nhiên liệu": "FUEL_RECEIPT",
+  "Báo cáo vận tải": "TRANSPORT_RECEIPT",
+  "Báo cáo chất thải": "WASTE_RECORD",
+  "Hóa đơn tiền nước": "WATER_BILL",
+  Khác: "OTHER",
+};
+
+const DOCUMENT_TYPE_LABELS: Record<AiDocumentType, string> = {
+  ELECTRICITY_BILL: "Hóa đơn tiền điện",
+  WATER_BILL: "Hóa đơn tiền nước",
+  FUEL_RECEIPT: "Biên lai nhiên liệu",
+  TRANSPORT_RECEIPT: "Báo cáo vận tải",
+  WASTE_RECORD: "Báo cáo chất thải",
+  PURCHASE_INVOICE: "Hóa đơn mua hàng",
+  OTHER: "Chứng từ phát thải",
+};
+
+function getDocumentTypeLabel(documentType: string | null): string {
+  return (
+    DOCUMENT_TYPE_LABELS[documentType as AiDocumentType] ??
+    DOCUMENT_TYPE_LABELS.OTHER
+  );
+}
 
 const STATUS_CONFIG: Record<
   FileItem["status"],
-  { label: string; variant: VariantProps<typeof badgeVariants>["variant"]; icon: typeof CheckCircle2 }
+  {
+    label: string;
+    variant: VariantProps<typeof badgeVariants>["variant"];
+    icon: typeof CheckCircle2;
+  }
 > = {
   "Đã trích xuất": {
     label: "Đã trích xuất",
@@ -112,7 +110,8 @@ export function UploadDocPage() {
   const copy = UPLOAD_DOC_COPY;
   const navigate = useNavigate();
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const { activeBusinessId, activeBusiness, setActiveBusiness } = useBusinessStore();
+  const { activeBusinessId, activeBusiness, setActiveBusiness } =
+    useBusinessStore();
   const { data: businessesData } = useBusinesses({ limit: 100 });
   const businesses = businessesData?.items ?? [];
 
@@ -135,37 +134,48 @@ export function UploadDocPage() {
     !!(activeBusinessId || businesses[0]?.id),
   );
   const uploadScanMutation = useUploadInvoiceScan();
+  const retryMutation = useRetryInvoiceScan();
 
   const [selectedCategory, setSelectedCategory] = useState("Hóa đơn tiền điện");
-  const [selectedStatusFilter, setSelectedStatusFilter] = useState<string>("Tất cả");
+  const [selectedStatusFilter, setSelectedStatusFilter] =
+    useState<string>("Tất cả");
   const [searchTerm, setSearchTerm] = useState("");
   const [isDragOver, setIsDragOver] = useState(false);
 
-  // Chuyển danh sách tài liệu từ API, fallback INITIAL_FILES
+  // Hiển thị dữ liệu tài liệu thực tế từ API.
   const files: FileItem[] = useMemo(() => {
-    if (scansData && scansData.items.length > 0) {
+    if (scansData) {
       return scansData.items.map((doc) => {
         let status: FileItem["status"] = "Chờ kiểm tra";
         if (doc.status === "NEED_REVIEW") status = "Cần xác nhận";
-        else if (doc.status === "CONFIRMED") status = "Đã trích xuất";
-        else if (doc.status === "FAILED" || doc.status === "REJECTED") status = "Lỗi";
+        else if (doc.status === "COMPLETED" || doc.status === "CONFIRMED")
+          status = "Đã trích xuất";
+        else if (doc.status === "FAILED" || doc.status === "REJECTED")
+          status = "Lỗi";
 
-        const sizeMb = doc.fileSize ? `${(doc.fileSize / 1024 / 1024).toFixed(1)} MB` : "Tệp hóa đơn";
-        const dateStr = doc.createdAt ? new Date(doc.createdAt).toLocaleDateString("vi-VN") : "Gần đây";
-        const conf = doc.confidenceScore ? `${Math.round(Number(doc.confidenceScore) * 100)}%` : undefined;
+        const sizeMb = doc.fileSize
+          ? `${(doc.fileSize / 1024 / 1024).toFixed(1)} MB`
+          : "Tệp hóa đơn";
+        const dateStr = doc.createdAt
+          ? new Date(doc.createdAt).toLocaleDateString("vi-VN")
+          : "Gần đây";
+        const conf = doc.confidenceScore
+          ? `${Math.round(Number(doc.confidenceScore) * 100)}%`
+          : undefined;
 
         return {
           id: doc.id,
           name: doc.fileName ?? "hoa-don.pdf",
-          type: doc.documentType === "INVOICE" ? "Hóa đơn tiền điện / nhiên liệu" : "Chứng từ phát thải",
+          type: getDocumentTypeLabel(doc.documentType),
           size: sizeMb,
           date: dateStr,
           status,
           confidence: conf,
+          retryable: doc.status === "FAILED" || doc.status === "NEED_REVIEW",
         };
       });
     }
-    return INITIAL_FILES;
+    return [];
   }, [scansData]);
 
   // Lọc danh sách tệp tin
@@ -182,7 +192,9 @@ export function UploadDocPage() {
     const targetBusinessId = activeBusinessId || businesses[0]?.id;
 
     if (!targetBusinessId) {
-      toast.error("Bạn chưa có hồ sơ doanh nghiệp. Vui lòng tạo doanh nghiệp trước khi tải tài liệu!");
+      toast.error(
+        "Bạn chưa có hồ sơ doanh nghiệp. Vui lòng tạo doanh nghiệp trước khi tải tài liệu!",
+      );
       navigate(ROUTES.app.businesses);
       return;
     }
@@ -191,28 +203,30 @@ export function UploadDocPage() {
       setActiveBusiness(businesses[0]);
     }
 
-    toast.loading(`Đang tải tệp ${file.name} và gửi sang AI trích xuất...`, { id: "upload-toast" });
+    toast.loading(`Đang tải tệp ${file.name} và gửi sang AI trích xuất...`, {
+      id: "upload-toast",
+    });
 
     try {
       await uploadScanMutation.mutateAsync({
         file,
         businessId: targetBusinessId,
+        documentType: DOCUMENT_TYPE_BY_CATEGORY[selectedCategory] ?? "OTHER",
       });
-      toast.success("Tải tệp thành công! Đang xử lý bóc tách qua AI...", { id: "upload-toast" });
+      toast.success("Tải tệp thành công! Đang xử lý bóc tách qua AI...", {
+        id: "upload-toast",
+      });
       await refetchScans();
-    } catch (err: any) {
-      toast.error(err?.message || "Tải tệp thất bại", { id: "upload-toast" });
+    } catch (error: unknown) {
+      toast.error(error instanceof Error ? error.message : "Tải tệp thất bại", {
+        id: "upload-toast",
+      });
     }
   };
 
   const handleSimulateUpload = () => {
     fileInputRef.current?.click();
   };
-
-  const handleDeleteFile = (_id: string, name: string) => {
-    toast.success(`Đã xóa tệp ${name}`);
-  };
-
 
   return (
     <div className="space-y-8">
@@ -221,6 +235,7 @@ export function UploadDocPage() {
         title="Tải lên Tài liệu & Hóa đơn"
         description={copy.description}
       />
+      <DataEntryMethods />
 
       {/* Thông tin doanh nghiệp đang áp dụng */}
       <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-primary/20 bg-primary/5 px-4 py-3 text-sm">
@@ -229,9 +244,13 @@ export function UploadDocPage() {
             <Building2 className="size-4" />
           </div>
           <div>
-            <span className="text-xs text-muted-foreground">Tài liệu sẽ được tính toán cho doanh nghiệp: </span>
+            <span className="text-xs text-muted-foreground">
+              Tài liệu sẽ được tính toán cho doanh nghiệp:{" "}
+            </span>
             <span className="font-bold text-foreground">
-              {activeBusiness?.name || businesses[0]?.name || "Chưa có doanh nghiệp"}
+              {activeBusiness?.name ||
+                businesses[0]?.name ||
+                "Chưa có doanh nghiệp"}
             </span>
           </div>
         </div>
@@ -239,7 +258,9 @@ export function UploadDocPage() {
           to={ROUTES.app.businesses}
           className="text-xs font-semibold text-primary hover:underline"
         >
-          {businesses.length > 1 ? "Đổi doanh nghiệp →" : "Quản lý doanh nghiệp →"}
+          {businesses.length > 1
+            ? "Đổi doanh nghiệp →"
+            : "Quản lý doanh nghiệp →"}
         </Link>
       </div>
 
@@ -251,8 +272,12 @@ export function UploadDocPage() {
               1
             </span>
             <div>
-              <p className="text-xs font-bold uppercase tracking-wider text-primary">Bước 1 / 3</p>
-              <h2 className="text-sm font-bold text-secondary-foreground">Tải lên chứng từ & Hóa đơn</h2>
+              <p className="text-xs font-bold uppercase tracking-wider text-primary">
+                Bước 1 / 3
+              </p>
+              <h2 className="text-sm font-bold text-secondary-foreground">
+                Tải lên chứng từ & Hóa đơn
+              </h2>
             </div>
           </div>
 
@@ -263,8 +288,12 @@ export function UploadDocPage() {
               2
             </span>
             <div>
-              <p className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Bước 2</p>
-              <h2 className="text-sm font-bold text-muted-foreground">AI Trích xuất & Xác nhận</h2>
+              <p className="text-xs font-bold uppercase tracking-wider text-muted-foreground">
+                Bước 2
+              </p>
+              <h2 className="text-sm font-bold text-muted-foreground">
+                AI Trích xuất & Xác nhận
+              </h2>
             </div>
           </div>
 
@@ -275,8 +304,12 @@ export function UploadDocPage() {
               3
             </span>
             <div>
-              <p className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Bước 3</p>
-              <h2 className="text-sm font-bold text-muted-foreground">Tính toán lượng CO₂e</h2>
+              <p className="text-xs font-bold uppercase tracking-wider text-muted-foreground">
+                Bước 3
+              </p>
+              <h2 className="text-sm font-bold text-muted-foreground">
+                Tính toán lượng CO₂e
+              </h2>
             </div>
           </div>
         </div>
@@ -288,7 +321,7 @@ export function UploadDocPage() {
           icon={FileText}
           label="Tổng tài liệu đã tải"
           value={`${files.length} tệp`}
-          hint="Bao gồm PDF, Excel & Ảnh chứng từ"
+          hint="Bao gồm PDF, JPG & PNG"
         />
         <MetricCard
           icon={CheckCircle2}
@@ -321,7 +354,9 @@ export function UploadDocPage() {
               <Upload className="size-5 text-primary" />
               Khu vực tải tài liệu
             </h2>
-            <span className="text-xs font-medium text-muted-foreground">Hỗ trợ tối đa 25MB / file</span>
+            <span className="text-xs font-medium text-muted-foreground">
+              Hỗ trợ tối đa 25MB / file
+            </span>
           </div>
 
           {/* Drag & Drop Zone */}
@@ -371,7 +406,7 @@ export function UploadDocPage() {
               {["PDF", "PNG", "JPG"].map((ext) => (
                 <span
                   key={ext}
-                  className="rounded-md border border-border bg-background px-2.5 py-1 text-[10px] font-bold text-muted-foreground uppercase"
+                  className="rounded-md border border-border bg-background px-2.5 py-1 text-[11px] font-bold text-muted-foreground uppercase"
                 >
                   {ext}
                 </span>
@@ -434,9 +469,12 @@ export function UploadDocPage() {
             </div>
 
             <div>
-              <h3 className="text-lg font-bold text-foreground">AI Engine đã sẵn sàng</h3>
+              <h3 className="text-lg font-bold text-foreground">
+                AI Engine đã sẵn sàng
+              </h3>
               <p className="mt-1 text-xs text-muted-foreground leading-relaxed">
-                Tự động nhận diện thông tin hóa đơn tiền điện (EVN), hóa đơn xăng dầu, dịch vụ vận tải và lập sổ cái carbon.
+                Tự động nhận diện thông tin hóa đơn tiền điện (EVN), hóa đơn
+                xăng dầu, dịch vụ vận tải và lập sổ cái carbon.
               </p>
             </div>
 
@@ -452,7 +490,10 @@ export function UploadDocPage() {
             </div>
 
             <Button asChild className="w-full py-5">
-              <Link to={ROUTES.app.aiReview} className="flex items-center justify-center gap-2">
+              <Link
+                to={ROUTES.app.aiReview}
+                className="flex items-center justify-center gap-2"
+              >
                 Trích xuất & Kiểm tra bằng AI
                 <ArrowRight className="size-4" />
               </Link>
@@ -463,11 +504,17 @@ export function UploadDocPage() {
             <ul className="space-y-3 text-xs text-muted-foreground leading-relaxed">
               <li className="flex items-start gap-2">
                 <span className="size-1.5 rounded-full bg-primary mt-1.5 shrink-0" />
-                <span>Hóa đơn nên rõ nét, không bị mờ mã số đồng hồ hoặc tổng chi phí.</span>
+                <span>
+                  Hóa đơn nên rõ nét, không bị mờ mã số đồng hồ hoặc tổng chi
+                  phí.
+                </span>
               </li>
               <li className="flex items-start gap-2">
                 <span className="size-1.5 rounded-full bg-primary mt-1.5 shrink-0" />
-                <span>Bạn có thể chỉnh sửa lại dữ liệu trích xuất trước khi ghi chính thức.</span>
+                <span>
+                  Bạn có thể chỉnh sửa lại dữ liệu trích xuất trước khi ghi
+                  chính thức.
+                </span>
               </li>
             </ul>
           </AppPanel>
@@ -489,7 +536,13 @@ export function UploadDocPage() {
           </div>
 
           <div className="flex flex-wrap gap-2">
-            {["Tất cả", "Chờ kiểm tra", "Đã trích xuất", "Cần xác nhận", "Lỗi"].map((status) => {
+            {[
+              "Tất cả",
+              "Chờ kiểm tra",
+              "Đã trích xuất",
+              "Cần xác nhận",
+              "Lỗi",
+            ].map((status) => {
               const active = selectedStatusFilter === status;
               return (
                 <button
@@ -542,8 +595,13 @@ export function UploadDocPage() {
                   const statusInfo = STATUS_CONFIG[file.status];
                   const StatusIcon = statusInfo.icon;
                   const isPdf = file.name.endsWith(".pdf");
-                  const isExcel = file.name.endsWith(".xlsx") || file.name.endsWith(".csv");
-                  const FileIconComponent = isPdf ? FileText : isExcel ? FileSpreadsheet : FileCode;
+                  const isExcel =
+                    file.name.endsWith(".xlsx") || file.name.endsWith(".csv");
+                  const FileIconComponent = isPdf
+                    ? FileText
+                    : isExcel
+                      ? FileSpreadsheet
+                      : FileCode;
 
                   return (
                     <tr
@@ -556,8 +614,12 @@ export function UploadDocPage() {
                             <FileIconComponent className="size-5" />
                           </div>
                           <div>
-                            <p className="font-semibold text-foreground">{file.name}</p>
-                            <p className="text-xs text-muted-foreground">{file.size}</p>
+                            <p className="font-semibold text-foreground">
+                              {file.name}
+                            </p>
+                            <p className="text-xs text-muted-foreground">
+                              {file.size}
+                            </p>
                           </div>
                         </div>
                       </td>
@@ -572,7 +634,10 @@ export function UploadDocPage() {
 
                       <td className="px-6 py-4">
                         <div className="flex items-center gap-2">
-                          <Badge variant={statusInfo.variant} className="gap-1.5 py-1">
+                          <Badge
+                            variant={statusInfo.variant}
+                            className="gap-1.5 py-1"
+                          >
                             <StatusIcon className="size-3.5" />
                             {statusInfo.label}
                           </Badge>
@@ -589,7 +654,9 @@ export function UploadDocPage() {
                           <Button
                             variant="outline"
                             size="sm"
-                            onClick={() => navigate(`${ROUTES.app.aiReview}?id=${file.id}`)}
+                            onClick={() =>
+                              navigate(`${ROUTES.app.aiReview}?id=${file.id}`)
+                            }
                             className="gap-1 text-xs"
                           >
                             <Eye className="size-3.5" />
@@ -599,18 +666,18 @@ export function UploadDocPage() {
                             variant="ghost"
                             size="icon-sm"
                             title="Tải lại"
-                            onClick={() => toast.info(`Đang tải lại ${file.name}...`)}
+                            disabled={
+                              !file.retryable || retryMutation.isPending
+                            }
+                            onClick={() =>
+                              retryMutation.mutate(file.id, {
+                                onSuccess: () =>
+                                  toast.success("Đã gửi trích xuất lại."),
+                                onError: (error) => toast.error(error.message),
+                              })
+                            }
                           >
                             <RefreshCw className="size-3.5" />
-                          </Button>
-                          <Button
-                            variant="ghost"
-                            size="icon-sm"
-                            className="text-muted-foreground hover:text-destructive"
-                            title="Xóa"
-                            onClick={() => handleDeleteFile(file.id, file.name)}
-                          >
-                            <Trash2 className="size-3.5" />
                           </Button>
                         </div>
                       </td>

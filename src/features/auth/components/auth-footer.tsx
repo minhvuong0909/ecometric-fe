@@ -16,26 +16,26 @@ const currentYear = new Date().getFullYear();
 
 export function AuthFooter({ className }: AuthFooterProps) {
   return (
-    <footer
-      className={cn(
-        "flex flex-col gap-4 border-t border-border px-6 py-6 sm:flex-row sm:items-center sm:justify-between lg:px-6",
-        className,
-      )}
-    >
-      <p className="text-sm text-muted-foreground">
-        {AUTH_COPY.footer.copyright.replace("{year}", String(currentYear))}
-      </p>
-      <nav aria-label="Pháp lý" className="flex gap-4">
-        {footerLinks.map((link) => (
-          <Link
-            key={link.label}
-            to={link.href}
-            className="link-muted text-sm"
-          >
-            {link.label}
-          </Link>
-        ))}
-      </nav>
+    <footer className={cn("border-t border-border py-5", className)}>
+      <div className="mx-auto flex w-full max-w-7xl flex-col items-center justify-between gap-3 px-6 sm:flex-row sm:text-left lg:px-8">
+        <p className="text-sm text-muted-foreground">
+          {AUTH_COPY.footer.copyright.replace("{year}", String(currentYear))}
+        </p>
+        <nav
+          aria-label="Pháp lý"
+          className="flex flex-wrap items-center justify-center gap-3"
+        >
+          {footerLinks.map((link) => (
+            <Link
+              key={link.label}
+              to={link.href}
+              className="link-muted text-sm"
+            >
+              {link.label}
+            </Link>
+          ))}
+        </nav>
+      </div>
     </footer>
   );
 }
