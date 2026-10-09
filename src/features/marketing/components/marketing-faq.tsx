@@ -7,20 +7,20 @@ export function MarketingFaq() {
 
   const faqs = [
     {
-      q: "Doanh nghiệp SME quy mô vừa và nhỏ có bắt buộc phải kiểm kê phát thải không?",
-      a: "Theo Nghị định 06/2022/NĐ-CP và Quyết định 01/2022/QĐ-TTg, các cơ sở phát thải lớn bắt buộc kiểm kê. Tuy nhiên, nếu doanh nghiệp của bạn tham gia chuỗi cung ứng xuất khẩu (sang EU theo cơ chế CBAM, Mỹ, Nhật Bản) hoặc muốn tiếp cận vốn tín dụng xanh từ các ngân hàng, đối tác mua hàng sẽ yêu cầu cung cấp dữ liệu phát thải Scope 1, 2 và 3.",
+      q: "Nên chuẩn bị dữ liệu gì khi bắt đầu?",
+      a: "Bắt đầu với hóa đơn điện, số liệu nhiên liệu và dữ liệu hoạt động trong kỳ kiểm kê. Tập hợp chứng từ theo cơ sở và thời gian để dễ đối chiếu khi nhập dữ liệu.",
     },
     {
       q: "Báo cáo xuất từ EcoMetric có giá trị pháp lý và được các bên kiểm toán chấp nhận không?",
-      a: "Hoàn toàn có. Hệ thống tính toán của EcoMetric tuân thủ nghiêm ngặt theo GHG Protocol Corporate Standard và ISO 14064-1:2018, đồng thời sử dụng bộ hệ số phát thải lưới điện Việt Nam được công bố chính thức bởi Cục Biến đổi khí hậu (Bộ TN&MT). Báo cáo kèm theo bảng diễn giải nguồn dữ liệu minh bạch sẵn sàng phục vụ kiểm toán bên thứ ba.",
+      a: "EcoMetric hỗ trợ tập hợp dữ liệu và chuẩn bị báo cáo. Việc chấp nhận phụ thuộc yêu cầu của bên nhận và quá trình rà soát, xác minh. Doanh nghiệp cần kiểm tra phạm vi, hệ số và chứng từ trước khi sử dụng báo cáo chính thức.",
     },
     {
       q: "Doanh nghiệp chúng tôi chỉ có hóa đơn tiền điện giấy và phiếu xăng dầu viết tay thì có dùng được không?",
-      a: "Có. Tính năng OCR AI của EcoMetric được huấn luyện đặc biệt trên các mẫu hóa đơn phổ biến tại Việt Nam (EVN, Petrolimex, hóa đơn nước, vé máy bay...). Bạn chỉ cần dùng điện thoại chụp ảnh hoặc quét scan tải lên, AI sẽ tự động đọc đúng lượng tiêu thụ mà không cần nhập tay.",
+      a: "Bạn có thể tải ảnh hoặc tài liệu để trích xuất dữ liệu, hoặc nhập số liệu thủ công. Chất lượng nhận diện phụ thuộc chứng từ; hãy kiểm tra lượng tiêu thụ và đơn vị trước khi xác nhận.",
     },
     {
-      q: "Dữ liệu chi phí và thông tin kinh doanh của doanh nghiệp được bảo mật như thế nào?",
-      a: "Toàn bộ dữ liệu của doanh nghiệp được mã hóa đa lớp (AES-256) ở cả trạng thái lưu trữ và truyền tải. Chúng tôi cam kết tuyệt đối không chia sẻ dữ liệu kinh doanh của bạn cho bên thứ ba hoặc sử dụng vào mục đích thương mại ngoài phạm vi hỗ trợ kiểm kê của bạn.",
+      q: "Biểu đồ trên trang chủ có phải kết quả của doanh nghiệp tôi không?",
+      a: "Không. Ảnh trên trang chủ sử dụng dữ liệu tài khoản thử nghiệm để giới thiệu giao diện. Trong không gian làm việc, kết quả được tính từ dữ liệu hoạt động của doanh nghiệp bạn.",
     },
   ];
 

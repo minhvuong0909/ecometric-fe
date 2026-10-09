@@ -104,16 +104,16 @@ export const PRICING_TIERS = [
 ] as const;
 
 export const CTA_SECTION = {
-  title: "Bạn đã sẵn sàng dẫn dắt xu hướng chuyển dịch chưa?",
+  title: "Bắt đầu từ dữ liệu doanh nghiệp đang có.",
   description:
-    "Hãy tham gia cùng các đội ngũ phát triển bền vững đang sử dụng EcoMetric để thúc đẩy hành động vì khí hậu và minh bạch hóa báo cáo.",
+    "Tạo tài khoản EcoMetric để tập hợp dữ liệu hoạt động và bắt đầu theo dõi phát thải.",
   primary: "Dùng thử miễn phí",
   secondary: "Liên hệ tư vấn",
 } as const;
 
 export const FOOTER_COPY = {
   tagline:
-    "Đồng hành cùng các tổ chức toàn cầu trong việc theo dõi, giảm thiểu và báo cáo dấu chân carbon với độ chính xác khoa học và tính minh bạch tuyệt đối.",
+    "Không gian làm việc giúp doanh nghiệp tập hợp dữ liệu, theo dõi phát thải và chuẩn bị báo cáo kiểm kê carbon.",
   copyright: "© {year} EcoMetric GHG Accounting. Bảo lưu mọi quyền.",
   highlightLinkId: "sustainability-report",
 } as const;

@@ -24,7 +24,7 @@ export function MarketingCta() {
             size="lg"
             className="border-border bg-transparent px-10 text-foreground hover:bg-secondary"
           >
-            <Link to={ROUTES.register}>{CTA_SECTION.secondary}</Link>
+            <Link to={ROUTES.login}>Đăng nhập tài khoản</Link>
           </Button>
         </div>
       </Reveal>

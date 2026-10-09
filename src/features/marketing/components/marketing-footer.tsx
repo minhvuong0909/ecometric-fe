@@ -13,13 +13,13 @@ const currentYear = new Date().getFullYear();
 export function MarketingFooter() {
   return (
     <footer
-      id="contact"
+      id="footer"
       className="border-t border-border/80 bg-slate-950 dark:bg-[#070d0a] pt-20 pb-10 text-slate-300"
     >
       <div className="mx-auto max-w-7xl px-6 lg:px-8">
         <div className="grid w-full gap-12 sm:grid-cols-2 lg:grid-cols-4 lg:gap-16">
           <div className="sm:col-span-2 lg:col-span-1">
-            <Logo variant="onDark" />
+            <Logo />
             <p className="mt-6 text-sm leading-relaxed text-footer-muted">
               {FOOTER_COPY.tagline}
             </p>

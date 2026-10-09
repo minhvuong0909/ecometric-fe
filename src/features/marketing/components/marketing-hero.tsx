@@ -1,28 +1,47 @@
+import { ArrowRight } from "lucide-react";
+import { useRef } from "react";
 import { Link } from "react-router";
-import { ArrowRight, Globe2, ShieldCheck, Award } from "lucide-react";
-import { motion, useReducedMotion } from "framer-motion";
-import { EcoBrandScene } from "@/shared/components/eco-brand-scene";
-import { HERO_COPY } from "@/features/marketing/constants/marketing-content";
-import { ROUTES } from "@/shared/constants/routes";
+import { motion, useReducedMotion, useScroll, useTransform } from "framer-motion";
 import { Button } from "@/shared/components/ui/button";
+import { ROUTES } from "@/shared/constants/routes";
 
-const standards = [{ label: "Phạm vi 1, 2 & 3", icon: Globe2 }, { label: "Chuẩn GHG Protocol", icon: ShieldCheck }, { label: "ISO 14064-1:2018", icon: Award }];
 export function MarketingHero() {
   const reduced = useReducedMotion();
-  return <section id="top" className="eco-hero scroll-mt-20">
-    <div className="mx-auto grid max-w-7xl items-center gap-4 px-6 lg:grid-cols-[1.05fr_1fr] lg:gap-8 lg:px-8">
-      <motion.div className="eco-hero-copy" initial={reduced ? false : { opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: .7 }}>
-        <div className="eco-eyebrow"><span /> CARBON INTELLIGENCE / ECOMETRIC</div>
-        <h1>{HERO_COPY.titleLead}<br /><span>{HERO_COPY.titleHighlight}</span></h1>
-        <p className="eco-hero-description">{HERO_COPY.description}</p>
-        <div className="mt-8 flex flex-col gap-3 sm:flex-row">
-          <Button asChild size="lg" className="eco-primary-cta"><Link to={ROUTES.register}>{HERO_COPY.ctaPrimary}<ArrowRight className="ml-2 size-4" /></Link></Button>
-          <Button asChild variant="outline" size="lg"><a href="#workflow">Tìm hiểu quy trình 3 bước</a></Button>
-        </div>
-        <div className="eco-hero-standards">{standards.map(({ label, icon: Icon }) => <div key={label}><Icon size={17} /><span>{label}</span></div>)}</div>
+  const heroRef = useRef<HTMLElement>(null);
+  const { scrollYProgress } = useScroll({
+    target: heroRef,
+    offset: ["start start", "end start"],
+  });
+  const artworkY = useTransform(scrollYProgress, [0, 1], [0, -28]);
+
+  return (
+    <section ref={heroRef} id="top" className="home-intro scroll-mt-20">
+      <motion.div className="home-document-background" aria-hidden="true" style={{ y: reduced ? 0 : artworkY }}>
+        <img src="/images/ecometric-documents-reference.png" alt="" width="1200" height="1200" fetchPriority="high" />
       </motion.div>
-      <EcoBrandScene />
-    </div>
-    <div className="eco-hero-bottom mx-auto max-w-7xl px-6 lg:px-8"><span>DỮ LIỆU RÕ RÀNG.</span><span>QUYẾT ĐỊNH BỀN VỮNG.</span><a href="#workflow">Khám phá EcoMetric <ArrowRight size={15} /></a></div>
-  </section>;
+      <div className="home-container home-intro-grid">
+        <motion.div
+          initial={reduced ? false : { opacity: 0, y: 14 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5 }}>
+          <p className="home-kicker">Nền tảng kiểm kê phát thải cho doanh nghiệp</p>
+          <h1>Hiểu rõ phát thải.<br /><span>Chủ động giảm carbon.</span></h1>
+          <p className="home-lead">
+            Tập hợp dữ liệu điện, nhiên liệu và vận chuyển. Theo dõi phát thải,
+            lập báo cáo và xác định ưu tiên cải thiện cùng EcoMetric.
+          </p>
+          <div className="home-actions">
+            <Button asChild size="lg">
+              <Link to={ROUTES.register}>
+                Dùng thử miễn phí <ArrowRight className="ml-2 size-4" aria-hidden="true" />
+              </Link>
+            </Button>
+            <a className="home-text-link" href="#workflow">
+              Xem cách EcoMetric hoạt động <ArrowRight size={16} aria-hidden="true" />
+            </a>
+          </div>
+        </motion.div>
+      </div>
+    </section>
+  );
 }

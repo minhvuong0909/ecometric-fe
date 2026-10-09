@@ -5,17 +5,18 @@ import { MarketingFooter } from "@/features/marketing/components/marketing-foote
 import { MarketingHeader } from "@/features/marketing/components/marketing-header";
 import { MarketingHero } from "@/features/marketing/components/marketing-hero";
 import { MarketingPricing } from "@/features/marketing/components/marketing-pricing";
-import { MarketingStandards } from "@/features/marketing/components/marketing-standards";
-import { MarketingWorkflow } from "@/features/marketing/components/marketing-workflow";
+import { MarketingChallenges } from "@/features/marketing/components/marketing-challenges";
+import { MarketingPointer } from "@/features/marketing/components/marketing-pointer";
+import "@/features/marketing/styles/homepage.css";
 
 export function PublicWebsitePage() {
   return (
     <div className="eco-brand eco-home min-h-dvh bg-background">
+      <MarketingPointer />
       <MarketingHeader />
       <main>
         <MarketingHero />
-        <MarketingStandards />
-        <MarketingWorkflow />
+        <MarketingChallenges />
         <MarketingFeatures />
         <MarketingPricing />
         <MarketingFaq />
